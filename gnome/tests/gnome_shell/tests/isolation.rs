@@ -73,7 +73,6 @@ fn shell_test_bus_cannot_activate_desktop_services() {
         let scratch = tempfile::tempdir().unwrap();
         let (_bus, address) = private_bus(scratch.path(), "session-bus");
         let connection = zbus::connection::Builder::address(address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();

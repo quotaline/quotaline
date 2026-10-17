@@ -38,7 +38,7 @@ const PATH: &str = "/tech/bernat/Quotaline/Gnome";
     default_path = "/org/freedesktop/portal/desktop"
 )]
 trait PortalSettings {
-    fn read_one(&self, namespace: &str, key: &str) -> zbus::Result<zbus::zvariant::OwnedValue>;
+    fn read_one(&self, namespace: &str, key: &str) -> zbus::Result<zbus::OwnedVariant>;
 }
 
 struct Inner {
@@ -272,11 +272,11 @@ impl App {
             return;
         }
         let connection = connection.expect("service is registered");
-        let mut hints = BTreeMap::<String, zbus::zvariant::Value<'_>>::new();
+        let mut hints = BTreeMap::<String, zbus::Variant<'_>>::new();
         if sound {
-            hints.insert("sound-name".into(), zbus::zvariant::Value::from("message-new-instant"));
+            hints.insert("sound-name".into(), zbus::Variant::from("message-new-instant"));
         } else {
-            hints.insert("suppress-sound".into(), zbus::zvariant::Value::from(true));
+            hints.insert("suppress-sound".into(), zbus::Variant::from(true));
         }
         let actions = if provider.is_some() {
             vec!["default", "Sign in"]
@@ -463,7 +463,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     if app.inner.lock().await.settings.demo {
         app.warm_demo();
     }
-    let connection = Builder::session()?.build().await?;
+    let connection = Builder::session().build().await?;
     app.inner.lock().await.connection = Some(connection.clone());
     connection.object_server().at(PATH, Bus(app.clone())).await?;
     connection.request_name(NAME).await?;

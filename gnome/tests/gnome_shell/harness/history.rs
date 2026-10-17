@@ -39,7 +39,6 @@ pub(crate) fn run_shell_cases_with_reset(
 #[cfg(feature = "fixture-api")]
 pub(crate) async fn sign_in_response(fixture: &IsolatedService, provider: &str) -> bool {
     let connection = zbus::connection::Builder::address(fixture.address.as_str())
-        .unwrap()
         .build()
         .await
         .unwrap();
@@ -82,7 +81,6 @@ pub(crate) fn project_history_shell(private: bool, projects: &[(&str, f64)], exp
     );
     tokio::runtime::Runtime::new().unwrap().block_on(async {
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();

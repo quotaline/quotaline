@@ -1,10 +1,5 @@
 [advisories]
 unused-ignored-advisory = "deny"
-ignore = [
-  { id = "RUSTSEC-2026-0370", reason = "secret-service 5.2 still depends on zbus 5; migrate when it supports zbus 6." },
-  { id = "RUSTSEC-2026-0371", reason = "secret-service 5.2 still depends on zbus 5; migrate when it supports zbus 6." },
-  { id = "RUSTSEC-2026-0372", reason = "secret-service 5.2 still depends on zbus 5; migrate when it supports zbus 6." },
-]
 
 [licenses]
 allow = [
@@ -35,3 +30,4 @@ skip = [
 unknown-registry = "deny"
 unknown-git = "deny"
 allow-registry = ["https://github.com/rust-lang/crates.io-index"]
+allow-git = ["https://github.com/gaborbernat/secret-service-rs"]

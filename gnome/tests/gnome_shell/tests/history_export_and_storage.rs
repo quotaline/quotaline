@@ -20,7 +20,6 @@ fn selected_model_filters_retained_quota_csv() {
     });
     tokio::runtime::Runtime::new().unwrap().block_on(async {
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();
@@ -78,7 +77,6 @@ fn csv_exports_protect_spreadsheet_formula_prefixes() {
     );
     tokio::runtime::Runtime::new().unwrap().block_on(async {
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();
@@ -142,7 +140,6 @@ fn metric_history_ignores_invalid_dates_and_excludes_boundary_days() {
     );
     tokio::runtime::Runtime::new().unwrap().block_on(async {
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();
@@ -195,7 +192,6 @@ fn reducing_retention_prunes_old_quota_and_analytics_history() {
     );
     tokio::runtime::Runtime::new().unwrap().block_on(async {
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();
@@ -238,7 +234,6 @@ fn metric_export_reports_a_missing_destination_directory() {
         let fixture = isolated_service(&serde_json::json!({"demo":demo,"providers":providers}));
         tokio::runtime::Runtime::new().unwrap().block_on(async {
             let connection = zbus::connection::Builder::address(fixture.address.as_str())
-                .unwrap()
                 .build()
                 .await
                 .unwrap();
@@ -319,7 +314,6 @@ fn pace_uses_recent_samples_after_service_restart() {
     );
     tokio::runtime::Runtime::new().unwrap().block_on(async {
         let connection = zbus::connection::Builder::address(address.trim())
-            .unwrap()
             .build()
             .await
             .unwrap();
@@ -360,7 +354,6 @@ fn service_remains_available_when_data_directory_is_a_file() {
     );
     tokio::runtime::Runtime::new().unwrap().block_on(async {
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();

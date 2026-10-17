@@ -7,7 +7,6 @@ fn history_view_rejects_unknown_metric_over_dbus() {
     let fixture = isolated_service(&serde_json::json!({"demo":true}));
     tokio::runtime::Runtime::new().unwrap().block_on(async {
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();
@@ -31,7 +30,6 @@ fn metric_export_rejects_unknown_metric_over_dbus() {
     let fixture = isolated_service(&serde_json::json!({"demo":true}));
     tokio::runtime::Runtime::new().unwrap().block_on(async {
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();
@@ -62,7 +60,6 @@ fn local_metric_export_creates_an_owner_only_csv() {
     let fixture = isolated_service(&serde_json::json!({"providers":providers}));
     tokio::runtime::Runtime::new().unwrap().block_on(async {
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();
@@ -125,7 +122,6 @@ fn full_history_export_streams_samples_and_analytics_with_private_projects() {
     );
     tokio::runtime::Runtime::new().unwrap().block_on(async {
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();
@@ -213,7 +209,6 @@ fn disabled_provider_history_is_hidden_from_charts_and_csv() {
     );
     tokio::runtime::Runtime::new().unwrap().block_on(async {
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();
@@ -264,7 +259,6 @@ fn selected_models_scope_quota_history_and_csv_but_not_analytics() {
     }));
     tokio::runtime::Runtime::new().unwrap().block_on(async {
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();
@@ -311,7 +305,6 @@ fn empty_custom_model_selection_hides_quota_history() {
     }));
     tokio::runtime::Runtime::new().unwrap().block_on(async {
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();
@@ -363,7 +356,6 @@ fn default_model_selection_filters_retained_quota_history() {
     });
     tokio::runtime::Runtime::new().unwrap().block_on(async {
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();

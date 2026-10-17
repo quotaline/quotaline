@@ -35,7 +35,6 @@ pub(crate) fn interrupted_cursor_refresh(demo: bool) {
             },
         );
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();

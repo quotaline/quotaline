@@ -68,7 +68,6 @@ pub(crate) fn threshold_notification(case: ThresholdCase) {
             },
         );
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();
@@ -76,11 +75,8 @@ pub(crate) fn threshold_notification(case: ThresholdCase) {
         let _desktop = if desktop {
             Some(
                 zbus::connection::Builder::address(fixture.address.as_str())
-                    .unwrap()
                     .name("org.freedesktop.Notifications")
-                    .unwrap()
                     .serve_at("/org/freedesktop/Notifications", NotificationSink(sender))
-                    .unwrap()
                     .build()
                     .await
                     .unwrap(),
@@ -91,11 +87,8 @@ pub(crate) fn threshold_notification(case: ThresholdCase) {
         let _portal = match clock_format {
             Some(format) => Some(
                 zbus::connection::Builder::address(fixture.address.as_str())
-                    .unwrap()
                     .name("org.freedesktop.portal.Desktop")
-                    .unwrap()
                     .serve_at("/org/freedesktop/portal/desktop", ClockSettings(format))
-                    .unwrap()
                     .build()
                     .await
                     .unwrap(),
@@ -176,17 +169,13 @@ pub(crate) fn sign_in_notification_action(disable_before_click: bool) {
     });
     tokio::runtime::Runtime::new().unwrap().block_on(async {
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();
         let (sender, mut receiver) = tokio::sync::mpsc::unbounded_channel();
         let _desktop = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .name("org.freedesktop.Notifications")
-            .unwrap()
             .serve_at("/org/freedesktop/Notifications", NotificationSink(sender))
-            .unwrap()
             .build()
             .await
             .unwrap();

@@ -98,7 +98,6 @@ fn expired_codex_keyring_token_refreshes_in_the_same_item() {
                 .as_bytes(),
         );
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();
@@ -178,7 +177,6 @@ fn codex_refresh_preserves_a_keyring_item_changed_during_oauth() {
             .mount(&server)
             .await;
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();
@@ -259,7 +257,6 @@ fn codex_refresh_reports_a_keyring_item_locked_during_oauth() {
             .mount(&server)
             .await;
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();

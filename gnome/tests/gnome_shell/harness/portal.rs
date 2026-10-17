@@ -39,9 +39,7 @@ pub(crate) fn portal_shell_fixture(script: &'static str, response: u32, uri_over
         )
         .unwrap();
         let portal = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .name("org.freedesktop.portal.Desktop")
-            .unwrap()
             .serve_at(
                 "/org/freedesktop/portal/desktop",
                 PortalChooser(
@@ -51,12 +49,10 @@ pub(crate) fn portal_shell_fixture(script: &'static str, response: u32, uri_over
                     gate.clone(),
                 ),
             )
-            .unwrap()
             .serve_at(
                 "/org/freedesktop/portal/desktop/request/test/tmb",
                 PortalRequest(closed.clone()),
             )
-            .unwrap()
             .build()
             .await
             .unwrap();
@@ -124,17 +120,14 @@ pub(crate) fn portal_shell_fixture(script: &'static str, response: u32, uri_over
                     "/org/freedesktop/portal/desktop/request/test/other",
                     "org.freedesktop.portal.Request",
                     "Response",
-                    &(
-                        0_u32,
-                        std::collections::HashMap::<String, zbus::zvariant::Value<'_>>::new(),
-                    ),
+                    &(0_u32, std::collections::HashMap::<String, zbus::Variant<'_>>::new()),
                 )
                 .await
                 .unwrap();
         }
         if response != 3 && response != 4 && response != 7 {
             let mut results = std::collections::HashMap::new();
-            results.insert("uris", zbus::zvariant::Value::new(vec![uri]));
+            results.insert("uris", zbus::Variant::new(vec![uri]));
             portal
                 .emit_signal(
                     None::<&str>,

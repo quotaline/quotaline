@@ -386,7 +386,6 @@ fn claude_profile_organization_reaches_shell_and_privacy_chips() {
     let fixture = claude_live_service(&server);
     runtime.block_on(async {
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();

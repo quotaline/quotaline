@@ -43,7 +43,6 @@ fn claude_local_analytics_reaches_history_without_network_credentials() {
     );
     tokio::runtime::Runtime::new().unwrap().block_on(async {
         let connection = zbus::connection::Builder::address(address.trim())
-            .unwrap()
             .build()
             .await
             .unwrap();
@@ -182,7 +181,6 @@ fn claude_transcript_scan_skips_oversized_old_and_incomplete_records() {
     );
     tokio::runtime::Runtime::new().unwrap().block_on(async {
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();
@@ -231,7 +229,6 @@ fn unpriced_claude_transcript_keeps_message_metrics_without_cost_points() {
     );
     tokio::runtime::Runtime::new().unwrap().block_on(async {
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();
@@ -286,7 +283,6 @@ fn claude_transcript_scan_removes_deleted_file_history() {
     );
     tokio::runtime::Runtime::new().unwrap().block_on(async {
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();

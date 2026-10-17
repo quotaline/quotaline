@@ -24,7 +24,6 @@ pub(crate) fn assert_antigravity_ignores_local_process(
     let (mut server, port) = local_antigravity_fixture(server_root, "language_server", &args);
     tokio::runtime::Runtime::new().unwrap().block_on(async {
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();
@@ -83,7 +82,6 @@ pub(crate) fn assert_antigravity_discovers_local_process(
     let (mut server, port) = local_antigravity_fixture(fixture.scratch.path(), program, args);
     tokio::runtime::Runtime::new().unwrap().block_on(async {
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();
@@ -169,7 +167,6 @@ pub(crate) fn gemini_file_source_state(encrypted: bool, keyring: GeminiKeyringFi
             );
         }
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();
@@ -242,7 +239,6 @@ pub(crate) fn gemini_keyring_failure_state(file: Option<&str>, connected: bool, 
             if locked { br#"{"access_token":"locked"}"# } else { b"not JSON" },
         );
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();

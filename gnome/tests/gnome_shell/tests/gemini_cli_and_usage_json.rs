@@ -52,7 +52,6 @@ fn installed_oauth_clients_work_without_complete_environment_credentials() {
             },
         );
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();

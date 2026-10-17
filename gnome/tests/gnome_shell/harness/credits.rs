@@ -20,7 +20,6 @@ pub(crate) fn copilot_locked_keyring_state(account: &str, configured: bool, stat
         );
         let _keyring = copilot_keyring_fixture(&fixture, &[(account, "locked-fixture")]).await;
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();
@@ -89,7 +88,6 @@ pub(crate) fn codex_keyring_failure_state(file: Option<&str>, locked: bool) -> s
             if locked { br#"{"tokens":{"access_token":"locked"}}"# } else { b"not JSON" },
         );
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();
@@ -155,7 +153,6 @@ pub(crate) fn codex_credits_shell_case(case: &str, credits: serde_json::Value, r
     );
     runtime.block_on(async {
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();

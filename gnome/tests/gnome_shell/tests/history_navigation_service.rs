@@ -7,7 +7,6 @@ fn history_reading_selection_uses_shared_policy_over_dbus() {
     let fixture = isolated_service(&serde_json::json!({"demo":true}));
     tokio::runtime::Runtime::new().unwrap().block_on(async {
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();
@@ -35,7 +34,6 @@ fn history_view_actions_update_range_and_saved_preferences() {
     let fixture = isolated_service(&serde_json::json!({"demo":true}));
     tokio::runtime::Runtime::new().unwrap().block_on(async {
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();
@@ -96,7 +94,6 @@ fn history_view_rejects_invalid_actions_without_changing_selection() {
     let fixture = isolated_service(&serde_json::json!({"demo":true}));
     tokio::runtime::Runtime::new().unwrap().block_on(async {
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();
@@ -140,7 +137,6 @@ fn history_view_keeps_navigation_when_the_database_query_fails() {
     });
     tokio::runtime::Runtime::new().unwrap().block_on(async {
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();

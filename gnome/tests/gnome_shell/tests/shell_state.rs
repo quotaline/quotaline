@@ -84,7 +84,6 @@ fn first_run_opens_usage_and_dismissal_persists() {
     assert_eq!(settings["first_run_card_dismissed"], true);
     tokio::runtime::Runtime::new().unwrap().block_on(async {
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();
@@ -229,7 +228,6 @@ fn first_run_detects_cursor_when_quota_is_rate_limited() {
     );
     runtime.block_on(async {
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();

@@ -38,7 +38,6 @@ fn cursor_last_reading_stays_visible_in_shell_after_api_failure() {
     let fixture = cursor_live_service(&server);
     runtime.block_on(async {
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();

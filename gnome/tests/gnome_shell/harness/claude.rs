@@ -63,7 +63,6 @@ pub(crate) fn claude_reset_shell_fixture(reset: &str, expected: &str, screenshot
     let fixture = claude_live_service(&server);
     runtime.block_on(async {
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();

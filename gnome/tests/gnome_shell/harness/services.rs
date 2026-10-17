@@ -13,9 +13,9 @@ pub(crate) struct ClockSettings(pub(crate) &'static str);
 #[cfg(feature = "fixture-api")]
 #[zbus::interface(name = "org.freedesktop.portal.Settings")]
 impl ClockSettings {
-    fn read_one(&self, namespace: &str, key: &str) -> zbus::fdo::Result<zbus::zvariant::OwnedValue> {
+    fn read_one(&self, namespace: &str, key: &str) -> zbus::fdo::Result<zbus::OwnedVariant> {
         assert_eq!((namespace, key), ("org.gnome.desktop.interface", "clock-format"));
-        Ok(zbus::zvariant::Value::from(self.0).try_into().unwrap())
+        Ok(zbus::Variant::from(self.0).try_into().unwrap())
     }
 }
 
@@ -71,8 +71,8 @@ impl PortalChooser {
         &self,
         _parent_window: &str,
         _title: &str,
-        _options: std::collections::HashMap<String, zbus::zvariant::OwnedValue>,
-    ) -> zbus::fdo::Result<zbus::zvariant::OwnedObjectPath> {
+        _options: std::collections::HashMap<String, zbus::OwnedVariant>,
+    ) -> zbus::fdo::Result<zbus::OwnedObjectPath> {
         if let Some(marker) = &self.2 {
             fs::write(marker, "requested").unwrap();
         }
@@ -83,7 +83,7 @@ impl PortalChooser {
         if self.1 {
             return Err(zbus::fdo::Error::Failed("Save dialog unavailable".into()));
         }
-        Ok(zbus::zvariant::OwnedObjectPath::try_from("/org/freedesktop/portal/desktop/request/test/tmb").unwrap())
+        Ok(zbus::OwnedObjectPath::try_from("/org/freedesktop/portal/desktop/request/test/tmb").unwrap())
     }
 }
 
@@ -325,7 +325,7 @@ impl NotificationSink {
         title: &str,
         body: &str,
         actions: Vec<String>,
-        hints: std::collections::HashMap<String, zbus::zvariant::OwnedValue>,
+        hints: std::collections::HashMap<String, zbus::OwnedVariant>,
         _timeout: i32,
     ) -> u32 {
         self.0
@@ -356,7 +356,7 @@ impl GatedNotificationSink {
         title: &str,
         _body: &str,
         _actions: Vec<String>,
-        _hints: std::collections::HashMap<String, zbus::zvariant::OwnedValue>,
+        _hints: std::collections::HashMap<String, zbus::OwnedVariant>,
         _timeout: i32,
     ) -> u32 {
         self.requested.send(()).unwrap();

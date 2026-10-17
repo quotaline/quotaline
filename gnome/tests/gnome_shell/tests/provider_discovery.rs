@@ -7,7 +7,6 @@ fn service_exits_when_session_bus_closes() {
     let mut fixture = isolated_service(&serde_json::json!({"demo":true}));
     tokio::runtime::Runtime::new().unwrap().block_on(async {
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();
@@ -65,7 +64,6 @@ fn model_activity_reports_last_increase_or_reset_within_retention() {
     );
     tokio::runtime::Runtime::new().unwrap().block_on(async {
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();
@@ -103,7 +101,6 @@ fn model_groups_use_shared_search_and_reveal_policy() {
     let fixture = isolated_service(&serde_json::json!({"demo": true}));
     tokio::runtime::Runtime::new().unwrap().block_on(async {
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();
@@ -140,7 +137,6 @@ fn model_selection_actions_use_shared_policy() {
     let fixture = isolated_service(&serde_json::json!({"demo": true}));
     tokio::runtime::Runtime::new().unwrap().block_on(async {
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();
@@ -201,7 +197,6 @@ fn removed_model_cannot_allow_clearing_the_last_visible_selection() {
     }));
     tokio::runtime::Runtime::new().unwrap().block_on(async {
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();
@@ -258,7 +253,6 @@ fn cursor_app_session_precedes_agent_credentials() {
             },
         );
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();
@@ -315,7 +309,6 @@ fn cursor_agent_survives_an_unreadable_app_database() {
             },
         );
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();
@@ -345,7 +338,6 @@ fn empty_secret_service_keeps_unsigned_providers_in_sign_in_state() {
             "antigravity":false,"cursor":false,"copilot":false});
         let fixture = isolated_service(&serde_json::json!({"providers":disabled}));
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();
@@ -394,7 +386,6 @@ fn codex_rollout_fallback_is_visible_without_api_credentials() {
     });
     tokio::runtime::Runtime::new().unwrap().block_on(async {
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();

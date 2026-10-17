@@ -7,7 +7,6 @@ fn service_exposes_shared_provider_and_metric_metadata() {
     let fixture = isolated_service(&serde_json::json!({"demo":true}));
     tokio::runtime::Runtime::new().unwrap().block_on(async {
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();
@@ -47,7 +46,6 @@ fn demo_launch_requests_use_generated_data_without_persisting_the_request() {
         let _service = Process(command.stdout(Stdio::null()).stderr(Stdio::null()).spawn().unwrap());
         tokio::runtime::Runtime::new().unwrap().block_on(async {
             let connection = zbus::connection::Builder::address(address.trim())
-                .unwrap()
                 .build()
                 .await
                 .unwrap();
@@ -85,7 +83,6 @@ fn explicit_demo_choice_overrides_saved_demo_and_launch_request() {
     );
     tokio::runtime::Runtime::new().unwrap().block_on(async {
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();
@@ -110,7 +107,6 @@ fn service_exposes_default_panel_selection_for_settings() {
     let fixture = default_selection_service();
     tokio::runtime::Runtime::new().unwrap().block_on(async {
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();
@@ -149,7 +145,6 @@ fn history_response_keeps_raw_series_for_native_labels() {
     let fixture = isolated_service(&serde_json::json!({"demo":true}));
     tokio::runtime::Runtime::new().unwrap().block_on(async {
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();

@@ -31,7 +31,6 @@ fn claude_spend_reason_and_purchase_reach_shell() {
     let fixture = claude_live_service(&server);
     runtime.block_on(async {
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();
@@ -104,7 +103,6 @@ fn copilot_day_reset_uses_the_provider_calendar_date_in_shell() {
     );
     runtime.block_on(async {
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();
@@ -261,7 +259,6 @@ fn rolled_history_uses_local_calendar_buckets_and_rejects_unknown_rollups() {
     );
     tokio::runtime::Runtime::new().unwrap().block_on(async {
         let connection = zbus::connection::Builder::address(address.trim())
-            .unwrap()
             .build()
             .await
             .unwrap();
@@ -342,7 +339,6 @@ fn demo_usage_history_reaches_dbus() {
     let fixture = isolated_service(&serde_json::json!({"demo":true}));
     tokio::runtime::Runtime::new().unwrap().block_on(async {
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();

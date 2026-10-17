@@ -35,7 +35,6 @@ fn codex_history_tracks_each_account_separately() {
             },
         );
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();
@@ -185,7 +184,6 @@ fn codex_secret_service_auth_precedes_stale_file_credentials() {
             br#"{"tokens":{"access_token":"keyring-fixture"}}"#,
         );
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();
@@ -263,7 +261,6 @@ fn codex_credit_balance_reaches_daily_history() {
             },
         );
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();
@@ -340,7 +337,6 @@ fn codex_credit_allowance_reaches_shell() {
     );
     runtime.block_on(async {
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();

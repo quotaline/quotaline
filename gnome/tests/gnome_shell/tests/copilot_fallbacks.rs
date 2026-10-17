@@ -38,7 +38,6 @@ fn copilot_keyring_item_without_a_token_uses_cli_file() {
         );
         let _keyring = copilot_keyring_fixture(&fixture, &[("https://github.com:ada", "{}")]).await;
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();
@@ -93,7 +92,6 @@ fn malformed_copilot_keyring_item_reports_unreadable_credentials() {
         );
         runtime.block_on(async {
             let connection = zbus::connection::Builder::address(fixture.address.as_str())
-                .unwrap()
                 .build()
                 .await
                 .unwrap();
@@ -199,7 +197,6 @@ fn unusable_copilot_keyring_item_falls_back_to_local_session() {
             )
             .unwrap();
             let connection = zbus::connection::Builder::address(fixture.address.as_str())
-                .unwrap()
                 .build()
                 .await
                 .unwrap();
@@ -253,7 +250,6 @@ fn copilot_legacy_apps_survives_malformed_higher_priority_files() {
             },
         );
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();

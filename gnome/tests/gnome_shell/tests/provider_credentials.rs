@@ -208,7 +208,6 @@ fn expired_cursor_session_requests_sign_in_before_network_access() {
     });
     tokio::runtime::Runtime::new().unwrap().block_on(async {
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();

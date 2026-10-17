@@ -222,7 +222,6 @@ pub(crate) fn packed_extension(root: &Path, output_dir: &Path) -> std::path::Pat
 pub(crate) fn request_service_quit(fixture: &IsolatedService) {
     tokio::runtime::Runtime::new().unwrap().block_on(async {
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();

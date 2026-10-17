@@ -77,7 +77,6 @@ fn gemini_unsupported_quota_opens_setup_in_shell() {
     );
     let state = runtime.block_on(async {
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();
@@ -162,7 +161,6 @@ fn gemini_keyring_refresh_precedes_stale_file_credentials() {
             br#"{"token":{"accessToken":"gemini-keyring-old","refreshToken":"gemini-keyring-refresh","expiresAt":1}}"#,
         );
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();
@@ -237,7 +235,6 @@ fn gemini_refresh_preserves_a_keyring_item_changed_during_oauth() {
             .mount(&server)
             .await;
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();
@@ -313,7 +310,6 @@ fn gemini_refresh_reports_a_keyring_item_locked_during_oauth() {
             .mount(&server)
             .await;
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();

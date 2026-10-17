@@ -184,7 +184,6 @@ fn claude_online_refresh_reaches_state_and_history() {
             },
         );
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();

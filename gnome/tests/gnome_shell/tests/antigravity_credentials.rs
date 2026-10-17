@@ -42,7 +42,6 @@ fn antigravity_refresh_uses_oauth_client_from_service_environment() {
             },
         );
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();
@@ -110,7 +109,6 @@ fn antigravity_keyring_precedes_stale_file_credentials() {
             format!("go-keyring-base64:{encoded}").as_bytes(),
         );
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();
@@ -176,7 +174,6 @@ fn antigravity_invalid_keyring_falls_back_to_cli_file() {
             b"go-keyring-base64:!",
         );
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();
@@ -218,7 +215,6 @@ fn antigravity_invalid_keyring_without_file_reports_unreadable_credentials() {
             b"go-keyring-base64:!",
         );
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();
@@ -259,7 +255,6 @@ fn antigravity_locked_keyring_reports_unreadable_credentials() {
             br#"{"token":{"access_token":"locked-fixture"}}"#,
         );
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();
@@ -319,7 +314,6 @@ fn antigravity_app_credentials_survive_a_malformed_cli_file() {
             },
         );
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();

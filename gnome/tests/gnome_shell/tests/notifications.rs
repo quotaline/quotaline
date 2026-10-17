@@ -68,7 +68,6 @@ fn notification_action_listener_failure_is_logged() {
     );
     tokio::runtime::Runtime::new().unwrap().block_on(async {
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();
@@ -154,17 +153,13 @@ fn reset_notifications_cover_a_large_set_of_distinct_limits() {
             },
         );
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();
         let (sender, mut receiver) = tokio::sync::mpsc::unbounded_channel();
         let _desktop = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .name("org.freedesktop.Notifications")
-            .unwrap()
             .serve_at("/org/freedesktop/Notifications", NotificationSink(sender))
-            .unwrap()
             .build()
             .await
             .unwrap();
@@ -246,7 +241,6 @@ fn disabling_notifications_stops_an_undelivered_reset_batch() {
             },
         );
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();
@@ -254,14 +248,11 @@ fn disabling_notifications_stops_an_undelivered_reset_batch() {
         let (delivered_sender, mut delivered) = tokio::sync::mpsc::unbounded_channel();
         let gate = std::sync::Arc::new(tokio::sync::Semaphore::new(0));
         let _desktop = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .name("org.freedesktop.Notifications")
-            .unwrap()
             .serve_at(
                 "/org/freedesktop/Notifications",
                 GatedNotificationSink { requested: requested_sender, gate: gate.clone(), delivered: delivered_sender },
             )
-            .unwrap()
             .build()
             .await
             .unwrap();
@@ -325,17 +316,13 @@ fn missing_antigravity_credentials_do_not_notify_after_a_cached_session() {
     });
     tokio::runtime::Runtime::new().unwrap().block_on(async {
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();
         let (sender, mut receiver) = tokio::sync::mpsc::unbounded_channel();
         let _desktop = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .name("org.freedesktop.Notifications")
-            .unwrap()
             .serve_at("/org/freedesktop/Notifications", NotificationSink(sender))
-            .unwrap()
             .build()
             .await
             .unwrap();
@@ -404,7 +391,6 @@ fn enabling_claude_token_refresh_recovers_an_expired_session() {
             },
         );
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();
@@ -460,7 +446,6 @@ fn changing_refresh_policy_retries_an_in_flight_provider() {
             },
         );
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();

@@ -149,7 +149,6 @@ fn sign_in_reports_a_terminal_launch_failure() {
     let (started, logged) = tokio::runtime::Runtime::new().unwrap().block_on(async {
         let started = sign_in_response(&fixture, "claude").await;
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();
@@ -175,7 +174,6 @@ fn shell_diagnostics_require_detail_and_known_category() {
             "providers":{"claude":false,"codex":false,"gemini":false,"antigravity":false,"cursor":false,"copilot":false}
         }));
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();
@@ -283,7 +281,6 @@ fn leaving_demo_mode_clears_preview_providers() {
     }}));
     tokio::runtime::Runtime::new().unwrap().block_on(async {
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();

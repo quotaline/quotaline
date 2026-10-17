@@ -9,7 +9,6 @@ pub(crate) fn fault_service_shell_fixture(script: &'static str, options: FaultOp
     let runtime = tokio::runtime::Runtime::new().unwrap();
     let state = runtime.block_on(async {
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();
@@ -238,9 +237,7 @@ pub(crate) fn fault_service_shell_fixture(script: &'static str, options: FaultOp
     assert!(fixture._service.0.wait().unwrap().success());
     let service = runtime.block_on(async {
         zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .name("tech.bernat.Quotaline.Gnome")
-            .unwrap()
             .serve_at(
                 "/tech/bernat/Quotaline/Gnome",
                 FaultService {
@@ -281,7 +278,6 @@ pub(crate) fn fault_service_shell_fixture(script: &'static str, options: FaultOp
                     cost_gate: tokio::sync::Semaphore::new(0),
                 },
             )
-            .unwrap()
             .build()
             .await
             .unwrap()

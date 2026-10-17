@@ -48,7 +48,6 @@ fn codex_rollout_refresh_detects_a_changed_file() {
     });
     tokio::runtime::Runtime::new().unwrap().block_on(async {
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();
@@ -83,7 +82,6 @@ fn codex_keeps_a_newer_reading_over_an_older_local_rollout() {
     });
     tokio::runtime::Runtime::new().unwrap().block_on(async {
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();

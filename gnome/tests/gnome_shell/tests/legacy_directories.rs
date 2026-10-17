@@ -23,7 +23,6 @@ fn service_moves_pre_rename_directories_and_logs_it() {
     );
     tokio::runtime::Runtime::new().unwrap().block_on(async {
         let connection = zbus::connection::Builder::address(address.trim())
-            .unwrap()
             .build()
             .await
             .unwrap();

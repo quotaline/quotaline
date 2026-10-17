@@ -113,7 +113,6 @@ pub(crate) fn cursor_shell_fixture(summary: serde_json::Value, script: &str, var
     let fixture = cursor_live_service(&server);
     runtime.block_on(async {
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();
@@ -150,7 +149,6 @@ pub(crate) fn cached_claude_snapshot(root: &Path) {
 #[cfg(feature = "fixture-api")]
 pub(crate) async fn assert_stale_claude_recovery(fixture: &IsolatedService, expected: &str) {
     let connection = zbus::connection::Builder::address(fixture.address.as_str())
-        .unwrap()
         .build()
         .await
         .unwrap();
@@ -186,7 +184,6 @@ pub(crate) async fn start_keyring(fixture: &IsolatedService) -> Process {
         .read_to_end(&mut Vec::new())
         .unwrap();
     let connection = zbus::connection::Builder::address(fixture.address.as_str())
-        .unwrap()
         .build()
         .await
         .unwrap();
@@ -298,7 +295,7 @@ pub(crate) async fn wait_for_reply<B>(
     matches: impl Fn(&serde_json::Value) -> bool,
 ) -> serde_json::Value
 where
-    B: serde::Serialize + zbus::zvariant::DynamicType,
+    B: serde::Serialize + zbus::DynamicType,
 {
     let mut changes = proxy.receive_signal("Changed").await.unwrap();
     loop {
@@ -319,7 +316,6 @@ where
 #[cfg(feature = "fixture-api")]
 pub(crate) async fn provider_with_status(fixture: &IsolatedService, id: &str, status: &str) -> serde_json::Value {
     let connection = zbus::connection::Builder::address(fixture.address.as_str())
-        .unwrap()
         .build()
         .await
         .unwrap();

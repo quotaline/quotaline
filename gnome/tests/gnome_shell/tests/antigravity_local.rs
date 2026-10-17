@@ -107,7 +107,6 @@ fn antigravity_skips_unrelated_and_damaged_proc_entries() {
     write_process(13, &valid_args, Some(&runtime), Some("socket:[424242]"));
     tokio::runtime::Runtime::new().unwrap().block_on(async {
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();
@@ -172,7 +171,6 @@ fn antigravity_discovers_local_process_without_runtime_directory() {
     std::os::unix::fs::symlink("socket:[424242]", process.join("fd/3")).unwrap();
     tokio::runtime::Runtime::new().unwrap().block_on(async {
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();
@@ -211,7 +209,6 @@ fn antigravity_handles_unavailable_proc_directory() {
     );
     tokio::runtime::Runtime::new().unwrap().block_on(async {
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();
@@ -394,7 +391,6 @@ fn antigravity_cli_file_reaches_cloud_quota_without_a_local_server() {
             },
         );
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();

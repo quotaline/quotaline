@@ -7,7 +7,6 @@ fn history_visibility_toggle_and_isolation_persist() {
     let fixture = isolated_service(&serde_json::json!({"demo": true}));
     tokio::runtime::Runtime::new().unwrap().block_on(async {
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();
@@ -48,7 +47,6 @@ fn history_visibility_double_click_undoes_the_first_toggle() {
     let fixture = isolated_service(&serde_json::json!({"demo": true}));
     tokio::runtime::Runtime::new().unwrap().block_on(async {
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();
@@ -80,7 +78,6 @@ fn history_visibility_rejects_invalid_actions_and_syncs_external_settings() {
     let fixture = isolated_service(&serde_json::json!({"demo": true}));
     tokio::runtime::Runtime::new().unwrap().block_on(async {
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();

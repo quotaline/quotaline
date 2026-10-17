@@ -8,7 +8,6 @@ fn service_exposes_shared_provider_refresh_limits() {
     let runtime = tokio::runtime::Runtime::new().unwrap();
     runtime.block_on(async {
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();
@@ -40,7 +39,6 @@ fn threshold_toggle_uses_shared_settings_policy() {
     let runtime = tokio::runtime::Runtime::new().unwrap();
     runtime.block_on(async {
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();
@@ -81,7 +79,6 @@ fn inactive_providers_keep_optional_settings_hidden() {
     let runtime = tokio::runtime::Runtime::new().unwrap();
     runtime.block_on(async {
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();
@@ -122,7 +119,6 @@ fn cached_windows_keep_pace_setting_visible_without_credentials() {
     let runtime = tokio::runtime::Runtime::new().unwrap();
     runtime.block_on(async {
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();

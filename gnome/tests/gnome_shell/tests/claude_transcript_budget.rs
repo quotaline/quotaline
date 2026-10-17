@@ -27,7 +27,6 @@ fn claude_transcript_scan_resumes_after_its_byte_budget() {
     );
     tokio::runtime::Runtime::new().unwrap().block_on(async {
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();

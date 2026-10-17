@@ -2,6 +2,8 @@
 members = ["crates/providers/codex", "crates/providers/claude", "crates/providers/antigravity", "crates/providers/gemini", "crates/providers/cursor", "crates/providers/copilot", "crates/refresh", "crates/data/export", "crates/accounts/setup", "crates/presentation/status-bar", "crates/demo", "crates/presentation/notifications", "crates/settings", "crates/presentation/quota", "crates/data/analytics", "crates/http", "crates/accounts/credentials", "crates/logging", "crates/catalog", "crates/presentation/text", "crates/accounts/credential-sources", "crates/data/history", "crates/data/storage", "gnome", "gnome/adapter", "macos/adapter", "macos/platform"]
 default-members = ["crates/providers/codex", "crates/providers/claude", "crates/providers/antigravity", "crates/providers/gemini", "crates/providers/cursor", "crates/providers/copilot", "crates/refresh", "crates/data/export", "crates/accounts/setup", "crates/presentation/status-bar", "crates/demo", "crates/presentation/notifications", "crates/settings", "crates/presentation/quota", "crates/data/analytics", "crates/http", "crates/accounts/credentials", "crates/logging", "crates/catalog", "crates/presentation/text", "crates/accounts/credential-sources", "crates/data/history", "crates/data/storage", "gnome", "gnome/adapter"]
 resolver = "3"
+[patch.crates-io]
+secret-service = { git = "https://github.com/gaborbernat/secret-service-rs", rev = "c7cd3193ca53319e2ca0ff6c362f3806665ea899" }
 
 [profile.release]
 opt-level = "z"

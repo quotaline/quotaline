@@ -80,9 +80,7 @@ fn power_profile_changes_reschedule_provider_refresh() {
     let (mut power_bus, power_address) = private_bus(power_directory.path(), "power-bus");
     let power_connection = runtime.block_on(async {
         zbus::connection::Builder::address(power_address.trim())
-            .unwrap()
             .name("org.freedesktop.UPower.PowerProfiles")
-            .unwrap()
             .serve_at(
                 "/org/freedesktop/UPower/PowerProfiles",
                 PowerProfiles {
@@ -90,7 +88,6 @@ fn power_profile_changes_reschedule_provider_refresh() {
                     degraded: String::new(),
                 },
             )
-            .unwrap()
             .build()
             .await
             .unwrap()
@@ -173,9 +170,7 @@ fn power_saver_keeps_claude_transcript_scans_to_known_files() {
         |address| {
             power_connection = Some(runtime.block_on(async {
                 zbus::connection::Builder::address(address)
-                    .unwrap()
                     .name("org.freedesktop.UPower.PowerProfiles")
-                    .unwrap()
                     .serve_at(
                         "/org/freedesktop/UPower/PowerProfiles",
                         PowerProfiles {
@@ -183,7 +178,6 @@ fn power_saver_keeps_claude_transcript_scans_to_known_files() {
                             degraded: String::new(),
                         },
                     )
-                    .unwrap()
                     .build()
                     .await
                     .unwrap()
@@ -196,7 +190,6 @@ fn power_saver_keeps_claude_transcript_scans_to_known_files() {
     let _power_connection = power_connection.unwrap();
     runtime.block_on(async {
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();
@@ -258,7 +251,6 @@ fn service_runs_without_a_system_power_bus() {
     );
     tokio::runtime::Runtime::new().unwrap().block_on(async {
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();
@@ -299,7 +291,6 @@ fn scheduled_provider_refresh_doubles_rate_limit_backoff() {
     let fixture = fast_cursor_service(&server, 1);
     runtime.block_on(async {
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();
@@ -349,7 +340,6 @@ fn manual_refresh_doubles_provider_failure_backoff() {
     let fixture = fast_cursor_service(&server, 1);
     runtime.block_on(async {
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();

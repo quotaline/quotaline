@@ -46,7 +46,6 @@ fn copilot_secret_service_account_precedes_stale_file_credentials() {
         )
         .await;
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();
@@ -110,7 +109,6 @@ fn copilot_map_account_finds_username_keyring_item() {
             br#"{"access_token":"map-keyring","host":"https://github.com/","login":"keyring-ada"}"#,
         );
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();
@@ -163,7 +161,6 @@ fn copilot_map_account_uses_oauth_token_file() {
             },
         );
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();
@@ -218,7 +215,6 @@ fn copilot_ignores_unlisted_secret_service_accounts() {
             },
         );
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();
@@ -285,7 +281,6 @@ fn copilot_keyring_survives_malformed_cli_config() {
         );
         let _keyring = copilot_keyring_fixture(&fixture, &[("https://github.com:ada", "keyring-raw")]).await;
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();
@@ -360,7 +355,6 @@ fn copilot_keyring_account_and_json_identity() {
             );
             let _keyring = copilot_keyring_fixture(&fixture, &[(account, secret)]).await;
             let connection = zbus::connection::Builder::address(fixture.address.as_str())
-                .unwrap()
                 .build()
                 .await
                 .unwrap();

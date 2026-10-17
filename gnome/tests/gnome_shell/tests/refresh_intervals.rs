@@ -42,7 +42,6 @@ fn scheduled_provider_refresh_updates_cursor_usage() {
     let fixture = fast_cursor_service(&server, 1);
     runtime.block_on(async {
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();
@@ -90,7 +89,6 @@ fn missing_credentials_wait_for_panel_activation() {
     let fixture = missing_cursor_service(&server);
     runtime.block_on(async {
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();
@@ -153,7 +151,6 @@ fn previously_connected_provider_keeps_retrying_after_credential_loss() {
     let fixture = fast_cursor_service(&server, 1);
     runtime.block_on(async {
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();
@@ -207,7 +204,6 @@ fn open_panel_uses_provider_floor_and_close_restores_background_interval() {
     let fixture = fast_cursor_service(&server, 30);
     runtime.block_on(async {
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();
@@ -271,7 +267,6 @@ fn scheduled_provider_refresh_honors_retry_after() {
     let fixture = fast_cursor_service(&server, 1);
     runtime.block_on(async {
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();
@@ -324,7 +319,6 @@ fn idle_refresh_interval_expands_until_panel_opens() {
     });
     runtime.block_on(async {
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();

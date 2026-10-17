@@ -53,7 +53,6 @@ fn malformed_existing_history_schema_returns_an_error_without_stopping_the_servi
     );
     tokio::runtime::Runtime::new().unwrap().block_on(async {
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();
@@ -92,7 +91,6 @@ fn history_schema_creation_reports_an_incompatible_existing_table() {
     );
     tokio::runtime::Runtime::new().unwrap().block_on(async {
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();
@@ -129,7 +127,6 @@ fn retention_prune_reports_a_database_failure_without_stopping_the_service() {
         );
         tokio::runtime::Runtime::new().unwrap().block_on(async {
             let connection = zbus::connection::Builder::address(fixture.address.as_str())
-                .unwrap()
                 .build()
                 .await
                 .unwrap();
@@ -165,7 +162,6 @@ fn history_recreates_schema_after_database_replacement() {
     }));
     tokio::runtime::Runtime::new().unwrap().block_on(async {
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();
@@ -276,7 +272,6 @@ fn scheduled_codex_analytics_reaches_daily_history() {
     );
     runtime.block_on(async {
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
-            .unwrap()
             .build()
             .await
             .unwrap();
