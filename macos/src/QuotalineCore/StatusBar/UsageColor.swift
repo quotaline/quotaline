@@ -51,6 +51,10 @@ public struct UsageLadder: Hashable, Sendable {
     green: HSBColor(hue: 0.38, saturation: 0.7, brightness: 1),
     orange: HSBColor(hue: 0.08, saturation: 0.78, brightness: 1),
     red: HSBColor(hue: 0.025, saturation: 0.55, brightness: 1))
+  public static let lightStatus = UsageLadder(
+    green: HSBColor(hue: 0.401, saturation: 0.671, brightness: 0.24),
+    orange: HSBColor(hue: 0.063, saturation: 0.676, brightness: 0.336),
+    red: HSBColor(hue: 0.026, saturation: 0.654, brightness: 0.353))
 
   public static func ladder(for contrast: UsageContrast) -> UsageLadder {
     contrast == .increased ? increased : standard
@@ -71,8 +75,8 @@ public enum UsageColor {
     color(pace: pace, percent: percent, ladder: UsageLadder.ladder(for: contrast))
   }
 
-  public static func statusColor(percent: Double) -> HSBColor {
-    color(pace: .unknown, percent: percent, ladder: .status)
+  public static func statusColor(percent: Double, dark: Bool) -> HSBColor {
+    color(pace: .unknown, percent: percent, ladder: dark ? .status : .lightStatus)
   }
 
   private static func color(pace: PaceStatus, percent: Double, ladder: UsageLadder) -> HSBColor {
@@ -81,6 +85,7 @@ public enum UsageColor {
     case .exhausted: return ladder.red
     case .unknown, .onTrack, .behind:
       let fraction = min(max(percent, 0), 100) / 100
+      if fraction == 1 { return ladder.red }
       if fraction < orangeAt {
         return ladder.green.mixed(with: ladder.orange, fraction: pow(fraction / orangeAt, 2))
       }

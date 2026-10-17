@@ -42,11 +42,16 @@ await test('high usage meters meet dark tile contrast', () => {
 });
 await test('status and widget text meet their surface contrast', () => {
     const activePanel = luminance('#303034');
+    const silverMenuBar = luminance('#f1f1f1');
     const widget = luminance('#494949');
     const lightPanel = luminance('#e3e3e8');
     const lightWidget = luminance('#bdbdbf');
     for (let percent = 0; percent <= 100; percent++) {
         assert.ok((luminance(usageStatusColor(percent)) + 0.05) / (activePanel + 0.05) >= 4.5, `${percent}% status`);
+        assert.ok(
+            (silverMenuBar + 0.05) / (luminance(usageStatusColor(percent, null, true)) + 0.05) >= 7,
+            `${percent}% light status`,
+        );
         assert.ok((luminance(usageTextColor(percent)) + 0.05) / (widget + 0.05) >= 4.5, `${percent}% widget`);
         assert.ok(
             (lightPanel + 0.05) / (luminance(usageTextColor(percent, null, true)) + 0.05) >= 4.5,

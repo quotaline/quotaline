@@ -21,7 +21,8 @@ public enum ExportRunner {
   ) async throws -> String {
     switch invocation {
     case .files(let command, let directory):
-      let written = try await run(command, directory: directory)
+      // Fix the preview clock so exports keep representative usage levels across reruns.
+      let written = try await run(command, directory: directory, now: Date(timeIntervalSince1970: 1_792_215_000))
       return "wrote \(written.count) files to \(directory.path)"
     case .usageJSON:
       return try UsageExportCommand.output(

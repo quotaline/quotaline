@@ -34,7 +34,7 @@ public enum StatusItemRenderer {
     case .number:
       return (dark ? NSColor.white : NSColor.black).withAlphaComponent(0.85)
     case .usage(let percent):
-      let hsb = dark ? UsageColor.statusColor(percent: percent) : UsageColor.color(percent: percent)
+      let hsb = UsageColor.statusColor(percent: percent, dark: dark)
       return NSColor(
         hue: hsb.hue, saturation: hsb.saturation, brightness: hsb.brightness, alpha: 1)
     }
