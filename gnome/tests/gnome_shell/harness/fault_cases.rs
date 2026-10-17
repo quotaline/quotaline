@@ -4,7 +4,7 @@ use super::*;
 use quotaline_quota::notices::notice_visible;
 
 pub(crate) fn fault_service_shell_fixture(script: &'static str, options: FaultOptions) {
-    let _shell = SHELL_LOCK.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    let _shell = shell_lock();
     let mut fixture = isolated_service(&serde_json::json!({"demo":true}));
     let runtime = tokio::runtime::Runtime::new().unwrap();
     let state = runtime.block_on(async {

@@ -5,7 +5,7 @@ use super::super::*;
 #[cfg(feature = "fixture-api")]
 #[test]
 fn claude_spend_reason_and_purchase_reach_shell() {
-    let _shell = SHELL_LOCK.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    let _shell = shell_lock();
     let runtime = tokio::runtime::Runtime::new().unwrap();
     let server = runtime.block_on(MockServer::start());
     runtime.block_on(async {
@@ -69,7 +69,7 @@ fn claude_overdue_reset_matches_macos_deadline() {
 #[cfg(feature = "fixture-api")]
 #[test]
 fn copilot_day_reset_uses_the_provider_calendar_date_in_shell() {
-    let _shell = SHELL_LOCK.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    let _shell = shell_lock();
     let runtime = tokio::runtime::Runtime::new().unwrap();
     let server = runtime.block_on(MockServer::start());
     let day = (chrono::Utc::now().date_naive() + chrono::Duration::days(3))
@@ -219,7 +219,7 @@ fn cursor_at_limit_format_shows_reset_in_warning_color() {
 
 #[test]
 fn rolled_history_uses_local_calendar_buckets_and_rejects_unknown_rollups() {
-    let _shell = SHELL_LOCK.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    let _shell = shell_lock();
     let scratch = tempfile::tempdir().unwrap();
     let data = scratch.path().join("data/quotaline");
     let config = scratch.path().join("config/quotaline");

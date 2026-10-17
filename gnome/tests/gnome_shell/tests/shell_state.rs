@@ -71,7 +71,7 @@ fn codex_old_code_reviews_show_zero_today_and_this_week() {
 #[cfg(feature = "fixture-api")]
 #[test]
 fn first_run_opens_usage_and_dismissal_persists() {
-    let _shell = SHELL_LOCK.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    let _shell = shell_lock();
     let fixture = fresh_install_fixture();
     run_shell_script(
         &fixture,
@@ -106,7 +106,7 @@ fn first_run_opens_usage_and_dismissal_persists() {
 #[cfg(feature = "fixture-api")]
 #[test]
 fn first_run_empty_layout_fits_narrow_shell() {
-    let _shell = SHELL_LOCK.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    let _shell = shell_lock();
     let fixture = fresh_install_fixture();
     run_shell_script(
         &fixture,
@@ -182,7 +182,7 @@ fn saved_advanced_settings_remain_visible_without_providers() {
 #[cfg(feature = "fixture-api")]
 #[test]
 fn undiscovered_provider_control_persists_explicit_activation() {
-    let _shell = SHELL_LOCK.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    let _shell = shell_lock();
     let fixture = isolated_service(&serde_json::json!({"show_all_providers":true,"last_tab":"Settings"}));
     run_shell_script(&fixture, "extension/tests/integration/provider-toggle.test.js", &[]);
     let saved: serde_json::Value =
@@ -200,7 +200,7 @@ fn undiscovered_provider_control_persists_explicit_activation() {
 #[cfg(feature = "fixture-api")]
 #[test]
 fn first_run_detects_cursor_when_quota_is_rate_limited() {
-    let _shell = SHELL_LOCK.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    let _shell = shell_lock();
     let runtime = tokio::runtime::Runtime::new().unwrap();
     let server = runtime.block_on(MockServer::start());
     runtime.block_on(async {
@@ -311,7 +311,7 @@ fn failed_model_group_request_can_retry_in_shell() {
 #[cfg(feature = "fixture-api")]
 #[test]
 fn shell_lifecycle_cases_reuse_one_shell() {
-    let _shell = SHELL_LOCK.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    let _shell = shell_lock();
     let fixture = isolated_service(&serde_json::json!({"demo":true}));
     run_shell_cases_with_reset(
         &fixture,
@@ -331,7 +331,7 @@ fn shell_lifecycle_cases_reuse_one_shell() {
 #[cfg(feature = "fixture-api")]
 #[test]
 fn open_history_refreshes_on_its_minute_timer() {
-    let _shell = SHELL_LOCK.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    let _shell = shell_lock();
     let fixture = isolated_service(&serde_json::json!({"demo":true}));
     run_shell_cases(
         &fixture,
@@ -399,7 +399,7 @@ fn history_picker_omits_unavailable_metric_groups_in_shell() {
 #[cfg(feature = "fixture-api")]
 #[test]
 fn history_without_samples_explains_the_empty_state_in_shell() {
-    let _shell = SHELL_LOCK.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    let _shell = shell_lock();
     let fixture = isolated_service(&serde_json::json!({"providers":{
         "claude":false,"codex":false,"gemini":false,"antigravity":false,"cursor":false,"copilot":false
     }}));

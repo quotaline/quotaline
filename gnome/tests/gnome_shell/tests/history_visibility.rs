@@ -71,7 +71,7 @@ fn state_filters_only_selected_full_limit_notices() {
 #[cfg(feature = "fixture-api")]
 #[test]
 fn fully_hidden_history_can_restore_a_series_in_shell() {
-    let _shell = SHELL_LOCK.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    let _shell = shell_lock();
     let fixture = isolated_service(&serde_json::json!({"demo":true}));
     tokio::runtime::Runtime::new().unwrap().block_on(async {
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
@@ -110,7 +110,7 @@ fn fully_hidden_history_can_restore_a_series_in_shell() {
 #[cfg(feature = "fixture-api")]
 #[test]
 fn light_and_high_contrast_themes_reuse_shell() {
-    let _shell = SHELL_LOCK.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    let _shell = shell_lock();
     let fixture = isolated_service(&serde_json::json!({"demo":true}));
     run_shell_cases_with_reset(
         &fixture,
@@ -127,7 +127,7 @@ fn light_and_high_contrast_themes_reuse_shell() {
 #[cfg(feature = "fixture-api")]
 #[test]
 fn dark_shell_theme_fits_reference_height() {
-    let _shell = SHELL_LOCK.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    let _shell = shell_lock();
     let fixture = isolated_service(&serde_json::json!({"demo":true}));
     run_shell_script(
         &fixture,

@@ -5,7 +5,7 @@ use super::super::*;
 #[cfg(feature = "fixture-api")]
 #[test]
 fn claude_model_names_render_as_compact_panel_labels() {
-    let _shell = SHELL_LOCK.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    let _shell = shell_lock();
     let runtime = tokio::runtime::Runtime::new().unwrap();
     let server = runtime.block_on(MockServer::start());
     runtime.block_on(async {
@@ -57,7 +57,7 @@ fn claude_model_names_render_as_compact_panel_labels() {
 #[cfg(feature = "fixture-api")]
 #[test]
 fn hidden_claude_limit_survives_adaptive_panel_formats() {
-    let _shell = SHELL_LOCK.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    let _shell = shell_lock();
     let runtime = tokio::runtime::Runtime::new().unwrap();
     let server = runtime.block_on(MockServer::start());
     let reset = (chrono::Utc::now() + chrono::Duration::days(2) + chrono::Duration::minutes(90)).to_rfc3339();
@@ -112,7 +112,7 @@ fn hidden_claude_limit_survives_adaptive_panel_formats() {
 #[cfg(feature = "fixture-api")]
 #[test]
 fn copilot_quota_categories_render_as_compact_panel_labels() {
-    let _shell = SHELL_LOCK.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    let _shell = shell_lock();
     let runtime = tokio::runtime::Runtime::new().unwrap();
     let server = runtime.block_on(MockServer::start());
     runtime.block_on(async {

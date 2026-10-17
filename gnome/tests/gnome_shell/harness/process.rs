@@ -2,7 +2,18 @@
 
 use super::*;
 
-pub(crate) static SHELL_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+// Nextest runs each test in a separate process, so a mutex cannot protect the shared Shell session.
+pub(crate) fn shell_lock() -> fs::File {
+    let lock = fs::OpenOptions::new()
+        .read(true)
+        .write(true)
+        .create(true)
+        .truncate(false)
+        .open(std::env::temp_dir().join("quotaline-gnome-shell.lock"))
+        .unwrap();
+    lock.lock().unwrap();
+    lock
+}
 
 pub(crate) struct Process(pub(crate) Child);
 

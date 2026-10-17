@@ -112,7 +112,7 @@ fn legacy_short_label_conflict_allows_an_unrelated_edit_over_dbus() {
 #[cfg(feature = "fixture-api")]
 #[test]
 fn conflicting_persisted_short_label_shows_derived_default_in_shell() {
-    let _shell = SHELL_LOCK.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    let _shell = shell_lock();
     let fixture = isolated_service(&serde_json::json!({
         "demo": true,
         "short_labels": {"claude:session": "CX 5h"}
@@ -123,7 +123,7 @@ fn conflicting_persisted_short_label_shows_derived_default_in_shell() {
 #[cfg(feature = "fixture-api")]
 #[test]
 fn derived_short_labels_include_unselected_models_in_shell() {
-    let _shell = SHELL_LOCK.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    let _shell = shell_lock();
     let fixture = isolated_service_with(
         &serde_json::json!({
             "providers": {"claude": false, "codex": true, "gemini": false, "antigravity": false,

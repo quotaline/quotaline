@@ -5,7 +5,7 @@ use super::super::*;
 #[cfg(feature = "fixture-api")]
 #[test]
 fn demo_usage_and_history_reach_shell() {
-    let _shell = SHELL_LOCK.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    let _shell = shell_lock();
     let fixture = isolated_service(&serde_json::json!({
         "demo":true,"write_usage_json":true,"history_days":7,"notifications":false
     }));
@@ -19,7 +19,7 @@ fn demo_usage_and_history_reach_shell() {
 #[cfg(feature = "fixture-api")]
 #[test]
 fn demo_settings_reach_shell() {
-    let _shell = SHELL_LOCK.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    let _shell = shell_lock();
     let fixture = isolated_service(&serde_json::json!({"demo":true,"write_usage_json":true,"history_days":7}));
     run_shell_script(
         &fixture,
@@ -31,7 +31,7 @@ fn demo_settings_reach_shell() {
 #[cfg(feature = "fixture-api")]
 #[test]
 fn demo_formats_and_lifecycle_reach_shell() {
-    let _shell = SHELL_LOCK.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    let _shell = shell_lock();
     let fixture = isolated_service_with(
         &serde_json::json!({"demo":true,"write_usage_json":true,"history_days":7}),
         |root| {
@@ -92,7 +92,7 @@ fn demo_formats_and_lifecycle_reach_shell() {
 #[cfg(feature = "fixture-api")]
 #[test]
 fn service_owner_loss_and_recovery_reach_shell() {
-    let _shell = SHELL_LOCK.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    let _shell = shell_lock();
     let fixture = isolated_service(&serde_json::json!({"demo":true}));
     let scratch = fixture.scratch.path().to_path_buf();
     let address = fixture.address.clone();
@@ -154,7 +154,7 @@ fn quit_method_stops_service() {
 #[cfg(feature = "fixture-api")]
 #[test]
 fn quit_footer_hides_panel_and_stops_service() {
-    let _shell = SHELL_LOCK.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    let _shell = shell_lock();
     let mut fixture = isolated_service(&serde_json::json!({"demo":true}));
     run_shell_script(
         &fixture,
@@ -171,7 +171,7 @@ fn quit_footer_hides_panel_and_stops_service() {
 #[cfg(feature = "fixture-api")]
 #[test]
 fn quit_shortcut_hides_panel_and_stops_service() {
-    let _shell = SHELL_LOCK.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    let _shell = shell_lock();
     let mut fixture = isolated_service(&serde_json::json!({"demo":true}));
     run_shell_script(
         &fixture,
@@ -188,7 +188,7 @@ fn quit_shortcut_hides_panel_and_stops_service() {
 #[cfg(feature = "fixture-api")]
 #[test]
 fn quit_works_in_small_menu() {
-    let _shell = SHELL_LOCK.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    let _shell = shell_lock();
     let mut fixture = isolated_service(&serde_json::json!({"demo":true}));
     run_shell_script(
         &fixture,
@@ -205,7 +205,7 @@ fn quit_works_in_small_menu() {
 #[cfg(feature = "fixture-api")]
 #[test]
 fn quit_without_service_hides_panel() {
-    let _shell = SHELL_LOCK.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    let _shell = shell_lock();
     let mut fixture = isolated_service(&serde_json::json!({"demo":true}));
     request_service_quit(&fixture);
     assert!(wait_for_exit(&mut fixture._service.0, Duration::from_secs(3)).is_some());

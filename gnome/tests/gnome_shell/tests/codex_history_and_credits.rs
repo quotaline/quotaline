@@ -305,7 +305,7 @@ fn codex_credit_balance_reaches_daily_history() {
 #[cfg(feature = "fixture-api")]
 #[test]
 fn codex_credit_allowance_reaches_shell() {
-    let _shell = SHELL_LOCK.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    let _shell = shell_lock();
     let runtime = tokio::runtime::Runtime::new().unwrap();
     let server = runtime.block_on(MockServer::start());
     runtime.block_on(async {

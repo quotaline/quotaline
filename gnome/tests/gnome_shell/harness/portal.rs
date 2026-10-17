@@ -10,7 +10,7 @@ pub(crate) fn fresh_install_fixture() -> IsolatedService {
 
 #[cfg(feature = "fixture-api")]
 pub(crate) fn portal_shell_fixture(script: &'static str, response: u32, uri_override: Option<&str>) {
-    let _shell = SHELL_LOCK.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    let _shell = shell_lock();
     let fixture = isolated_service(&serde_json::json!({"demo":true}));
     let path = if response == 5 {
         fixture.scratch.path().join("missing/history-export.csv")

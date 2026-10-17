@@ -122,7 +122,7 @@ pub(crate) fn codex_keyring_failure_state(file: Option<&str>, locked: bool) -> s
 
 #[cfg(feature = "fixture-api")]
 pub(crate) fn codex_credits_shell_case(case: &str, credits: serde_json::Value, resets: serde_json::Value) {
-    let _shell = SHELL_LOCK.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    let _shell = shell_lock();
     let runtime = tokio::runtime::Runtime::new().unwrap();
     let server = runtime.block_on(MockServer::start());
     runtime.block_on(async {

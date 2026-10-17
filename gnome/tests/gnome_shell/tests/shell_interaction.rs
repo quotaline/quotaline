@@ -75,7 +75,7 @@ fn disabling_shell_cancels_pending_save_dialog() {
 #[cfg(feature = "fixture-api")]
 #[test]
 fn remaining_mode_changes_usage_card_values_in_shell() {
-    let _shell = SHELL_LOCK.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    let _shell = shell_lock();
     let fixture = isolated_service(&serde_json::json!({"demo":true,"show_as":"remaining"}));
     run_shell_script(&fixture, "extension/tests/integration/remaining-usage.test.js", &[]);
 }
@@ -83,7 +83,7 @@ fn remaining_mode_changes_usage_card_values_in_shell() {
 #[cfg(feature = "fixture-api")]
 #[test]
 fn quota_help_runs_in_reused_shell() {
-    let _shell = SHELL_LOCK.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    let _shell = shell_lock();
     let fixture = isolated_service(&serde_json::json!({"demo":true}));
     run_shell_cases(
         &fixture,
@@ -97,7 +97,7 @@ fn quota_help_runs_in_reused_shell() {
 #[cfg(feature = "fixture-api")]
 #[test]
 fn settings_help_runs_in_reused_shell() {
-    let _shell = SHELL_LOCK.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    let _shell = shell_lock();
     let fixture = isolated_service(&serde_json::json!({"demo":true}));
     run_shell_cases(
         &fixture,
@@ -126,7 +126,7 @@ fn settings_help_runs_in_reused_shell() {
 #[cfg(feature = "fixture-api")]
 #[test]
 fn history_and_panel_help_run_in_reused_shell() {
-    let _shell = SHELL_LOCK.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    let _shell = shell_lock();
     let fixture = isolated_service(&serde_json::json!({"demo":true}));
     run_shell_cases(
         &fixture,
@@ -148,7 +148,7 @@ fn history_and_panel_help_run_in_reused_shell() {
 #[cfg(feature = "fixture-api")]
 #[test]
 fn empty_panel_item_help_explains_missing_usage() {
-    let _shell = SHELL_LOCK.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    let _shell = shell_lock();
     let fixture = isolated_service(&serde_json::json!({"providers":{
         "claude":false,"codex":false,"gemini":false,"antigravity":false,"cursor":false,"copilot":false
     }}));
@@ -162,7 +162,7 @@ fn empty_panel_item_help_explains_missing_usage() {
 #[cfg(feature = "fixture-api")]
 #[test]
 fn compact_shell_adapts_to_760_pixel_monitor() {
-    let _shell = SHELL_LOCK.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    let _shell = shell_lock();
     let fixture = isolated_service(&serde_json::json!({"demo":true}));
     run_shell_script(
         &fixture,
@@ -174,7 +174,7 @@ fn compact_shell_adapts_to_760_pixel_monitor() {
 #[cfg(feature = "fixture-api")]
 #[test]
 fn very_narrow_shell_adapts_to_420_pixel_monitor() {
-    let _shell = SHELL_LOCK.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    let _shell = shell_lock();
     let fixture = isolated_service(&serde_json::json!({"demo":true}));
     run_shell_script(
         &fixture,
@@ -186,7 +186,7 @@ fn very_narrow_shell_adapts_to_420_pixel_monitor() {
 #[cfg(feature = "fixture-api")]
 #[test]
 fn narrow_shell_adapts_to_560_pixel_monitor() {
-    let _shell = SHELL_LOCK.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    let _shell = shell_lock();
     let fixture = isolated_service(&serde_json::json!({"demo":true}));
     run_shell_script(
         &fixture,
@@ -198,7 +198,7 @@ fn narrow_shell_adapts_to_560_pixel_monitor() {
 #[cfg(feature = "fixture-api")]
 #[test]
 fn small_shell_adapts_to_320_pixel_monitor() {
-    let _shell = SHELL_LOCK.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    let _shell = shell_lock();
     let fixture = isolated_service(&serde_json::json!({"demo":true}));
     run_shell_script(
         &fixture,
@@ -210,7 +210,7 @@ fn small_shell_adapts_to_320_pixel_monitor() {
 #[cfg(feature = "fixture-api")]
 #[test]
 fn demo_layout_history_and_diagnostics_share_shell() {
-    let _shell = SHELL_LOCK.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    let _shell = shell_lock();
     let fixture = isolated_service(&serde_json::json!({"demo":true}));
     run_shell_cases(
         &fixture,
@@ -225,7 +225,7 @@ fn demo_layout_history_and_diagnostics_share_shell() {
 #[cfg(feature = "fixture-api")]
 #[test]
 fn history_touch_isolation_reaches_shell() {
-    let _shell = SHELL_LOCK.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    let _shell = shell_lock();
     let fixture = isolated_service(&serde_json::json!({"demo":true}));
     run_shell_script(&fixture, "extension/tests/integration/history-last-series.test.js", &[]);
 }
@@ -233,7 +233,7 @@ fn history_touch_isolation_reaches_shell() {
 #[cfg(feature = "fixture-api")]
 #[test]
 fn centered_medium_history_stacks_two_legend_columns() {
-    let _shell = SHELL_LOCK.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    let _shell = shell_lock();
     let fixture = isolated_service(&serde_json::json!({"demo":true}));
     run_shell_script(
         &fixture,
@@ -245,7 +245,7 @@ fn centered_medium_history_stacks_two_legend_columns() {
 #[cfg(feature = "fixture-api")]
 #[test]
 fn disabled_provider_with_cached_usage_stays_in_settings() {
-    let _shell = SHELL_LOCK.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    let _shell = shell_lock();
     let fixture = isolated_service(&serde_json::json!({"demo":true,"providers":{
         "claude":true,"codex":true,"gemini":true,"antigravity":false,"cursor":true,"copilot":true
     }}));

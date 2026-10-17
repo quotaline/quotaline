@@ -41,7 +41,7 @@ fn gemini_encrypted_storage_uses_file_when_keyring_is_empty() {
 #[cfg(feature = "fixture-api")]
 #[test]
 fn gemini_unsupported_quota_opens_setup_in_shell() {
-    let _shell = SHELL_LOCK.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    let _shell = shell_lock();
     let runtime = tokio::runtime::Runtime::new().unwrap();
     let server = runtime.block_on(MockServer::start());
     runtime.block_on(async {

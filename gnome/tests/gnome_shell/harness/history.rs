@@ -57,7 +57,7 @@ pub(crate) async fn sign_in_response(fixture: &IsolatedService, provider: &str) 
 
 #[cfg(feature = "fixture-api")]
 pub(crate) fn project_history_shell(private: bool, projects: &[(&str, f64)], expected: &[&str], capture: &str) {
-    let _shell = SHELL_LOCK.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    let _shell = shell_lock();
     let providers = serde_json::json!({"claude":true,"codex":false,"gemini":false,"antigravity":false,"cursor":false,"copilot":false});
     let fixture = isolated_service_configured(
         &serde_json::json!({"providers":providers,"history_metric":"projectCost","last_tab":"History","hide_identity":private}),
@@ -123,7 +123,7 @@ pub(crate) fn project_history_shell(private: bool, projects: &[(&str, f64)], exp
 
 #[cfg(feature = "fixture-api")]
 pub(crate) fn cloud_credit_shell_case(case: &str, credits: serde_json::Value, status: &str) {
-    let _shell = SHELL_LOCK.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    let _shell = shell_lock();
     let fixture = isolated_service_with(
         &serde_json::json!({"providers":{"claude":true},"last_tab":"Usage","show_all_providers":true}),
         move |root| {

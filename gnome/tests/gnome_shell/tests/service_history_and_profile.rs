@@ -47,7 +47,7 @@ fn history_project_labels_preserve_root_path_in_shell() {
 #[cfg(feature = "fixture-api")]
 #[test]
 fn history_value_formats_reuse_shell() {
-    let _shell = SHELL_LOCK.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    let _shell = shell_lock();
     let fixture = isolated_service(&serde_json::json!({
         "demo":true,"last_tab":"History","history_metric":"costUSD","history_days":7
     }));
@@ -63,7 +63,7 @@ fn history_value_formats_reuse_shell() {
 #[cfg(feature = "fixture-api")]
 #[test]
 fn cached_provider_sources_render_in_settings() {
-    let _shell = SHELL_LOCK.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    let _shell = shell_lock();
     let providers = serde_json::json!({"claude":false,"codex":false,"gemini":false,"antigravity":false,"cursor":false,"copilot":false});
     let fixture = isolated_service_configured(
         &serde_json::json!({"providers":providers,"last_tab":"Settings","show_all_providers":true}),
@@ -132,7 +132,7 @@ fn stale_claude_cloud_credit_without_expiry_is_muted_in_shell() {
 #[cfg(feature = "fixture-api")]
 #[test]
 fn cached_quota_without_pace_or_currency_remains_readable_in_shell() {
-    let _shell = SHELL_LOCK.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    let _shell = shell_lock();
     let fixture = isolated_service_configured(
         &serde_json::json!({"providers":{"claude":true},"last_tab":"Usage","show_all_providers":true}),
         |root| {
@@ -183,7 +183,7 @@ fn cached_quota_without_pace_or_currency_remains_readable_in_shell() {
 #[cfg(feature = "fixture-api")]
 #[test]
 fn hide_unused_omits_an_empty_provider_group_in_shell() {
-    let _shell = SHELL_LOCK.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    let _shell = shell_lock();
     let runtime = tokio::runtime::Runtime::new().unwrap();
     let server = runtime.block_on(MockServer::start());
     runtime.block_on(async {
@@ -360,7 +360,7 @@ fn claude_keeps_credentials_when_token_refresh_cannot_connect() {
 #[cfg(feature = "fixture-api")]
 #[test]
 fn claude_profile_organization_reaches_shell_and_privacy_chips() {
-    let _shell = SHELL_LOCK.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    let _shell = shell_lock();
     let runtime = tokio::runtime::Runtime::new().unwrap();
     let server = runtime.block_on(MockServer::start());
     runtime.block_on(async {

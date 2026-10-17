@@ -7,7 +7,7 @@ use super::super::*;
 fn sign_in_notification_opens_provider_controls_in_shell() {
     use std::os::unix::fs::symlink;
 
-    let _shell = SHELL_LOCK.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    let _shell = shell_lock();
     let fixture = isolated_service_configured(
         &serde_json::json!({"providers":{
             "claude":true,"codex":false,"gemini":false,"antigravity":false,"cursor":false,"copilot":false
@@ -311,7 +311,7 @@ fn leaving_demo_mode_clears_preview_providers() {
 #[cfg(feature = "fixture-api")]
 #[test]
 fn history_controls_run_in_reused_shell() {
-    let _shell = SHELL_LOCK.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    let _shell = shell_lock();
     let fixture = isolated_service(&serde_json::json!({"demo":true}));
     run_shell_cases(
         &fixture,
@@ -327,7 +327,7 @@ fn history_controls_run_in_reused_shell() {
 #[cfg(feature = "fixture-api")]
 #[test]
 fn history_turns_counts_the_total_once_in_shell() {
-    let _shell = SHELL_LOCK.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    let _shell = shell_lock();
     let today = chrono::Utc::now().format("%Y-%m-%d").to_string();
     let yesterday = (chrono::Utc::now() - chrono::Duration::days(1))
         .format("%Y-%m-%d")

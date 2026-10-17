@@ -41,7 +41,7 @@ pub(crate) fn claude_usage_state(usage: serde_json::Value, status: &str) -> serd
 
 #[cfg(feature = "fixture-api")]
 pub(crate) fn claude_reset_shell_fixture(reset: &str, expected: &str, screenshot: &str) {
-    let _shell = SHELL_LOCK.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    let _shell = shell_lock();
     let runtime = tokio::runtime::Runtime::new().unwrap();
     let server = runtime.block_on(MockServer::start());
     runtime.block_on(async {

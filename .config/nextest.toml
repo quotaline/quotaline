@@ -9,8 +9,15 @@ slow-timeout = { period = "30s", terminate-after = 1 }
 
 [profile.ci-hosted]
 inherits = "ci"
-test-threads = 1
 slow-timeout = { period = "60s", terminate-after = 1 }
+
+[test-groups]
+gnome-shell = { max-threads = 4 }
+
+[[profile.default.overrides]]
+filter = "binary(gnome_shell)"
+test-group = "gnome-shell"
+slow-timeout = { period = "180s", terminate-after = 1 }
 
 [[profile.default.overrides]]
 filter = "test(demo_usage_and_history_reach_shell)"

@@ -270,7 +270,7 @@ fn metric_export_reports_a_missing_destination_directory() {
 
 #[test]
 fn pace_uses_recent_samples_after_service_restart() {
-    let _shell = SHELL_LOCK.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    let _shell = shell_lock();
     let scratch = tempfile::tempdir().unwrap();
     let now = chrono::Utc::now().timestamp();
     let data = scratch.path().join("data/quotaline");

@@ -99,7 +99,7 @@ pub(crate) fn cursor_live_service(server: &MockServer) -> IsolatedService {
 
 #[cfg(feature = "fixture-api")]
 pub(crate) fn cursor_shell_fixture(summary: serde_json::Value, script: &str, variables: &[(&str, &str)]) {
-    let _shell = SHELL_LOCK.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    let _shell = shell_lock();
     let runtime = tokio::runtime::Runtime::new().unwrap();
     let server = runtime.block_on(MockServer::start());
     runtime.block_on(async {

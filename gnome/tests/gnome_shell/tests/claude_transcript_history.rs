@@ -4,7 +4,7 @@ use super::super::*;
 
 #[test]
 fn claude_local_analytics_reaches_history_without_network_credentials() {
-    let _shell = SHELL_LOCK.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    let _shell = shell_lock();
     let scratch = tempfile::tempdir().unwrap();
     let config = scratch.path().join("config/quotaline");
     let projects = scratch.path().join("home/.claude/projects/demo");

@@ -5,7 +5,7 @@ use super::super::*;
 #[cfg(feature = "fixture-api")]
 #[test]
 fn cursor_last_reading_stays_visible_in_shell_after_api_failure() {
-    let _shell = SHELL_LOCK.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    let _shell = shell_lock();
     let runtime = tokio::runtime::Runtime::new().unwrap();
     let server = runtime.block_on(MockServer::start());
     let requests = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
@@ -61,7 +61,7 @@ fn cursor_last_reading_stays_visible_in_shell_after_api_failure() {
 fn stale_claude_card_starts_sign_in_after_auth_failure() {
     use std::os::unix::fs::symlink;
 
-    let _shell = SHELL_LOCK.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    let _shell = shell_lock();
     let runtime = tokio::runtime::Runtime::new().unwrap();
     let server = runtime.block_on(MockServer::start());
     runtime.block_on(async {
@@ -111,7 +111,7 @@ fn stale_claude_card_starts_sign_in_after_auth_failure() {
 #[cfg(feature = "fixture-api")]
 #[test]
 fn stale_claude_card_opens_setup_for_unreadable_credentials_in_light_shell() {
-    let _shell = SHELL_LOCK.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    let _shell = shell_lock();
     let fixture = isolated_service_with(
         &serde_json::json!({"providers":{
             "claude":true,"codex":false,"gemini":false,"antigravity":false,"cursor":false,"copilot":false

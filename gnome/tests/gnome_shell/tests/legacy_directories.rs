@@ -4,7 +4,7 @@ use super::super::*;
 
 #[test]
 fn service_moves_pre_rename_directories_and_logs_it() {
-    let _shell = SHELL_LOCK.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    let _shell = shell_lock();
     let scratch = tempfile::tempdir().unwrap();
     let legacy = scratch.path().join("config/token-menu-bar-gnome");
     fs::create_dir_all(&legacy).unwrap();
