@@ -106,12 +106,15 @@ export const displayMethods = {
         ]);
         if (signature !== this._panelSignature) {
             const container = this._indicator.container;
-            const box = container.get_parent();
+            const box = container.get_parent() as Clutter.Actor;
+            const panel = box.get_parent() as Clutter.Actor;
             const occupiedWidth =
-                (box?.get_children() ?? [])
+                box
+                    .get_children()
                     .filter(actor => actor !== container && actor.visible)
                     .reduce((width, actor) => width + actor.get_preferred_width(-1)[1], 0) +
-                (box?.get_parent()?.get_children() ?? [])
+                panel
+                    .get_children()
                     .filter(actor => actor !== box && actor.visible)
                     .reduce((width, actor) => width + actor.get_preferred_width(-1)[1], 0);
             const budget = statusBudget(this._monitorWidth, occupiedWidth);
