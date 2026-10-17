@@ -1,4 +1,4 @@
-import type Clutter from 'gi://Clutter';
+import Clutter from 'gi://Clutter';
 import GLib from 'gi://GLib';
 import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
@@ -17,7 +17,12 @@ export class Tooltip {
     _follow: number;
 
     constructor() {
-        this._popup = new St.BoxLayout({vertical: true, style_class: 'tmb-tooltip', visible: false, reactive: false});
+        this._popup = new St.BoxLayout({
+            orientation: Clutter.Orientation.VERTICAL,
+            style_class: 'tmb-tooltip',
+            visible: false,
+            reactive: false,
+        });
         this._title = new St.Label({style_class: 'tmb-tooltip-title'});
         this._body = new St.Label({style_class: 'tmb-tooltip-body'});
         this._body.clutter_text.set_line_wrap(true);

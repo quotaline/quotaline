@@ -4,7 +4,8 @@ description: Build the Shell extension and local service without root access.
 weight: 1
 ---
 
-Use GNOME Shell 50 with [mise](https://mise.jdx.dev/installing-mise.html), `gnome-extensions`, and `systemctl --user`.
+Use GNOME Shell 50 or 51 with [mise](https://mise.jdx.dev/installing-mise.html), `gnome-extensions`, and
+`systemctl --user`.
 
 ```sh
 git clone https://github.com/quotaline/quotaline

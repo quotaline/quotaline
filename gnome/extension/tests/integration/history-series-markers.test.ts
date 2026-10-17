@@ -1,3 +1,4 @@
+import Clutter from 'gi://Clutter';
 import GdkPixbuf from 'gi://GdkPixbuf';
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
@@ -40,7 +41,7 @@ export async function run() {
         }));
         const chart = createChart(series, 0, 100, new Set(series.map(item => item.id)));
         probe = new St.BoxLayout({
-            vertical: true,
+            orientation: Clutter.Orientation.VERTICAL,
             x: 40,
             y: 80,
             style: 'background-color: #242424; padding: 16px; spacing: 12px;',
