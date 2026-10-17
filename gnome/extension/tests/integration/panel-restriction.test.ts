@@ -1,3 +1,4 @@
+import Clutter from 'gi://Clutter';
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import Shell from 'gi://Shell';
@@ -45,6 +46,10 @@ async function capture(name: string) {
 
 export async function run() {
     try {
+        if (GLib.getenv('TMB_PANEL_ORIENTATION')) {
+            await orientationScenario();
+            return;
+        }
         Main.overview.hide();
         const indicator = getIndicator();
         if (!indicator) throw new Error('Quotaline indicator is missing');
@@ -136,6 +141,32 @@ export async function run() {
             );
         }
     }
+}
+
+async function orientationScenario() {
+    const indicator = required(getIndicator());
+    const cells = required(findActor(indicator, actor => actor.has_style_class_name?.('tmb-panel-cells')));
+    const mini = Boolean(GLib.getenv('TMB_PANEL_MINI'));
+    if (mini) {
+        setSetting('selected_windows', ['claude:session', 'claude:weekly']);
+        setSetting('format', 'mini-bars');
+    }
+    const rows = () => findActor(cells, actor => actor.has_style_class_name?.('tmb-panel-mini-rows'));
+    const stacked = () => cells.get_children().find(actor => actor.has_style_class_name?.('tmb-panel-cell-stacked'));
+    await waitOrFail(
+        () => (mini ? rows()?.get_n_children() === 2 : stacked()?.has_allocation()),
+        'Provider status did not load',
+    );
+    flattenPanelLayout(indicator);
+    await afterPaint();
+    const [first, second] = required(mini ? rows() : stacked()).get_children();
+    if (required(first).get_transformed_position()[1] >= required(second).get_transformed_position()[1])
+        throw new Error('Panel layout reversed the provider status rows');
+}
+
+function flattenPanelLayout(actor: Clutter.Actor): void {
+    if (actor instanceof St.BoxLayout) actor.orientation = Clutter.Orientation.HORIZONTAL;
+    for (const child of actor.get_children()) flattenPanelLayout(child);
 }
 
 export function finish() {}

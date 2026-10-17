@@ -13,13 +13,6 @@ import {box, button, clear, coloredLabel, label, meter, percent} from './support
 // Status cells never carry bars, which is how a Mini bars group is told apart.
 type PanelCell = (StatusCell & {bars?: undefined}) | MiniBarGroup;
 
-function verticalPanelBox(styleClass: string): St.Widget {
-    return new St.Widget({
-        layout_manager: new Clutter.BoxLayout({orientation: Clutter.Orientation.VERTICAL}),
-        style_class: styleClass,
-    });
-}
-
 export const displayMethods = {
     _panelCell(this: TokenPanel, cell: PanelCell): St.Widget {
         if (cell.bars) return this._miniBarCell(cell);
@@ -114,12 +107,11 @@ export const displayMethods = {
         if (signature !== this._panelSignature) {
             const container = this._indicator.container;
             const box = container.get_parent();
-            const panel = box?.get_parent();
             const occupiedWidth =
                 (box?.get_children() ?? [])
                     .filter(actor => actor !== container && actor.visible)
                     .reduce((width, actor) => width + actor.get_preferred_width(-1)[1], 0) +
-                (panel?.get_children() ?? [])
+                (box?.get_parent()?.get_children() ?? [])
                     .filter(actor => actor !== box && actor.visible)
                     .reduce((width, actor) => width + actor.get_preferred_width(-1)[1], 0);
             const budget = statusBudget(this._monitorWidth, occupiedWidth);
@@ -370,5 +362,12 @@ export const displayMethods = {
         if (tab === 'History') this._loadHistory();
     },
 };
+
+function verticalPanelBox(styleClass: string): St.Widget {
+    return new St.Widget({
+        layout_manager: new Clutter.BoxLayout({orientation: Clutter.Orientation.VERTICAL}),
+        style_class: styleClass,
+    });
+}
 
 export type DisplayMethods = typeof displayMethods;

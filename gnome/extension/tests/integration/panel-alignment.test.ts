@@ -316,7 +316,8 @@ async function runScenario() {
 
 export async function run() {
     try {
-        await runScenario();
+        if (GLib.getenv('TMB_PANEL_SPACE')) await panelSpaceScenario();
+        else await runScenario();
     } finally {
         const directory = GLib.getenv('TMB_JS_COVERAGE_DIR');
         if (directory) {
@@ -326,6 +327,26 @@ export async function run() {
                 JSON.stringify(globalThis.__coverage__ ?? {}),
             );
         }
+    }
+}
+
+async function panelSpaceScenario() {
+    const indicator = required(getIndicator());
+    const cells = required(findActor(indicator, actor => actor.has_style_class_name?.('tmb-panel-cells')));
+    const icon = required(required(cells.get_parent()).get_children()[0]);
+    await waitFor(() => indicator.width > 200 && !icon.visible, 'Provider status did not fill the panel');
+    const box = required(indicator.container.get_parent());
+    const host = GLib.getenv('TMB_PANEL_PEER') ? required(box.get_parent()) : box;
+    const neighbor = new St.Widget({width: 1000, height: 20});
+    host.add_child(neighbor);
+    try {
+        await afterPaint(() => {
+            Main.layoutManager.emit('monitors-changed');
+        });
+        await waitFor(() => icon.visible, 'Provider status did not yield space to another panel item');
+    } finally {
+        host.remove_child(neighbor);
+        neighbor.destroy();
     }
 }
 

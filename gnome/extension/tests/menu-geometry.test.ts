@@ -18,6 +18,8 @@ await test('menu fits within the monitor inset', () => {
 });
 await test('status uses the remaining panel space', () => {
     assert.equal(statusBudget(1280, 1000), 264);
+});
+await test('status has no space when other items fill the panel', () => {
     assert.equal(statusBudget(1280, 1300), 0);
 });
 await test('status stays capped when the panel is mostly empty', () => {
