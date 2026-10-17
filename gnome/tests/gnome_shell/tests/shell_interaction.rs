@@ -244,6 +244,26 @@ fn centered_medium_history_stacks_two_legend_columns() {
 
 #[cfg(feature = "fixture-api")]
 #[test]
+fn provider_status_yields_to_other_panel_items() {
+    let _shell = shell_lock();
+    let fixture = isolated_service(&serde_json::json!({"demo":true}));
+    run_shell_script(&fixture, "extension/tests/integration/panel-space.test.js", &[]);
+}
+
+#[cfg(feature = "fixture-api")]
+#[test]
+fn provider_status_yields_to_another_panel_group() {
+    let _shell = shell_lock();
+    let fixture = isolated_service(&serde_json::json!({"demo":true}));
+    run_shell_script(
+        &fixture,
+        "extension/tests/integration/panel-space.test.js",
+        &[("TMB_PANEL_PEER", "1")],
+    );
+}
+
+#[cfg(feature = "fixture-api")]
+#[test]
 fn disabled_provider_with_cached_usage_stays_in_settings() {
     let _shell = shell_lock();
     let fixture = isolated_service(&serde_json::json!({"demo":true,"providers":{

@@ -3,7 +3,7 @@ import GLib from 'gi://GLib';
 import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import {usageColor, usageStatusColor} from '../color.js';
-import {menuWidth} from '../menu-geometry.js';
+import {menuWidth, statusBudget} from '../menu-geometry.js';
 import type {PanelMonitor, TokenPanel} from '../panel.js';
 import type {MiniBarGroup, StatusCell, StatusTier} from '../service-state.js';
 import {COPY} from '../shared-copy.js';
@@ -104,7 +104,17 @@ export const displayMethods = {
             cells.map(cell => [cell.id, cell.text, cell.used, cell.restricted, cell.limited, cell.stale]),
         ]);
         if (signature !== this._panelSignature) {
-            const budget = Math.max(120, Math.floor(this._monitorWidth * 0.35));
+            const container = this._indicator.container;
+            const box = container.get_parent();
+            const panel = box?.get_parent();
+            const occupiedWidth =
+                (box?.get_children() ?? [])
+                    .filter(actor => actor !== container && actor.visible)
+                    .reduce((width, actor) => width + actor.get_preferred_width(-1)[1], 0) +
+                (panel?.get_children() ?? [])
+                    .filter(actor => actor !== box && actor.visible)
+                    .reduce((width, actor) => width + actor.get_preferred_width(-1)[1], 0);
+            const budget = statusBudget(this._monitorWidth, occupiedWidth);
             const measure = (items: PanelCell[]) =>
                 items.map((cell, index) => {
                     if (index)
