@@ -136,6 +136,31 @@ private final class ContrastFlag {
   #expect(controller.registry.ids == before)
 }
 
+@Test @MainActor func userRediscoveryWaitsForAndRepeatsAnActiveDiscovery() async throws {
+  let (gate, release) = AsyncStream<Void>.makeStream()
+  let (dependencies, recorder) = try makeDependencies(rebuildProviders: { _ in
+    for await _ in gate { break }
+    return ProviderRegistry([
+      ScriptedProvider(id: .codex, result: ProviderFetchResult(outcome: .success(sampleSnapshot(.codex))))
+    ])
+  })
+  let controller = AppController(dependencies: dependencies)
+  let activation = Task { await controller.rediscoverProviders(.applicationActivated) }
+  await waitUntil { controller.providerRediscoveryTask != nil }
+  let unblock = Task { @MainActor in
+    await mainActorTurn()
+    release.yield()
+    release.finish()
+  }
+
+  await controller.rediscoverProviders(.userInitiated)
+  await activation.value
+  await unblock.value
+
+  #expect(recorder.rebuilt == 2)
+  #expect(controller.registry.ids == [.codex])
+}
+
 @Test @MainActor func reopeningWhileThePopoverIsOpenStartsNoNewAttachment() throws {
   let (controller, _, _) = try startedController()
   defer { controller.stop() }
