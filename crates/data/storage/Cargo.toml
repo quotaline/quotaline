@@ -1,11 +1,11 @@
 [package]
 name = "quotaline-storage"
-version = "0.1.8"
+version = "0.2.0"
 edition = "2024"
 license = "MIT"
 
 [dependencies]
-quotaline-logging = { version = "0.1.8", path = "../../logging" }
+quotaline-logging = { version = "0.2.0", path = "../../logging" }
 serde = "1"
 serde_json = "1"
 tempfile = "3"

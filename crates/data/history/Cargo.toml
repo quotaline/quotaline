@@ -1,6 +1,6 @@
 [package]
 name = "quotaline-history"
-version = "0.1.8"
+version = "0.2.0"
 edition = "2024"
 license = "MIT"
 
@@ -11,13 +11,13 @@ csv = "1.4.0"
 rusqlite = { version = "0.40", features = ["array", "bundled"] }
 serde = { version = "1", features = ["derive"] }
 thiserror = "2"
-quotaline-analytics = { version = "0.1.8", path = "../analytics" }
-quotaline-claude = { version = "0.1.8", path = "../../providers/claude" }
-quotaline-demo = { version = "0.1.8", path = "../../demo" }
-quotaline-quota = { version = "0.1.8", path = "../../presentation/quota" }
-quotaline-settings = { version = "0.1.8", path = "../../settings" }
-quotaline-storage = { version = "0.1.8", path = "../storage" }
-quotaline-text = { version = "0.1.8", path = "../../presentation/text" }
+quotaline-analytics = { version = "0.2.0", path = "../analytics" }
+quotaline-claude = { version = "0.2.0", path = "../../providers/claude" }
+quotaline-demo = { version = "0.2.0", path = "../../demo" }
+quotaline-quota = { version = "0.2.0", path = "../../presentation/quota" }
+quotaline-settings = { version = "0.2.0", path = "../../settings" }
+quotaline-storage = { version = "0.2.0", path = "../storage" }
+quotaline-text = { version = "0.2.0", path = "../../presentation/text" }
 uniffi = { version = "0.32.2", optional = true }
 walkdir = "2"
 

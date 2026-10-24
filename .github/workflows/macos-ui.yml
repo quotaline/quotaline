@@ -36,8 +36,7 @@ env:
   UI_SCHEME: ${{ inputs.group == 'performance' && 'Quotaline-Benchmarks' || 'Quotaline-Direct' }}
   UI_TARGET: ${{ inputs.group == 'performance' && 'QuotalinePerformanceTests' || 'QuotalineApplicationUITests' }}
   UI_SUITE: ${{ inputs.group == 'performance' && 'performance' || 'functional' }}
-  UI_RUNNER_ID: ${{ inputs.group == 'performance' && 'tech.bernat.quotaline.performance-tests.xctrunner' || 'tech.bernat.quotaline.application-ui-tests.xctrunner'
-    }}
+  UI_RUNNER_ID: ${{ inputs.group == 'performance' && 'tech.bernat.quotaline.performance-tests.xctrunner' || 'tech.bernat.quotaline.application-ui-tests.xctrunner' }}
 
 defaults:
   run:
@@ -93,12 +92,10 @@ jobs:
         with:
           deriveddata-directory: macos/.build/ui-derived
           sourcepackages-directory: macos/.build/xcode-packages
-          key: ui-build-v4-${{ runner.os }}-${{ runner.arch }}-${{ inputs.runner }}-${{ steps.xcode.outputs.cache }}-${{ hashFiles('macos/Package.swift',
-            'macos/App/project.yml') }}-${{ github.sha }}
+          key: ui-build-v4-${{ runner.os }}-${{ runner.arch }}-${{ inputs.runner }}-${{ steps.xcode.outputs.cache }}-${{ hashFiles('macos/Package.swift', 'macos/App/project.yml') }}-${{ github.sha }}
           restore-keys: |
             ui-build-v4-${{ runner.os }}-${{ runner.arch }}-${{ inputs.runner }}-${{ steps.xcode.outputs.cache }}-${{ hashFiles('macos/Package.swift', 'macos/App/project.yml') }}-
-          swiftpm-cache-key: xcode-spm-${{ runner.os }}-${{ runner.arch }}-${{ inputs.runner }}-${{ steps.xcode.outputs.cache
-            }}-${{ hashFiles('macos/Package.swift', 'macos/App/project.yml') }}
+          swiftpm-cache-key: xcode-spm-${{ runner.os }}-${{ runner.arch }}-${{ inputs.runner }}-${{ steps.xcode.outputs.cache }}-${{ hashFiles('macos/Package.swift', 'macos/App/project.yml') }}
           use-default-mtime-targets: false
           restore-mtime-targets: |
             macos/Package.swift
@@ -178,8 +175,7 @@ jobs:
       fail-fast: false
       max-parallel: ${{ inputs.shards > 0 && inputs.shards || 2 }}
       matrix:
-        shard: ${{ inputs.group != '' && fromJSON(format('[{{"name":{0},"groups":[{0}]}}]', toJSON(inputs.group))) || fromJSON(needs.build.outputs.shards)
-          }}
+        shard: ${{ inputs.group != '' && fromJSON(format('[{{"name":{0},"groups":[{0}]}}]', toJSON(inputs.group))) || fromJSON(needs.build.outputs.shards) }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -287,8 +283,7 @@ jobs:
           path: macos/.build/ui-build.log
           retention-days: 1
       - name: Retain rendered-text assertions
-        if: ${{ !cancelled() && contains(join(matrix.shard.groups, ' '), 'text-') && (inputs.test == '' || startsWith(inputs.test, 'LiveControlAuditUITests/testLongTextAt'))
-          }}
+        if: ${{ !cancelled() && contains(join(matrix.shard.groups, ' '), 'text-') && (inputs.test == '' || startsWith(inputs.test, 'LiveControlAuditUITests/testLongTextAt')) }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: rendered-ui-${{ inputs.runtime-major }}-${{ matrix.shard.name }}

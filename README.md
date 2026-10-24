@@ -8,7 +8,7 @@ usage guides, and troubleshooting.
 
 - [Install on macOS or GNOME](https://quotaline.readthedocs.io/en/latest/start/)
 - [Contribute](https://quotaline.readthedocs.io/en/latest/contributing/)
-- [Changelog](CHANGELOG.md)
+- [Changelog](https://quotaline.readthedocs.io/en/latest/changelog/)
 - [Report a bug](https://github.com/quotaline/quotaline/issues) or [report a security issue privately](SECURITY.md)
 
 [MIT licensed](LICENSE).

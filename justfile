@@ -666,7 +666,7 @@ macos-stamp tag="":
 # Start a release: Prepare Release tags the commit and dispatches the build, the cask and the App Store upload
 [group('macos')]
 [working-directory('macos')]
-macos-release bump="patch":
+macos-release bump="auto":
     gh workflow run "Prepare Release" --field bump={{ bump }}
     @echo "Watch it with: gh run watch \$(gh run list --workflow 'Prepare Release' --limit 1 --json databaseId -q '.[0].databaseId')"
 
@@ -842,7 +842,7 @@ macos-test-python:
     mkdir -p {{ tmp }}
     uv venv --allow-existing --python 3.15 .build/verification-tools
     uv pip install --python .build/verification-tools/bin/python \
-      psutil==7.2.2 types-psutil==7.2.2.20260906 pytest==9.1.1 pytest-mock==3.16.0 pytest-cov==7.1.0 ty==0.0.88
+      psutil==7.2.2 types-psutil==7.2.2.20260906 pytest==9.1.1 pytest-mock==3.16.0 pytest-cov==7.1.0 ty==0.0.88 PyYAML types-PyYAML
     .build/verification-tools/bin/ty check --python .build/verification-tools/bin/python \
       Scripts/local_ui_tests.py Scripts/swift_coverage.py Scripts/verify_app_bundle.py Scripts/with_hang_samples.py Scripts/tests
     .build/verification-tools/bin/python -m pytest Scripts/tests -q --cov=Scripts --cov-report=

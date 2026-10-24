@@ -1,6 +1,6 @@
 [package]
 name = "quotaline-gnome"
-version = "0.1.8"
+version = "0.2.0"
 edition = "2024"
 license = "MIT"
 
@@ -28,29 +28,29 @@ path = "tests/gnome_shell.rs"
 required-features = ["fixture-api"]
 
 [dependencies]
-quotaline-analytics = { version = "0.1.8", path = "../crates/data/analytics" }
-quotaline-antigravity = { version = "0.1.8", path = "../crates/providers/antigravity" }
-quotaline-catalog = { version = "0.1.8", path = "../crates/catalog" }
-quotaline-claude = { version = "0.1.8", path = "../crates/providers/claude" }
-quotaline-codex = { version = "0.1.8", path = "../crates/providers/codex" }
-quotaline-copilot = { version = "0.1.8", path = "../crates/providers/copilot" }
-quotaline-credential-sources = { version = "0.1.8", path = "../crates/accounts/credential-sources" }
-quotaline-credentials = { version = "0.1.8", path = "../crates/accounts/credentials" }
-quotaline-cursor = { version = "0.1.8", path = "../crates/providers/cursor" }
-quotaline-demo = { version = "0.1.8", path = "../crates/demo" }
-quotaline-export = { version = "0.1.8", path = "../crates/data/export" }
-quotaline-gemini = { version = "0.1.8", path = "../crates/providers/gemini" }
-quotaline-http = { version = "0.1.8", path = "../crates/http" }
-quotaline-logging = { version = "0.1.8", path = "../crates/logging" }
-quotaline-notifications = { version = "0.1.8", path = "../crates/presentation/notifications" }
-quotaline-quota = { version = "0.1.8", path = "../crates/presentation/quota" }
-quotaline-refresh = { version = "0.1.8", path = "../crates/refresh" }
-quotaline-settings = { version = "0.1.8", path = "../crates/settings" }
-quotaline-setup = { version = "0.1.8", path = "../crates/accounts/setup" }
-quotaline-status-bar = { version = "0.1.8", path = "../crates/presentation/status-bar" }
-quotaline-storage = { version = "0.1.8", path = "../crates/data/storage" }
-quotaline-text = { version = "0.1.8", path = "../crates/presentation/text" }
-quotaline-gnome-adapter = { version = "0.1.8", path = "adapter" }
+quotaline-analytics = { version = "0.2.0", path = "../crates/data/analytics" }
+quotaline-antigravity = { version = "0.2.0", path = "../crates/providers/antigravity" }
+quotaline-catalog = { version = "0.2.0", path = "../crates/catalog" }
+quotaline-claude = { version = "0.2.0", path = "../crates/providers/claude" }
+quotaline-codex = { version = "0.2.0", path = "../crates/providers/codex" }
+quotaline-copilot = { version = "0.2.0", path = "../crates/providers/copilot" }
+quotaline-credential-sources = { version = "0.2.0", path = "../crates/accounts/credential-sources" }
+quotaline-credentials = { version = "0.2.0", path = "../crates/accounts/credentials" }
+quotaline-cursor = { version = "0.2.0", path = "../crates/providers/cursor" }
+quotaline-demo = { version = "0.2.0", path = "../crates/demo" }
+quotaline-export = { version = "0.2.0", path = "../crates/data/export" }
+quotaline-gemini = { version = "0.2.0", path = "../crates/providers/gemini" }
+quotaline-http = { version = "0.2.0", path = "../crates/http" }
+quotaline-logging = { version = "0.2.0", path = "../crates/logging" }
+quotaline-notifications = { version = "0.2.0", path = "../crates/presentation/notifications" }
+quotaline-quota = { version = "0.2.0", path = "../crates/presentation/quota" }
+quotaline-refresh = { version = "0.2.0", path = "../crates/refresh" }
+quotaline-settings = { version = "0.2.0", path = "../crates/settings" }
+quotaline-setup = { version = "0.2.0", path = "../crates/accounts/setup" }
+quotaline-status-bar = { version = "0.2.0", path = "../crates/presentation/status-bar" }
+quotaline-storage = { version = "0.2.0", path = "../crates/data/storage" }
+quotaline-text = { version = "0.2.0", path = "../crates/presentation/text" }
+quotaline-gnome-adapter = { version = "0.2.0", path = "adapter" }
 chrono = { version = "0.4", default-features = false, features = ["clock", "serde"] }
 futures-util = "0.3"
 serde = { version = "1", features = ["derive"] }
@@ -68,6 +68,6 @@ rusqlite = { version = "0.40", features = ["bundled"] }
 secret-service = { version = "6", default-features = false, features = ["rt-tokio-crypto-rust"] }
 sha2 = "0.11"
 tempfile = "3"
-quotaline-history = { version = "0.1.8", path = "../crates/data/history" }
+quotaline-history = { version = "0.2.0", path = "../crates/data/history" }
 tokio = { version = "1", features = ["test-util"] }
 wiremock = "0.6"

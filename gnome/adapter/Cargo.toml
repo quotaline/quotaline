@@ -1,6 +1,6 @@
 [package]
 name = "quotaline-gnome-adapter"
-version = "0.1.8"
+version = "0.2.0"
 edition = "2024"
 license = "MIT"
 
@@ -8,26 +8,26 @@ license = "MIT"
 fixture-api = []
 
 [dependencies]
-quotaline-analytics = { version = "0.1.8", path = "../../crates/data/analytics" }
-quotaline-antigravity = { version = "0.1.8", path = "../../crates/providers/antigravity" }
-quotaline-catalog = { version = "0.1.8", path = "../../crates/catalog" }
-quotaline-claude = { version = "0.1.8", path = "../../crates/providers/claude" }
-quotaline-codex = { version = "0.1.8", path = "../../crates/providers/codex" }
-quotaline-copilot = { version = "0.1.8", path = "../../crates/providers/copilot" }
-quotaline-credentials = { version = "0.1.8", path = "../../crates/accounts/credentials" }
-quotaline-cursor = { version = "0.1.8", path = "../../crates/providers/cursor" }
-quotaline-gemini = { version = "0.1.8", path = "../../crates/providers/gemini" }
-quotaline-http = { version = "0.1.8", path = "../../crates/http" }
-quotaline-logging = { version = "0.1.8", path = "../../crates/logging" }
-quotaline-notifications = { version = "0.1.8", path = "../../crates/presentation/notifications" }
-quotaline-quota = { version = "0.1.8", path = "../../crates/presentation/quota" }
-quotaline-settings = { version = "0.1.8", path = "../../crates/settings" }
-quotaline-setup = { version = "0.1.8", path = "../../crates/accounts/setup" }
-quotaline-status-bar = { version = "0.1.8", path = "../../crates/presentation/status-bar" }
-quotaline-text = { version = "0.1.8", path = "../../crates/presentation/text" }
-quotaline-credential-sources = { version = "0.1.8", path = "../../crates/accounts/credential-sources" }
-quotaline-storage = { version = "0.1.8", path = "../../crates/data/storage" }
-quotaline-history = { version = "0.1.8", path = "../../crates/data/history" }
+quotaline-analytics = { version = "0.2.0", path = "../../crates/data/analytics" }
+quotaline-antigravity = { version = "0.2.0", path = "../../crates/providers/antigravity" }
+quotaline-catalog = { version = "0.2.0", path = "../../crates/catalog" }
+quotaline-claude = { version = "0.2.0", path = "../../crates/providers/claude" }
+quotaline-codex = { version = "0.2.0", path = "../../crates/providers/codex" }
+quotaline-copilot = { version = "0.2.0", path = "../../crates/providers/copilot" }
+quotaline-credentials = { version = "0.2.0", path = "../../crates/accounts/credentials" }
+quotaline-cursor = { version = "0.2.0", path = "../../crates/providers/cursor" }
+quotaline-gemini = { version = "0.2.0", path = "../../crates/providers/gemini" }
+quotaline-http = { version = "0.2.0", path = "../../crates/http" }
+quotaline-logging = { version = "0.2.0", path = "../../crates/logging" }
+quotaline-notifications = { version = "0.2.0", path = "../../crates/presentation/notifications" }
+quotaline-quota = { version = "0.2.0", path = "../../crates/presentation/quota" }
+quotaline-settings = { version = "0.2.0", path = "../../crates/settings" }
+quotaline-setup = { version = "0.2.0", path = "../../crates/accounts/setup" }
+quotaline-status-bar = { version = "0.2.0", path = "../../crates/presentation/status-bar" }
+quotaline-text = { version = "0.2.0", path = "../../crates/presentation/text" }
+quotaline-credential-sources = { version = "0.2.0", path = "../../crates/accounts/credential-sources" }
+quotaline-storage = { version = "0.2.0", path = "../../crates/data/storage" }
+quotaline-history = { version = "0.2.0", path = "../../crates/data/history" }
 base64 = "0.23"
 chrono = { version = "0.4", default-features = false, features = ["clock", "serde"] }
 hex = "0.4"

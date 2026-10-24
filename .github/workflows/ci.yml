@@ -1,48 +1,35 @@
 name: CI
 run-name: ${{ github.event_name == 'pull_request' && format('CI / PR {0} / base {1}', github.event.pull_request.number, github.event.pull_request.base.sha) || format('CI / {0}', github.ref_name) }}
-
 on:
   push:
     branches: [main]
   pull_request:
-    types: [opened, synchronize, reopened, labeled, unlabeled]
+    types: [opened, synchronize, reopened]
   workflow_dispatch:
   # Pull requests and main run macOS 26 only, to fit the organization's five macOS runners; every runtime, package
   # mode and distribution runs nightly.
   schedule:
     - cron: "23 2 * * *"
-
 permissions:
   contents: read
   pull-requests: read
-
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
-
 jobs:
-  news:
-    name: News fragment
-    if: github.event_name == 'pull_request' && !contains(github.event.pull_request.labels.*.name, 'skip news')
+  hook-update-cooldown:
+    name: Hook update cooldown
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-26.04
     timeout-minutes: 5
+    permissions:
+      actions: read
+      contents: read
+      pull-requests: read
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: tox-dev/github-workflows/check-hook-update-cooldown@55f51f9b5cc0b40f280155a95de2d4f0ecbf7be1 # v3.0.0
         with:
-          fetch-depth: 0
-          persist-credentials: false
-      - name: Require a user-facing change
-        run: |
-          found=0
-          while IFS= read -r path; do
-            if [[ "$path" =~ ^changelog\.d/[0-9]+\.(feature|bugfix|doc)\.md$ && -s "$path" ]]; then
-              found=1
-            fi
-          done < <(git diff --name-only --diff-filter=AM "origin/$GITHUB_BASE_REF"...HEAD)
-          if (( found == 0 )); then
-            echo "::error::add a nonempty changelog.d/<PR>.<type>.md fragment or apply skip news"
-            exit 1
-          fi
+          release-app-client-id: ${{ vars.RELEASE_APP_CLIENT_ID }}
   changes:
     runs-on: ubuntu-26.04
     timeout-minutes: 5
@@ -119,7 +106,6 @@ jobs:
               - 'README.md'
               - 'website/**'
               - '.readthedocs.yaml'
-
   macos-runtimes:
     needs: changes
     if: ${{ needs.changes.outputs.crates == 'true' || needs.changes.outputs.macos == 'true' || needs.changes.outputs.shared == 'true' || contains(fromJSON('["workflow_dispatch","schedule"]'), github.event_name) }}
@@ -144,7 +130,6 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           FULL_MATRIX: ${{ contains(fromJSON('["workflow_dispatch","schedule"]'), github.event_name) && '1' || '0' }}
         run: gh api repos/actions/runner-images/releases/tags/xcode-27-arm64%2F20260907.0173 | macos/Scripts/ci-runtime-matrix.sh
-
   crates-coverage:
     needs: changes
     if: ${{ needs.changes.outputs.crates == 'true' || needs.changes.outputs.shared == 'true' || contains(fromJSON('["workflow_dispatch","schedule"]'), github.event_name) }}
@@ -169,7 +154,6 @@ jobs:
         env:
           TMB_TMPDIR: ${{ runner.temp }}/tmb
           TMB_NEXTEST_PROFILE: ci-hosted
-
   lint:
     needs: changes
     if: ${{ needs.changes.outputs.crates == 'true' || needs.changes.outputs.gnome == 'true' || needs.changes.outputs.shared == 'true' || contains(fromJSON('["workflow_dispatch","schedule"]'), github.event_name) }}
@@ -197,10 +181,8 @@ jobs:
       - run: mise exec -- just check
       - run: mise exec -- just clippy
       - run: mise exec -- just lint-extension
-
   validate:
     needs: changes
-    if: ${{ needs.changes.outputs.docs == 'true' || needs.changes.outputs.shared == 'true' || contains(fromJSON('["workflow_dispatch","schedule"]'), github.event_name) }}
     runs-on: ubuntu-26.04
     timeout-minutes: 10
     steps:
@@ -222,7 +204,6 @@ jobs:
           test -s website/public/robots.txt
           test -s website/public/start/index.md
           test -s website/public/reference/providers/index.md
-
   dependencies:
     needs: changes
     if: ${{ needs.changes.outputs.crates == 'true' || needs.changes.outputs.gnome == 'true' || needs.changes.outputs.shared == 'true' || contains(fromJSON('["workflow_dispatch","schedule"]'), github.event_name) }}
@@ -240,7 +221,6 @@ jobs:
           version: 2026.10.11
           install_args: --locked
       - run: mise exec -- just lint-deps
-
   build:
     needs: changes
     if: ${{ needs.changes.outputs.crates == 'true' || needs.changes.outputs.gnome == 'true' || needs.changes.outputs.shared == 'true' || contains(fromJSON('["workflow_dispatch","schedule"]'), github.event_name) }}
@@ -275,7 +255,6 @@ jobs:
             target/quotaline-gnome-linux-x86_64.tar.gz.sha256
           if-no-files-found: error
           retention-days: 1
-
   rust-tests:
     needs: changes
     if: ${{ needs.changes.outputs.crates == 'true' || needs.changes.outputs.gnome == 'true' || needs.changes.outputs.shared == 'true' || contains(fromJSON('["workflow_dispatch","schedule"]'), github.event_name) }}
@@ -308,7 +287,6 @@ jobs:
           path: target/rust-coverage-report.json
           if-no-files-found: error
           retention-days: 7
-
   gnome-coverage:
     needs: changes
     if: ${{ needs.changes.outputs.crates == 'true' || needs.changes.outputs.gnome == 'true' || needs.changes.outputs.shared == 'true' || contains(fromJSON('["workflow_dispatch","schedule"]'), github.event_name) }}
@@ -362,7 +340,6 @@ jobs:
             target/js-coverage/report.json
           if-no-files-found: warn
           retention-days: 7
-
   rust-coverage:
     needs: [rust-tests, gnome-coverage]
     runs-on: ubuntu-26.04
@@ -390,7 +367,6 @@ jobs:
           path: target/rust-coverage-report.json
           if-no-files-found: error
           retention-days: 7
-
   release:
     needs: [build, lint, validate, dependencies, crates-coverage, rust-coverage]
     if: ${{ always() && needs.build.result == 'success' && needs.lint.result == 'success' && (needs.validate.result == 'success' || needs.validate.result == 'skipped') && needs.dependencies.result == 'success' && (needs.crates-coverage.result == 'success' || needs.crates-coverage.result == 'skipped') && needs.rust-coverage.result == 'success' }}
@@ -416,7 +392,6 @@ jobs:
             target/quotaline-gnome-linux-x86_64.tar.gz
             target/quotaline-gnome-linux-x86_64.tar.gz.sha256
           if-no-files-found: error
-
   macos-ffi-coverage:
     needs: changes
     if: ${{ needs.changes.outputs.crates == 'true' || needs.changes.outputs.macos_rust == 'true' || needs.changes.outputs.shared == 'true' || contains(fromJSON('["workflow_dispatch","schedule"]'), github.event_name) }}
@@ -444,7 +419,6 @@ jobs:
         env:
           TMB_TMPDIR: ${{ runner.temp }}/tmb
           TMB_NEXTEST_PROFILE: ci-hosted
-
   macos-build:
     needs: changes
     if: ${{ needs.changes.outputs.crates == 'true' || needs.changes.outputs.macos == 'true' || needs.changes.outputs.shared == 'true' || contains(fromJSON('["workflow_dispatch","schedule"]'), github.event_name) }}
@@ -504,7 +478,6 @@ jobs:
             macos/src/QuotalineRust
           if-no-files-found: error
           retention-days: 1
-
   macos-lint:
     needs: changes
     if: ${{ needs.changes.outputs.crates == 'true' || needs.changes.outputs.macos == 'true' || needs.changes.outputs.shared == 'true' || contains(fromJSON('["workflow_dispatch","schedule"]'), github.event_name) }}
@@ -526,7 +499,6 @@ jobs:
       - run: just macos-lint-swift
       - run: just --unstable --fmt --check --justfile ../justfile
       - run: just macos-test-scripts
-
   macos-coverage:
     needs: [changes, macos-build]
     if: ${{ needs.changes.outputs.crates == 'true' || needs.changes.outputs.macos == 'true' || needs.changes.outputs.shared == 'true' || contains(fromJSON('["workflow_dispatch","schedule"]'), github.event_name) }}
@@ -598,7 +570,6 @@ jobs:
           path: target/macos-swift-coverage.json
           if-no-files-found: ignore
           retention-days: 7
-
   macos-package:
     needs: [changes, macos-build, macos-runtimes]
     if: ${{ needs.macos-runtimes.outputs.full == 'true' && (needs.changes.outputs.crates == 'true' || needs.changes.outputs.macos == 'true' || needs.changes.outputs.shared == 'true' || contains(fromJSON('["workflow_dispatch","schedule"]'), github.event_name)) }}
@@ -662,7 +633,6 @@ jobs:
           path: ${{ runner.temp }}/settings-render
           if-no-files-found: warn
           retention-days: 7
-
   macos-rendered:
     needs: [changes, macos-coverage]
     if: ${{ !cancelled() && needs.macos-coverage.result != 'skipped' && (needs.changes.outputs.crates == 'true' || needs.changes.outputs.macos == 'true' || needs.changes.outputs.shared == 'true' || contains(fromJSON('["workflow_dispatch","schedule"]'), github.event_name)) }}
@@ -689,7 +659,6 @@ jobs:
           Scripts/test-rendered-text.sh "$image"
         env:
           TMPDIR: ${{ runner.temp }}
-
   macos-ui:
     needs: [changes, macos-build, macos-runtimes]
     if: ${{ needs.changes.outputs.crates == 'true' || needs.changes.outputs.macos == 'true' || needs.changes.outputs.shared == 'true' || contains(fromJSON('["workflow_dispatch","schedule"]'), github.event_name) }}
@@ -705,7 +674,6 @@ jobs:
       runtime-major: ${{ matrix.runtime-major }}
       minimum-xcode: ${{ matrix.minimum-xcode }}
       shards: ${{ fromJSON(needs.macos-runtimes.outputs.ui-shards) }}
-
   macos-application:
     needs: [changes, macos-build, macos-runtimes]
     if: ${{ needs.macos-runtimes.outputs.full == 'true' && (needs.changes.outputs.crates == 'true' || needs.changes.outputs.macos == 'true' || needs.changes.outputs.shared == 'true' || contains(fromJSON('["workflow_dispatch","schedule"]'), github.event_name)) }}
@@ -746,16 +714,11 @@ jobs:
           EXACT_XCODE_MAJOR: ${{ matrix.minimum-xcode }}
       - run: just macos-xcode
       - run: >-
-          xcodebuild -project App/Quotaline.xcodeproj -scheme "$SCHEME"
-          -configuration "$CONFIGURATION" -destination 'platform=macOS'
-          -derivedDataPath .build/app-derived -jobs 2
-          -clonedSourcePackagesDirPath .build/xcode-packages CODE_SIGNING_ALLOWED=NO
-          CODE_SIGN_IDENTITY= SPARKLE_PUBLIC_ED_KEY=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA= build
+          xcodebuild -project App/Quotaline.xcodeproj -scheme "$SCHEME" -configuration "$CONFIGURATION" -destination 'platform=macOS' -derivedDataPath .build/app-derived -jobs 2 -clonedSourcePackagesDirPath .build/xcode-packages CODE_SIGNING_ALLOWED=NO CODE_SIGN_IDENTITY= SPARKLE_PUBLIC_ED_KEY=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA= build
         env:
           SCHEME: ${{ matrix.scheme }}
       - run: >-
-          Scripts/verify-build-settings.sh "$TARGET" "$CONFIGURATION" "$DISTRIBUTION" "$CONDITION" "$SANDBOX"
-          "$ENTITLEMENTS"
+          Scripts/verify-build-settings.sh "$TARGET" "$CONFIGURATION" "$DISTRIBUTION" "$CONDITION" "$SANDBOX" "$ENTITLEMENTS"
         env:
           TARGET: ${{ matrix.target }}
           DISTRIBUTION: ${{ matrix.distribution }}
@@ -763,30 +726,25 @@ jobs:
           SANDBOX: ${{ matrix.sandbox }}
           ENTITLEMENTS: ${{ matrix.entitlements }}
       - run: >-
-          Scripts/verify-deployment-targets.sh
-          ".build/app-derived/Build/Products/$CONFIGURATION/Quotaline.app" 15.0
+          Scripts/verify-deployment-targets.sh ".build/app-derived/Build/Products/$CONFIGURATION/Quotaline.app" 15.0
       - run: >-
-          just macos-verify-app-bundle
-          ".build/app-derived/Build/Products/$CONFIGURATION/Quotaline.app"
-          "$DISTRIBUTION" "$UPDATER"
+          just macos-verify-app-bundle ".build/app-derived/Build/Products/$CONFIGURATION/Quotaline.app" "$DISTRIBUTION" "$UPDATER"
         env:
           DISTRIBUTION: ${{ matrix.distribution }}
           UPDATER: ${{ matrix.updater }}
       - run: >-
-          ditto -c -k
-          ".build/app-derived/Build/Products/$CONFIGURATION/Quotaline.app"
-          ".build/quotaline-$CONFIGURATION-macos.zip"
+          ditto -c -k ".build/app-derived/Build/Products/$CONFIGURATION/Quotaline.app" ".build/quotaline-$CONFIGURATION-macos.zip"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: macos-${{ matrix.configuration }}-${{ matrix.runtime-major }}-candidate
           path: macos/.build/quotaline-${{ matrix.configuration }}-macos.zip
           if-no-files-found: error
           retention-days: 1
-
   required-checks:
+    name: ${{ github.event_name == 'pull_request' && 'required-checks' || 'required-checks (non-PR)' }}
     if: ${{ always() }}
     needs:
-      - news
+      - hook-update-cooldown
       - changes
       - macos-runtimes
       - crates-coverage
@@ -809,6 +767,19 @@ jobs:
     runs-on: ubuntu-26.04
     timeout-minutes: 5
     steps:
+      - name: Require change detection
+        env:
+          JOB_RESULT: ${{ needs.changes.result }}
+        run: test "$JOB_RESULT" = success
+      - name: Require workflow and site validation
+        env:
+          JOB_RESULT: ${{ needs.validate.result }}
+        run: test "$JOB_RESULT" = success
+      - name: Require hook update cooldown
+        if: github.event_name == 'pull_request'
+        env:
+          JOB_RESULT: ${{ needs.hook-update-cooldown.result }}
+        run: test "$JOB_RESULT" = success
       - name: Require every applicable CI job
         env:
           CI_RESULTS: ${{ toJSON(needs) }}

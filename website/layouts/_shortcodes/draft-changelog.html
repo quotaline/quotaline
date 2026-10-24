@@ -1,0 +1,28 @@
+{{- if resources.Match "changelog.d/*.*.md" -}}
+<section>
+  <a id="draft"></a>
+  <h2>Draft</h2>
+  {{- range $section := (slice
+    (dict "type" "feature" "title" "Added")
+    (dict "type" "change" "title" "Changes")
+    (dict "type" "bugfix" "title" "Fixed")
+    (dict "type" "doc" "title" "Documentation")
+    (dict "type" "breaking" "title" "Breaking changes")
+    (dict "type" "security" "title" "Security")
+    (dict "type" "performance" "title" "Performance")
+    (dict "type" "deprecation" "title" "Deprecated")
+    (dict "type" "removal" "title" "Removed")
+    (dict "type" "packaging" "title" "Packaging")
+  ) -}}
+    {{- with resources.Match (printf "changelog.d/*.%s.md" $section.type) -}}
+  <a id="draft-{{ $section.type }}"></a>
+  <h3>{{ $section.title }}</h3>
+  <ul>
+      {{- range . -}}
+    <li>{{ .Content | strings.TrimSpace | markdownify }}</li>
+      {{- end -}}
+  </ul>
+    {{- end -}}
+  {{- end -}}
+</section>
+{{- end -}}
