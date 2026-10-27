@@ -1,5 +1,4 @@
-name: Release
-
+name: 🚀 Release
 on:
   push:
     tags: ["v*"]
@@ -8,205 +7,200 @@ on:
       tag:
         description: Existing tag to build (v1.2.3)
         required: true
-
+      app_store_reconciled:
+        description: App Store Connect checked for this version; permit another upload
+        required: false
+        type: boolean
+        default: false
 permissions:
   contents: read
-
 concurrency:
   group: release
   cancel-in-progress: false
   queue: max
-
 env:
   TAG: ${{ inputs.tag || github.ref_name }}
-
 jobs:
-  preflight:
-    name: Which legs can run
-    # Only this repository holds the signing identities; a fork that runs the workflow gets nothing to leak.
+  previous-tag:
+    name: 🏷️ Select previous tag
     if: github.repository == 'quotaline/quotaline'
-    runs-on: ubuntu-26.04
-    timeout-minutes: 5
-    permissions:
-      actions: read
-      contents: read
-    # The signing secrets live in this environment, so every job that touches them names it and inherits its
-    # protection rules.
-    environment: release
-    outputs:
-      app_store: ${{ steps.check.outputs.app_store }}
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: ${{ env.TAG }}
-          persist-credentials: false
-      - name: Match the release tag to the package version
-        run: |
-          [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || exit 1
-          version=$(sed -n 's/^version = "\([^"]*\)"/\1/p' gnome/Cargo.toml | head -1)
-          if [ "$TAG" != "v$version" ]; then
-            echo "::error::Tag $TAG does not match GNOME package version $version"
-            exit 1
-          fi
-          if ! grep -Fq "## $TAG (" CHANGELOG.md; then
-            echo "::error::Tag $TAG has no changelog entry"
-            exit 1
-          fi
-      # A job cannot read secrets in its own `if`, so the release works out here which legs it can publish.
-      # A tag that reaches only two of the three channels is a half-published release, so a missing credential stops
-      # the run here rather than leaving the App Store behind without anyone noticing.
-      - name: Require the App Store credentials
-        id: check
-        env:
-          APPLE_DISTRIBUTION_CERTIFICATE_BASE64: ${{ secrets.APPLE_DISTRIBUTION_CERTIFICATE_BASE64 }}
-          APPLE_DISTRIBUTION_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_DISTRIBUTION_CERTIFICATE_PASSWORD }}
-          MAC_INSTALLER_DISTRIBUTION_CERTIFICATE_BASE64: ${{ secrets.MAC_INSTALLER_DISTRIBUTION_CERTIFICATE_BASE64 }}
-          MAC_INSTALLER_DISTRIBUTION_CERTIFICATE_PASSWORD: ${{ secrets.MAC_INSTALLER_DISTRIBUTION_CERTIFICATE_PASSWORD }}
-          APP_STORE_PROVISIONING_PROFILE_BASE64: ${{ secrets.APP_STORE_PROVISIONING_PROFILE_BASE64 }}
-          APP_STORE_WIDGET_PROVISIONING_PROFILE_BASE64: ${{ secrets.APP_STORE_WIDGET_PROVISIONING_PROFILE_BASE64 }}
-        run: |
-          missing=""
-          for name in APPLE_DISTRIBUTION_CERTIFICATE_BASE64 APPLE_DISTRIBUTION_CERTIFICATE_PASSWORD \
-            MAC_INSTALLER_DISTRIBUTION_CERTIFICATE_BASE64 MAC_INSTALLER_DISTRIBUTION_CERTIFICATE_PASSWORD \
-            APP_STORE_PROVISIONING_PROFILE_BASE64 APP_STORE_WIDGET_PROVISIONING_PROFILE_BASE64; do
-            [ -n "${!name}" ] || missing="$missing $name"
-          done
-          if [ -n "$missing" ]; then
-            echo "::error::Cannot upload to the App Store without:$missing"
-            exit 1
-          fi
-          echo "app_store=true" >> "$GITHUB_OUTPUT"
-      # Continuous integration already ran the application tests against this commit, on every runtime rather than the
-      # two a release once repeated, so the release reads that verdict instead of spending another forty minutes to
-      # cover less.
-      - name: Require a green commit
-        env:
-          GH_TOKEN: ${{ github.token }}
-          REPOSITORY: ${{ github.repository }}
-        run: macos/Scripts/check-commit-verdict.sh "$TAG"
-
-  gnome:
-    name: GNOME download
-    needs: preflight
+    needs: verify-source
     runs-on: ubuntu-26.04
     timeout-minutes: 30
     permissions:
       contents: read
+    outputs:
+      tag: ${{ steps.previous.outputs.previous }}
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: 📥 Check out code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.verify-source.outputs.commit }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: 🐍 Install uv and Python
+        uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+        with:
+          version: latest-known
+          python-version: "3.15"
+          enable-cache: false
+      - name: 📦 Install locked release tools
+        uses: tox-dev/github-workflows/install-locked-tools@259a3d3fb578d00517ffb73341fdd463259b0b2f # 6.0.1
+        with:
+          groups: release-notes
+          venv: ${{ runner.temp }}/release-tools
+      - name: 🏷️ Select previous tag
+        id: previous
+        uses: tox-dev/github-workflows/select-previous-tag@259a3d3fb578d00517ffb73341fdd463259b0b2f # 6.0.1
+        with:
+          tag: ${{ env.TAG }}
+  notes:
+    name: 📝 Render GitHub Release notes
+    needs: [previous-tag, verify-source]
+    runs-on: ubuntu-26.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    outputs:
+      artifact-id: ${{ steps.upload.outputs.artifact-id }}
+    steps:
+      - name: 📥 Check out code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.verify-source.outputs.commit }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: 🐍 Install uv and Python
+        uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+        with:
+          version: latest-known
+          python-version: "3.15"
+          enable-cache: false
+      - name: 📦 Install locked release tools
+        uses: tox-dev/github-workflows/install-locked-tools@259a3d3fb578d00517ffb73341fdd463259b0b2f # 6.0.1
+        with:
+          groups: release-notes
+          venv: ${{ runner.temp }}/release-tools
+      - name: 📝 Render release notes
+        uses: tox-dev/github-workflows/render-release-notes@259a3d3fb578d00517ffb73341fdd463259b0b2f # 6.0.1
+        with:
+          tag: ${{ env.TAG }}
+          previous: ${{ needs.previous-tag.outputs.tag }}
+          changelog: website/content/changelog/_index.md
+          artifact-url: https://github.com/${{ github.repository }}/releases/tag/${{ env.TAG }}
+          artifact-label: Downloads
+      - name: 📤 Upload release notes
+        id: upload
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: github-release-notes
+          path: ${{ runner.temp }}/release-notes.md
+          if-no-files-found: error
+  verify-source:
+    name: ⚙️ Resolve tagged source
+    if: github.repository == 'quotaline/quotaline'
+    runs-on: ubuntu-26.04
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    outputs:
+      commit: ${{ steps.commit.outputs.sha }}
+    steps:
+      - name: 📥 Check out code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ env.TAG }}
           persist-credentials: false
-      - name: Install extension packaging tools
+      - name: ⚙️ Record the tagged commit
+        id: commit
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+  gnome:
+    name: 🏗️ Build GNOME download
+    needs: verify-source
+    runs-on: ubuntu-26.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    outputs:
+      artifact-id: ${{ steps.upload.outputs.artifact-id }}
+    steps:
+      - name: 📥 Check out code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.verify-source.outputs.commit }}
+          persist-credentials: false
+      - name: 📦 Install extension packaging tools
         run: |
           sudo apt-get update
           sudo apt-get install --yes --no-install-recommends gnome-shell unzip
-      - uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f # v2.0.0
+      - name: 🦀 Install Rust toolchain
+        uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f # v2.0.0
         with:
           cache: false
-      - uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8 # v5.1.2
+      - name: 🧰 Install mise tools
+        uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8 # v5.1.2
         with:
           version: 2026.10.11
           install_args: --locked
           cache: false
-      - run: mise exec -- just release-package
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+      - name: 🏗️ Build release package
+        run: mise exec -- just release-package
+      - name: 📤 Upload GNOME release package
+        id: upload
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: gnome-download
           path: |
             target/quotaline-gnome-linux-x86_64.tar.gz
             target/quotaline-gnome-linux-x86_64.tar.gz.sha256
           if-no-files-found: error
-
   direct:
-    name: Direct and Homebrew downloads
-    needs: [preflight, gnome]
+    name: 🏗️ Build direct and Homebrew downloads
+    needs: [gnome, verify-source]
     runs-on: macos-26
     timeout-minutes: 90
     environment: release
     defaults:
       run:
         working-directory: macos
-    # This job publishes the release; the cask job opens its branch from a clean main checkout.
     permissions:
-      contents: write
+      contents: read
+    outputs:
+      artifact-id: ${{ steps.upload.outputs.artifact-id }}
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: 📥 Check out code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ env.TAG }}
+          ref: ${{ needs.verify-source.outputs.commit }}
           fetch-depth: 0
           persist-credentials: false
-      - uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f # v2.0.0
+      - name: 🦀 Install Rust toolchain
+        uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f # v2.0.0
         with:
           cache: false
-      - uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8 # v5.1.2
+      - name: 🧰 Install mise tools
+        uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8 # v5.1.2
         with:
           version: 2026.10.11
           install_args: --locked
           working_directory: macos
           cache: false
-      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+      - name: 📩 Download GNOME release package
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
-          name: gnome-download
+          artifact-ids: ${{ needs.gnome.outputs.artifact-id }}
           path: macos/dist/gnome
-      - name: Use the runner temp directory
+      - name: ⚙️ Use the runner temp directory
         run: |
           mkdir -p "$RUNNER_TEMP/quotaline"
           echo "TMPDIR=$RUNNER_TEMP/quotaline" >> "$GITHUB_ENV"
-      - name: Select Xcode
+      - name: 🍎 Select Xcode
         run: Scripts/select-xcode.sh
-      - name: Build Rust bridge
+      - name: 🏗️ Build Rust bridge
         run: mise exec -- just macos-bindings
-      - name: Stamp version
+      - name: 🏷️ Stamp version
         run: just macos-stamp "${TAG#v}"
-      - name: Verify the release build number
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          current="$(just macos-version --build)"
-          published_tag="$(gh release list --limit 1 --json tagName --jq '.[0].tagName // ""')"
-          if [ -n "$published_tag" ]; then
-            appcast="$RUNNER_TEMP/published-appcast.xml"
-            gh release download "$published_tag" --pattern appcast.xml --output "$appcast"
-            # The element name carries a colon, so the substitution needs a delimiter the markup cannot contain.
-            published="$(sed -n 's|.*<sparkle:version>\([0-9][0-9]*\)</sparkle:version>.*|\1|p' "$appcast" | head -1)"
-            [[ "$current" =~ ^[0-9]+$ && "$published" =~ ^[0-9]+$ ]] || {
-              echo "::error::Could not read numeric build numbers from git and $published_tag"
-              exit 1
-            }
-            if [ "$published_tag" = "$TAG" ]; then
-              ((current == published)) || {
-                echo "::error::$TAG was published with build $published, but this checkout produces $current"
-                exit 1
-              }
-            elif ((current <= published)); then
-              echo "::error::Build $current must be greater than $published from $published_tag"
-              exit 1
-            fi
-          fi
-      - name: Require release credentials
-        # A tag must never publish an app Gatekeeper rejects or a feed Sparkle cannot verify, so the job stops here
-        # rather than falling back to an ad-hoc build. Use the ad-hoc workflow_dispatch build for unsigned testing.
-        env:
-          CERTIFICATE_BASE64: ${{ secrets.DEVELOPER_ID_CERTIFICATE_BASE64 }}
-          CERTIFICATE_PASSWORD: ${{ secrets.DEVELOPER_ID_CERTIFICATE_PASSWORD }}
-          TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-          APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
-          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
-          APP_STORE_CONNECT_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_KEY_BASE64 }}
-          SPARKLE_PUBLIC_ED_KEY: ${{ secrets.SPARKLE_PUBLIC_ED_KEY }}
-          SPARKLE_PRIVATE_ED_KEY: ${{ secrets.SPARKLE_PRIVATE_ED_KEY }}
-        run: |
-          missing=""
-          for name in CERTIFICATE_BASE64 CERTIFICATE_PASSWORD TEAM_ID APP_STORE_CONNECT_KEY_ID \
-            APP_STORE_CONNECT_ISSUER_ID APP_STORE_CONNECT_KEY_BASE64 SPARKLE_PUBLIC_ED_KEY SPARKLE_PRIVATE_ED_KEY; do
-            [ -n "${!name}" ] || missing="$missing $name"
-          done
-          if [ -n "$missing" ]; then
-            echo "::error::Cannot publish a release without:$missing"
-            exit 1
-          fi
-      - name: Import Developer ID certificate
+      - name: 🔑 Import Developer ID certificate
         id: identity
         env:
           CERTIFICATE_BASE64: ${{ secrets.DEVELOPER_ID_CERTIFICATE_BASE64 }}
@@ -214,20 +208,20 @@ jobs:
         run: |
           Scripts/import-certificate.sh
           echo "signed=true" >> "$GITHUB_OUTPUT"
-      - name: Generate project
+      - name: 🍎 Generate project
         run: cd App && xcodegen generate
-      - name: Archive and export
+      - name: 🏗️ Archive and export
         env:
           SIGNED: ${{ steps.identity.outputs.signed }}
           TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           SPARKLE_PUBLIC_ED_KEY: ${{ secrets.SPARKLE_PUBLIC_ED_KEY }}
         run: just macos-build-direct
-      - name: Archive and export Homebrew
+      - name: 🏗️ Archive and export Homebrew
         env:
           SIGNED: ${{ steps.identity.outputs.signed }}
           TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: just macos-build-homebrew
-      - name: Notarize and staple applications
+      - name: ✍️ Notarize and staple applications
         if: steps.identity.outputs.signed == 'true'
         env:
           APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
@@ -235,11 +229,11 @@ jobs:
           APP_STORE_CONNECT_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_KEY_BASE64 }}
         run: |
           Scripts/notarize.sh "dist/direct/Quotaline.app" "dist/homebrew/Quotaline.app"
-      - name: Package downloads
+      - name: 🏗️ Package downloads
         run: |
           Scripts/package-direct.sh "${TAG#v}"
           just macos-package-homebrew "${TAG#v}"
-      - name: Notarize and staple disk images
+      - name: ✍️ Notarize and staple disk images
         if: steps.identity.outputs.signed == 'true'
         env:
           APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
@@ -247,20 +241,21 @@ jobs:
           APP_STORE_CONNECT_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_KEY_BASE64 }}
         run: |
           Scripts/notarize.sh dist/direct/Quotaline.dmg dist/homebrew/Quotaline-Homebrew.dmg
-      - name: Refresh checksums
+      - name: ⚙️ Write checksum files
         shell: bash
         run: |
           for file in dist/direct/Quotaline.zip dist/direct/Quotaline.dmg \
             dist/homebrew/Quotaline-Homebrew.zip dist/homebrew/Quotaline-Homebrew.dmg; do
             shasum -a 256 "$file" | awk '{print $1}' > "$file.sha256"
           done
-      - name: Generate Sparkle appcast
+      - name: 📝 Generate Sparkle appcast
         env:
           SPARKLE_PRIVATE_ED_KEY: ${{ secrets.SPARKLE_PRIVATE_ED_KEY }}
         run: Scripts/appcast.sh "${TAG#v}"
-      - name: Update Homebrew cask file
+      - name: 🚀 Update Homebrew cask file
         run: Scripts/update-cask.sh "${TAG#v}" dist/homebrew/Quotaline-Homebrew.dmg
-      - name: Upload artifacts
+      - name: 📤 Upload artifacts
+        id: upload
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: downloads
@@ -275,45 +270,64 @@ jobs:
             macos/dist/gnome/*.tar.gz
             macos/dist/gnome/*.sha256
             Casks/quotaline.rb
-      - name: Read release notes
-        run: |
-          awk -v tag="$TAG" '/^## / { if (found) exit; found = index($0, "## " tag " (") == 1; next } found { print }' \
-            ../CHANGELOG.md > "$RUNNER_TEMP/release-notes.md"
-          test -s "$RUNNER_TEMP/release-notes.md"
-      - name: Publish GitHub release
-        # the action uploads the assets and writes the notes in one step
-        uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3 # zizmor: ignore[superfluous-actions]
+          if-no-files-found: error
+  publish:
+    name: 🚀 Publish GitHub Release
+    needs: [direct, notes, verify-source]
+    runs-on: ubuntu-26.04
+    timeout-minutes: 30
+    environment: release
+    permissions:
+      contents: write
+    steps:
+      - name: 📩 Download release downloads
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
-          tag_name: ${{ env.TAG }}
-          body_path: ${{ runner.temp }}/release-notes.md
-          files: |
-            macos/dist/direct/Quotaline.zip
-            macos/dist/direct/Quotaline.dmg
-            macos/dist/direct/Quotaline.zip.sha256
-            macos/dist/direct/Quotaline.dmg.sha256
-            macos/dist/direct/appcast.xml
-            macos/dist/homebrew/Quotaline-Homebrew.zip
-            macos/dist/homebrew/Quotaline-Homebrew.dmg
-            macos/dist/homebrew/Quotaline-Homebrew.zip.sha256
-            macos/dist/homebrew/Quotaline-Homebrew.dmg.sha256
-            macos/dist/gnome/quotaline-gnome-linux-x86_64.tar.gz
-            macos/dist/gnome/quotaline-gnome-linux-x86_64.tar.gz.sha256
-            Casks/quotaline.rb
-      - name: Verify the Homebrew asset
-        shell: bash
+          artifact-ids: ${{ needs.direct.outputs.artifact-id }}
+          path: .
+      - name: 📩 Download release notes
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          artifact-ids: ${{ needs.notes.outputs.artifact-id }}
+          path: ${{ runner.temp }}
+      - name: ⚙️ Collect release assets
+        run: |
+          mkdir "$RUNNER_TEMP/release-assets"
+          cp \
+            macos/dist/direct/Quotaline.zip \
+            macos/dist/direct/Quotaline.dmg \
+            macos/dist/direct/Quotaline.zip.sha256 \
+            macos/dist/direct/Quotaline.dmg.sha256 \
+            macos/dist/direct/appcast.xml \
+            macos/dist/homebrew/Quotaline-Homebrew.zip \
+            macos/dist/homebrew/Quotaline-Homebrew.dmg \
+            macos/dist/homebrew/Quotaline-Homebrew.zip.sha256 \
+            macos/dist/homebrew/Quotaline-Homebrew.dmg.sha256 \
+            macos/dist/gnome/quotaline-gnome-linux-x86_64.tar.gz \
+            macos/dist/gnome/quotaline-gnome-linux-x86_64.tar.gz.sha256 \
+            Casks/quotaline.rb \
+            "$RUNNER_TEMP/release-assets/"
+      - name: 🚀 Publish GitHub release
+        uses: tox-dev/github-workflows/publish-github-release@259a3d3fb578d00517ffb73341fdd463259b0b2f # 6.0.1
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release view "$TAG" --json assets --jq '.assets[].name' | grep -Fx 'Quotaline-Homebrew.dmg'
+        with:
+          tag: ${{ env.TAG }}
+          commit: ${{ needs.verify-source.outputs.commit }}
+          title: ${{ env.TAG }}
+          notes-file: ${{ runner.temp }}/release-notes.md
+          assets-directory: ${{ runner.temp }}/release-assets
   cask:
-    name: Open the Homebrew cask update
-    needs: direct
+    name: 🔀 Open the Homebrew cask update
+    needs: [direct, publish]
     runs-on: ubuntu-26.04
     timeout-minutes: 10
     environment: release-auth
     permissions:
       contents: read
     steps:
-      - id: token
+      - name: 🔑 Create release App token
+        id: token
         uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
         with:
           client-id: ${{ vars.RELEASE_APP_CLIENT_ID }}
@@ -323,16 +337,18 @@ jobs:
           permission-contents: write
           permission-pull-requests: write
           permission-issues: write
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: 📥 Check out code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: main
           token: ${{ steps.token.outputs.token }}
           persist-credentials: true # zizmor: ignore[artipacked] this job pushes a cask branch
-      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+      - name: 📩 Download release downloads
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
-          name: downloads
+          artifact-ids: ${{ needs.direct.outputs.artifact-id }}
           path: release
-      - name: Open a cask pull request
+      - name: 🔀 Open a cask pull request
         shell: bash
         env:
           GH_TOKEN: ${{ steps.token.outputs.token }}
@@ -353,17 +369,23 @@ jobs:
             else
               git push origin "HEAD:refs/heads/$branch"
             fi
-            if ! gh pr list --head "$branch" --state open --json number --jq 'length > 0' | grep -Fx true; then
+            owner=${GITHUB_REPOSITORY%%/*}
+            gh api -X GET "repos/$GITHUB_REPOSITORY/pulls" -f state=open -f head="$owner:$branch" \
+              >"$RUNNER_TEMP/cask-pulls.json"
+            existing_pr=$(jq -r --arg repository "$GITHUB_REPOSITORY" --arg branch "$branch" '
+              [.[] | select(.head.repo.full_name == $repository and .head.ref == $branch and .base.ref == "main")] |
+              .[0].number // empty
+            ' "$RUNNER_TEMP/cask-pulls.json")
+            if [[ -z "$existing_pr" ]]; then
               gh pr create --base main --head "$branch" --title "Update Homebrew cask for ${TAG}" \
                 --body "Publish the ${TAG} Homebrew package checksum." --label "skip news"
             else
-              gh pr edit "$branch" --add-label "skip news"
+              gh pr edit "$existing_pr" --add-label "skip news"
             fi
           fi
-
   app-store:
-    name: Mac App Store upload
-    needs: [preflight, direct]
+    name: 🚀 Mac App Store upload (${{ inputs.tag || github.ref_name }})
+    needs: verify-source
     runs-on: macos-26
     timeout-minutes: 90
     environment: release
@@ -371,41 +393,77 @@ jobs:
       run:
         working-directory: macos
     permissions:
+      actions: read
       contents: read
-    if: needs.preflight.outputs.app_store == 'true'
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: 🔍 Require App Store reconciliation before retry
+        if: github.run_attempt > 1 || (github.event_name == 'workflow_dispatch' && !inputs.app_store_reconciled)
+        working-directory: .
+        run: |
+          echo '::error::Check App Store Connect for this version, then dispatch Release with app_store_reconciled enabled'
+          exit 1
+      - name: 🔍 Reject previous App Store upload attempt
+        if: github.event_name == 'push'
+        working-directory: .
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api --paginate "repos/$GITHUB_REPOSITORY/actions/workflows/release.yml/runs?per_page=100" \
+            > "$RUNNER_TEMP/release-runs.json"
+          jq -s -r --arg tag "$TAG" --argjson current "$GITHUB_RUN_ID" '
+            .[].workflow_runs[] |
+            select(.id != $current and (.head_branch == $tag or .head_branch == null or .event == "workflow_dispatch")) |
+            [.id, (.head_branch == $tag), (.event == "workflow_dispatch")] | @tsv
+          ' "$RUNNER_TEMP/release-runs.json" > "$RUNNER_TEMP/prior-release-runs"
+          while IFS=$'\t' read -r run_id tag_branch dispatched; do
+            gh api --paginate "repos/$GITHUB_REPOSITORY/actions/runs/$run_id/jobs?filter=all&per_page=100" \
+              > "$RUNNER_TEMP/prior-release-jobs.json"
+            attempts=$(jq -r --arg tag "$TAG" --argjson tag_branch "$tag_branch" --argjson dispatched "$dispatched" '
+              .jobs[] |
+              select(.name == "🚀 Mac App Store upload (\($tag))" or
+                (($tag_branch or $dispatched) and .name == "Mac App Store upload")) |
+              .steps[]? | select(.name == "🚀 Archive, export and upload" and .started_at != null) | .started_at
+            ' "$RUNNER_TEMP/prior-release-jobs.json")
+            if [[ -n "$attempts" ]]; then
+              echo "::error::App Store upload for $TAG was attempted in run $run_id; reconcile in App Store Connect first" >&2
+              exit 1
+            fi
+          done < "$RUNNER_TEMP/prior-release-runs"
+      - name: 📥 Check out code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ env.TAG }}
+          ref: ${{ needs.verify-source.outputs.commit }}
           fetch-depth: 0
           persist-credentials: false
-      - uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f # v2.0.0
+      - name: 🦀 Install Rust toolchain
+        uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f # v2.0.0
         with:
           cache: false
-      - uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8 # v5.1.2
+      - name: 🧰 Install mise tools
+        uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8 # v5.1.2
         with:
           version: 2026.10.11
           install_args: --locked
           working_directory: macos
           cache: false
-      - name: Use the runner temp directory
+      - name: ⚙️ Use the runner temp directory
         run: |
           mkdir -p "$RUNNER_TEMP/quotaline"
           echo "TMPDIR=$RUNNER_TEMP/quotaline" >> "$GITHUB_ENV"
-      - name: Select Xcode
+      - name: 🍎 Select Xcode
         run: Scripts/select-xcode.sh
-      - name: Build Rust bridge
+      - name: 🏗️ Build Rust bridge
         run: mise exec -- just macos-bindings
-      - name: Stamp version
+      - name: 🏷️ Stamp version
         run: just macos-stamp "${TAG#v}"
-      - name: Import App Store certificates
+      - name: 🔑 Import App Store certificates
         env:
           CERTIFICATE_BASE64: ${{ secrets.APPLE_DISTRIBUTION_CERTIFICATE_BASE64 }}
           CERTIFICATE_PASSWORD: ${{ secrets.APPLE_DISTRIBUTION_CERTIFICATE_PASSWORD }}
           INSTALLER_CERTIFICATE_BASE64: ${{ secrets.MAC_INSTALLER_DISTRIBUTION_CERTIFICATE_BASE64 }}
           INSTALLER_CERTIFICATE_PASSWORD: ${{ secrets.MAC_INSTALLER_DISTRIBUTION_CERTIFICATE_PASSWORD }}
         run: Scripts/import-certificate.sh
-      - name: Install provisioning profile
+      - name: 🔑 Install provisioning profile
         env:
           PROVISIONING_PROFILE_BASE64: ${{ secrets.APP_STORE_PROVISIONING_PROFILE_BASE64 }}
           WIDGET_PROVISIONING_PROFILE_BASE64: ${{ secrets.APP_STORE_WIDGET_PROVISIONING_PROFILE_BASE64 }}
@@ -415,9 +473,22 @@ jobs:
           echo "$PROVISIONING_PROFILE_BASE64" | base64 --decode > "$profiles/quotaline.provisionprofile"
           echo "$WIDGET_PROVISIONING_PROFILE_BASE64" | base64 --decode \
             > "$profiles/quotaline-widget.provisionprofile"
-      - name: Generate project
+      - name: 🍎 Generate project
         run: cd App && xcodegen generate
-      - name: Archive, export and upload
+      - name: 🔍 Verify tag before App Store upload
+        env:
+          SOURCE_COMMIT: ${{ needs.verify-source.outputs.commit }}
+        run: |
+          refs=$(git ls-remote origin "refs/tags/$TAG" "refs/tags/$TAG^{}")
+          resolved=$(awk -v name="refs/tags/$TAG^{}" '$2 == name { print $1 }' <<< "$refs")
+          if [[ -z "$resolved" ]]; then
+            resolved=$(awk -v name="refs/tags/$TAG" '$2 == name { print $1 }' <<< "$refs")
+          fi
+          if [[ "$resolved" != "$SOURCE_COMMIT" ]]; then
+            echo "::error::$TAG moved after source verification" >&2
+            exit 1
+          fi
+      - name: 🚀 Archive, export and upload
         env:
           TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}

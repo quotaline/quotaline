@@ -1,0 +1,107 @@
+name: 🛡️ CodeQL
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "41 4 * * 1"
+  workflow_dispatch:
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+permissions: {}
+jobs:
+  analyze:
+    name: 🛡️ Analyze ${{ matrix.language }}
+    runs-on: ubuntu-26.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [actions, rust, javascript-typescript]
+    steps:
+      - name: 📥 Check out code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: 🛡️ Initialize CodeQL
+        uses: github/codeql-action/init@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee # v4.39.0
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: none
+          queries: security-extended
+          config: |
+            paths-ignore:
+              - crates/*/tests
+              - crates/demo
+              - gnome/tests
+              - gnome/extension/tests
+              - website/tests
+      - name: 🛡️ Analyze
+        uses: github/codeql-action/analyze@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee # v4.39.0
+        with:
+          category: "/language:${{ matrix.language }}"
+  analyze-swift:
+    name: 🛡️ Analyze swift
+    # A macOS build per PR is slow to schedule, so Swift is scanned on main and weekly only.
+    if: github.event_name != 'pull_request'
+    runs-on: macos-26
+    timeout-minutes: 60
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - name: 📥 Check out code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: 🧰 Install mise tools
+        uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8 # v5.1.2
+        with:
+          version: 2026.10.11
+          working_directory: macos
+          install_args: --locked just rust swift
+      - name: 🍎 Select Xcode
+        id: xcode
+        working-directory: macos
+        run: |
+          Scripts/select-xcode.sh
+          echo "cache=$(xcodebuild -version | shasum -a 256 | cut -c 1-12)" >> "$GITHUB_OUTPUT"
+      - name: 💾 Restore verified Rust bindings
+        id: bindings
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            macos/Generated/QuotalineRustFFI.xcframework
+            macos/src/QuotalineRust
+          key: macos-bindings-v2-${{ runner.os }}-${{ runner.arch }}-${{ steps.xcode.outputs.cache }}-${{ hashFiles('crates/**', 'macos/adapter/**', 'macos/platform/**', 'macos/uniffi.toml', 'Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml', 'mise.toml', 'mise.lock', 'justfile') }}
+      - name: 🦀 Install macOS Rust toolchain
+        working-directory: macos
+        run: just macos-toolchain
+      - name: 🏗️ Build Rust bindings
+        if: steps.bindings.outputs.cache-hit != 'true'
+        working-directory: macos
+        run: just macos-bindings
+      - name: 🛡️ Initialize CodeQL
+        uses: github/codeql-action/init@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee # v4.39.0
+        with:
+          languages: swift
+          build-mode: manual
+          queries: security-extended
+          config: |
+            paths-ignore:
+              - crates/*/tests
+              - crates/demo
+              - gnome/tests
+              - gnome/extension/tests
+              - website/tests
+      - name: 🏗️ Build macOS app
+        working-directory: macos
+        run: swift build --jobs 2
+      - name: 🛡️ Analyze
+        uses: github/codeql-action/analyze@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee # v4.39.0
+        with:
+          category: "/language:swift"

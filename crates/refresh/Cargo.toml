@@ -1,13 +1,13 @@
 [package]
 name = "quotaline-refresh"
-version = "0.1.8"
+version = "0.2.0"
 edition = "2024"
 license = "MIT"
 
 [dependencies]
-quotaline-quota = { version = "0.1.8", path = "../presentation/quota" }
-quotaline-text = { version = "0.1.8", path = "../presentation/text" }
+quotaline-quota = { version = "0.2.0", path = "../presentation/quota" }
+quotaline-text = { version = "0.2.0", path = "../presentation/text" }
 uniffi = { version = "0.32.2", optional = true }
 
 [dev-dependencies]
-quotaline-text = { version = "0.1.8", path = "../presentation/text", features = ["test-support"] }
+quotaline-text = { version = "0.2.0", path = "../presentation/text", features = ["test-support"] }

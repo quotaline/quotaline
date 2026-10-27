@@ -1775,7 +1775,7 @@ dependencies = [
 
 [[package]]
 name = "quotaline-analytics"
-version = "0.1.8"
+version = "0.2.0"
 dependencies = [
  "chrono",
  "chrono-tz",
@@ -1790,7 +1790,7 @@ dependencies = [
 
 [[package]]
 name = "quotaline-antigravity"
-version = "0.1.8"
+version = "0.2.0"
 dependencies = [
  "chrono",
  "futures-executor",
@@ -1803,14 +1803,14 @@ dependencies = [
 
 [[package]]
 name = "quotaline-catalog"
-version = "0.1.8"
+version = "0.2.0"
 dependencies = [
  "serde",
 ]
 
 [[package]]
 name = "quotaline-claude"
-version = "0.1.8"
+version = "0.2.0"
 dependencies = [
  "chrono",
  "futures-executor",
@@ -1829,7 +1829,7 @@ dependencies = [
 
 [[package]]
 name = "quotaline-codex"
-version = "0.1.8"
+version = "0.2.0"
 dependencies = [
  "chrono",
  "futures-executor",
@@ -1845,7 +1845,7 @@ dependencies = [
 
 [[package]]
 name = "quotaline-copilot"
-version = "0.1.8"
+version = "0.2.0"
 dependencies = [
  "chrono",
  "futures-executor",
@@ -1858,7 +1858,7 @@ dependencies = [
 
 [[package]]
 name = "quotaline-credential-sources"
-version = "0.1.8"
+version = "0.2.0"
 dependencies = [
  "memchr",
  "parking_lot",
@@ -1875,7 +1875,7 @@ dependencies = [
 
 [[package]]
 name = "quotaline-credentials"
-version = "0.1.8"
+version = "0.2.0"
 dependencies = [
  "base64 0.23.1",
  "chrono",
@@ -1886,7 +1886,7 @@ dependencies = [
 
 [[package]]
 name = "quotaline-cursor"
-version = "0.1.8"
+version = "0.2.0"
 dependencies = [
  "chrono",
  "futures-executor",
@@ -1900,7 +1900,7 @@ dependencies = [
 
 [[package]]
 name = "quotaline-demo"
-version = "0.1.8"
+version = "0.2.0"
 dependencies = [
  "chrono",
  "quotaline-analytics",
@@ -1910,7 +1910,7 @@ dependencies = [
 
 [[package]]
 name = "quotaline-export"
-version = "0.1.8"
+version = "0.2.0"
 dependencies = [
  "chrono",
  "quotaline-quota",
@@ -1920,7 +1920,7 @@ dependencies = [
 
 [[package]]
 name = "quotaline-gemini"
-version = "0.1.8"
+version = "0.2.0"
 dependencies = [
  "chrono",
  "futures-executor",
@@ -1932,7 +1932,7 @@ dependencies = [
 
 [[package]]
 name = "quotaline-gnome"
-version = "0.1.8"
+version = "0.2.0"
 dependencies = [
  "base64 0.23.1",
  "chrono",
@@ -1978,7 +1978,7 @@ dependencies = [
 
 [[package]]
 name = "quotaline-gnome-adapter"
-version = "0.1.8"
+version = "0.2.0"
 dependencies = [
  "base64 0.23.1",
  "chrono",
@@ -2020,7 +2020,7 @@ dependencies = [
 
 [[package]]
 name = "quotaline-history"
-version = "0.1.8"
+version = "0.2.0"
 dependencies = [
  "chrono",
  "chrono-tz",
@@ -2044,7 +2044,7 @@ dependencies = [
 
 [[package]]
 name = "quotaline-http"
-version = "0.1.8"
+version = "0.2.0"
 dependencies = [
  "chrono",
  "quotaline-logging",
@@ -2054,7 +2054,7 @@ dependencies = [
 
 [[package]]
 name = "quotaline-logging"
-version = "0.1.8"
+version = "0.2.0"
 dependencies = [
  "chrono",
  "regex-lite",
@@ -2064,7 +2064,7 @@ dependencies = [
 
 [[package]]
 name = "quotaline-macos-ffi"
-version = "0.1.8"
+version = "0.2.0"
 dependencies = [
  "base64 0.23.1",
  "chrono",
@@ -2112,7 +2112,7 @@ dependencies = [
 
 [[package]]
 name = "quotaline-macos-platform"
-version = "0.1.8"
+version = "0.2.0"
 dependencies = [
  "core-foundation",
  "libc",
@@ -2137,7 +2137,7 @@ dependencies = [
 
 [[package]]
 name = "quotaline-notifications"
-version = "0.1.8"
+version = "0.2.0"
 dependencies = [
  "chrono",
  "quotaline-catalog",
@@ -2149,7 +2149,7 @@ dependencies = [
 
 [[package]]
 name = "quotaline-quota"
-version = "0.1.8"
+version = "0.2.0"
 dependencies = [
  "chrono",
  "hex",
@@ -2163,7 +2163,7 @@ dependencies = [
 
 [[package]]
 name = "quotaline-refresh"
-version = "0.1.8"
+version = "0.2.0"
 dependencies = [
  "quotaline-quota",
  "quotaline-text",
@@ -2172,7 +2172,7 @@ dependencies = [
 
 [[package]]
 name = "quotaline-settings"
-version = "0.1.8"
+version = "0.2.0"
 dependencies = [
  "quotaline-analytics",
  "quotaline-catalog",
@@ -2185,7 +2185,7 @@ dependencies = [
 
 [[package]]
 name = "quotaline-setup"
-version = "0.1.8"
+version = "0.2.0"
 dependencies = [
  "serde",
  "serde_json",
@@ -2194,7 +2194,7 @@ dependencies = [
 
 [[package]]
 name = "quotaline-status-bar"
-version = "0.1.8"
+version = "0.2.0"
 dependencies = [
  "caseless",
  "chrono",
@@ -2212,7 +2212,7 @@ dependencies = [
 
 [[package]]
 name = "quotaline-storage"
-version = "0.1.8"
+version = "0.2.0"
 dependencies = [
  "quotaline-logging",
  "serde",
@@ -2223,7 +2223,7 @@ dependencies = [
 
 [[package]]
 name = "quotaline-text"
-version = "0.1.8"
+version = "0.2.0"
 dependencies = [
  "chrono",
  "serde",

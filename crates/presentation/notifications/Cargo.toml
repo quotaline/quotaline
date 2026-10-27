@@ -1,16 +1,16 @@
 [package]
 name = "quotaline-notifications"
-version = "0.1.8"
+version = "0.2.0"
 edition = "2024"
 license = "MIT"
 
 [dependencies]
 chrono = { version = "0.4", default-features = false, features = ["clock", "serde"] }
 serde = { version = "1", features = ["derive"] }
-quotaline-catalog = { version = "0.1.8", path = "../../catalog" }
-quotaline-quota = { version = "0.1.8", path = "../quota" }
-quotaline-settings = { version = "0.1.8", path = "../../settings" }
-quotaline-text = { version = "0.1.8", path = "../text" }
+quotaline-catalog = { version = "0.2.0", path = "../../catalog" }
+quotaline-quota = { version = "0.2.0", path = "../quota" }
+quotaline-settings = { version = "0.2.0", path = "../../settings" }
+quotaline-text = { version = "0.2.0", path = "../text" }
 
 [dev-dependencies]
-quotaline-text = { version = "0.1.8", path = "../text", features = ["test-support"] }
+quotaline-text = { version = "0.2.0", path = "../text", features = ["test-support"] }

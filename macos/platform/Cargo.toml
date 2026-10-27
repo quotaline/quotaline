@@ -1,17 +1,17 @@
 [package]
 name = "quotaline-macos-platform"
-version = "0.1.8"
+version = "0.2.0"
 edition = "2024"
 license = "MIT"
 
 [dependencies]
-quotaline-antigravity = { version = "0.1.8", path = "../../crates/providers/antigravity" }
-quotaline-catalog = { version = "0.1.8", path = "../../crates/catalog" }
-quotaline-credentials = { version = "0.1.8", path = "../../crates/accounts/credentials" }
-quotaline-quota = { version = "0.1.8", path = "../../crates/presentation/quota" }
-quotaline-status-bar = { version = "0.1.8", path = "../../crates/presentation/status-bar" }
-quotaline-credential-sources = { version = "0.1.8", path = "../../crates/accounts/credential-sources" }
-quotaline-storage = { version = "0.1.8", path = "../../crates/data/storage" }
+quotaline-antigravity = { version = "0.2.0", path = "../../crates/providers/antigravity" }
+quotaline-catalog = { version = "0.2.0", path = "../../crates/catalog" }
+quotaline-credentials = { version = "0.2.0", path = "../../crates/accounts/credentials" }
+quotaline-quota = { version = "0.2.0", path = "../../crates/presentation/quota" }
+quotaline-status-bar = { version = "0.2.0", path = "../../crates/presentation/status-bar" }
+quotaline-credential-sources = { version = "0.2.0", path = "../../crates/accounts/credential-sources" }
+quotaline-storage = { version = "0.2.0", path = "../../crates/data/storage" }
 thiserror = "2"
 unicode-segmentation = "1.13.3"
 

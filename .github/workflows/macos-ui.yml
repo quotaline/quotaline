@@ -1,4 +1,4 @@
-name: Native UI
+name: 🍎 Native UI
 
 on:
   workflow_call:
@@ -36,8 +36,7 @@ env:
   UI_SCHEME: ${{ inputs.group == 'performance' && 'Quotaline-Benchmarks' || 'Quotaline-Direct' }}
   UI_TARGET: ${{ inputs.group == 'performance' && 'QuotalinePerformanceTests' || 'QuotalineApplicationUITests' }}
   UI_SUITE: ${{ inputs.group == 'performance' && 'performance' || 'functional' }}
-  UI_RUNNER_ID: ${{ inputs.group == 'performance' && 'tech.bernat.quotaline.performance-tests.xctrunner' || 'tech.bernat.quotaline.application-ui-tests.xctrunner'
-    }}
+  UI_RUNNER_ID: ${{ inputs.group == 'performance' && 'tech.bernat.quotaline.performance-tests.xctrunner' || 'tech.bernat.quotaline.application-ui-tests.xctrunner' }}
 
 defaults:
   run:
@@ -46,34 +45,37 @@ defaults:
 jobs:
   build:
     if: ${{ !inputs.group }}
-    name: Build UI (macOS ${{ inputs.runtime-major }})
+    name: 🏗️ Build UI (macOS ${{ inputs.runtime-major }})
     runs-on: ${{ inputs.runner }}
     timeout-minutes: 10
     outputs:
       shards: ${{ steps.inventory.outputs.shards }}
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: 📥 Check out code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - &verify_runtime
-        name: Verify runtime
+        name: 🔍 Verify runtime
         env:
           EXPECTED_MACOS_MAJOR: ${{ inputs.runtime-major }}
         run: |
           version="$(sw_vers -productVersion)"
           [[ "${version%%.*}" == "$EXPECTED_MACOS_MAJOR" ]] || { echo "::error::Unexpected macOS $version"; exit 1; }
           echo "Runtime: macOS $version" >> "$GITHUB_STEP_SUMMARY"
-      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+      - name: 📩 Download Rust bindings
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: macos-rust-bindings
           path: macos
-      - uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8 # v5.1.2
+      - name: 🧰 Install mise tools
+        uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8 # v5.1.2
         with:
           version: 2026.10.11
           working_directory: macos
           install_args: --locked just jq uv xcodegen
       - &select_xcode
-        name: Select Xcode
+        name: 🍎 Select Xcode
         id: xcode
         env:
           MIN_XCODE_MAJOR: ${{ inputs.minimum-xcode }}
@@ -83,22 +85,20 @@ jobs:
           version="$(xcodebuild -version | tr '\n' '-')"
           echo "cache=$(printf '%s' "$version" | shasum -a 256 | cut -c 1-12)" >> "$GITHUB_OUTPUT"
       - &generate_project
-        name: Generate project
+        name: 🍎 Generate project
         if: ${{ github.job == 'build' || inputs.group != '' }}
         run: just macos-xcode
       - &restore_build
-        name: Restore verification build and input timestamps
+        name: 💾 Restore verification build and input timestamps
         if: ${{ github.job == 'build' || inputs.group != '' }}
         uses: irgaly/xcode-cache@4141f139f00e335c6e1031fb93e667181f86146f # v1.9.2
         with:
           deriveddata-directory: macos/.build/ui-derived
           sourcepackages-directory: macos/.build/xcode-packages
-          key: ui-build-v4-${{ runner.os }}-${{ runner.arch }}-${{ inputs.runner }}-${{ steps.xcode.outputs.cache }}-${{ hashFiles('macos/Package.swift',
-            'macos/App/project.yml') }}-${{ github.sha }}
+          key: ui-build-v4-${{ runner.os }}-${{ runner.arch }}-${{ inputs.runner }}-${{ steps.xcode.outputs.cache }}-${{ hashFiles('macos/Package.swift', 'macos/App/project.yml') }}-${{ github.sha }}
           restore-keys: |
             ui-build-v4-${{ runner.os }}-${{ runner.arch }}-${{ inputs.runner }}-${{ steps.xcode.outputs.cache }}-${{ hashFiles('macos/Package.swift', 'macos/App/project.yml') }}-
-          swiftpm-cache-key: xcode-spm-${{ runner.os }}-${{ runner.arch }}-${{ inputs.runner }}-${{ steps.xcode.outputs.cache
-            }}-${{ hashFiles('macos/Package.swift', 'macos/App/project.yml') }}
+          swiftpm-cache-key: xcode-spm-${{ runner.os }}-${{ runner.arch }}-${{ inputs.runner }}-${{ steps.xcode.outputs.cache }}-${{ hashFiles('macos/Package.swift', 'macos/App/project.yml') }}
           use-default-mtime-targets: false
           restore-mtime-targets: |
             macos/Package.swift
@@ -107,7 +107,7 @@ jobs:
             macos/Generated/**/*
             macos/tests/**/*
       - &build_application
-        name: Build the verification application
+        name: 🏗️ Build the verification application
         if: ${{ github.job == 'build' || inputs.group != '' }}
         id: build
         timeout-minutes: 10
@@ -123,7 +123,7 @@ jobs:
             COMPILATION_CACHE_CAS_PATH="$PWD/.build/ui-derived/CompilationCache.noindex" \
             -showBuildTimingSummary build-for-testing \
             2>&1 | tee .build/ui-build.log | tail -50
-      - name: Verify the complete UI inventory
+      - name: 🔍 Verify the complete UI inventory
         id: inventory
         env:
           UI_GROUP: ${{ inputs.group }}
@@ -145,9 +145,10 @@ jobs:
                 .[$index].load += ($seconds[$group] // 120) | .[$index].groups += [$group]) |
               to_entries | map({name: "shard-\(.key + 1)", groups: .value.groups})
             end' tests/ui-groups.json)" >> "$GITHUB_OUTPUT"
-      - name: Package test products
+      - name: 🏗️ Package test products
         run: ditto -c -k .build/ui-derived/Build/Products .build/ui-products.zip
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+      - name: 📤 Upload test products
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         id: ui-products
         background: true
         with:
@@ -155,16 +156,18 @@ jobs:
           path: macos/.build/ui-products.zip
           if-no-files-found: error
           retention-days: 1
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+      - name: 📤 Upload build log
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: ui-build-macos-${{ inputs.runtime-major }}
           path: macos/.build/ui-build.log
           retention-days: 1
-      - wait: ui-products
+      - name: ⏳ Wait for test products upload
+        wait: ui-products
 
   audit:
-    name: ${{ matrix.shard.name }} (macOS ${{ inputs.runtime-major }})
+    name: 🧪 ${{ matrix.shard.name }} (macOS ${{ inputs.runtime-major }})
     if: ${{ !cancelled() && (needs.build.result == 'success' || (inputs.group != '' && needs.build.result == 'skipped')) }}
     permissions:
       actions: read
@@ -178,19 +181,21 @@ jobs:
       fail-fast: false
       max-parallel: ${{ inputs.shards > 0 && inputs.shards || 2 }}
       matrix:
-        shard: ${{ inputs.group != '' && fromJSON(format('[{{"name":{0},"groups":[{0}]}}]', toJSON(inputs.group))) || fromJSON(needs.build.outputs.shards)
-          }}
+        shard: ${{ inputs.group != '' && fromJSON(format('[{{"name":{0},"groups":[{0}]}}]', toJSON(inputs.group))) || fromJSON(needs.build.outputs.shards) }}
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: 📥 Check out code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - *verify_runtime
-      - uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8 # v5.1.2
+      - name: 🧰 Install mise tools
+        uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8 # v5.1.2
         with:
           version: 2026.10.11
           working_directory: macos
           install_args: --locked just jq uv xcodegen
-      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+      - name: 📩 Download Rust bindings
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         if: ${{ inputs.group != '' }}
         with:
           name: macos-rust-bindings
@@ -199,16 +204,17 @@ jobs:
       - *generate_project
       - *restore_build
       - *build_application
-      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+      - name: 📩 Download test products
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         if: ${{ !inputs.group }}
         with:
           name: ui-products-macos-${{ inputs.runtime-major }}
           path: macos/.build
           github-token: ${{ github.token }}
-      - name: Unpack shared test products
+      - name: 📩 Unpack shared test products
         if: ${{ !inputs.group }}
         run: ditto -x -k .build/ui-products.zip .build/ui-derived/Build/Products
-      - name: Run the UI groups
+      - name: 🧪 Run the UI groups
         timeout-minutes: ${{ inputs.shards > 0 && 30 || 8 }}
         env:
           UI_GROUPS: ${{ toJSON(matrix.shard.groups) }}
@@ -229,14 +235,14 @@ jobs:
             -xctestrun "${specifications[0]}" -destination "platform=macOS,arch=$(uname -m)" \
             -resultBundlePath .build/ui-results.xcresult "${selectors[@]}" test-without-building \
             2>&1 | tee .build/ui-test.log | awk '/Test Case|Test Suite|error:|warning:|FIRST_SETTINGS|TAB_SWITCH_SUMMARY|CONTROL_AUDIT|LONG_TEXT_AUDIT|^[[:space:]]*t = / { print; fflush() }'
-      - name: Export UI evidence
+      - name: 📊 Export UI evidence
         id: evidence
         if: ${{ !cancelled() }}
         run: |
           if [[ -d .build/ui-results.xcresult ]]; then
             Scripts/export-ui-results.sh .build/ui-results.xcresult .build/ui-results
           fi
-      - name: Retain UI results
+      - name: 📤 Retain UI results
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
@@ -249,7 +255,7 @@ jobs:
           include-hidden-files: true
           if-no-files-found: error
           retention-days: 1
-      - name: Retain UI test timings
+      - name: 📤 Retain UI test timings
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
@@ -257,7 +263,7 @@ jobs:
           path: macos/.build/ui-test.log
           if-no-files-found: warn
           retention-days: 7
-      - name: Verify every selected method passed once
+      - name: 🔍 Verify every selected method passed once
         if: ${{ !cancelled() && steps.evidence.outcome == 'success' }}
         env:
           UI_GROUPS: ${{ toJSON(matrix.shard.groups) }}
@@ -267,10 +273,10 @@ jobs:
             selectors+=("$UI_TARGET/$selector")
           done < <(jq -r --argjson groups "$UI_GROUPS" --arg test "$UI_TEST" '. as $all | $groups[] | $all[.] // error("unknown UI group \(.)") | .[] | select($test == "" or . == $test)' tests/ui-groups.json)
           uv run --python 3.15 Scripts/local_ui_tests.py --suite "$UI_SUITE" --check-results .build/ui-results/tests.json "${selectors[@]}"
-      - name: Verify result export integrity
+      - name: 🔍 Verify result export integrity
         if: ${{ !cancelled() && contains(matrix.shard.groups, 'file-choosers') && steps.evidence.outcome == 'success' }}
         run: Scripts/test-ui-results.sh .build/ui-results.xcresult
-      - name: Retain an unexportable result bundle
+      - name: 📤 Retain an unexportable result bundle
         if: ${{ !cancelled() && steps.evidence.outcome == 'failure' }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
@@ -279,16 +285,15 @@ jobs:
           include-hidden-files: true
           if-no-files-found: error
           retention-days: 1
-      - name: Retain diagnostic build log
+      - name: 📤 Retain diagnostic build log
         if: ${{ always() && inputs.group != '' }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: ui-build-macos-${{ inputs.runtime-major }}
           path: macos/.build/ui-build.log
           retention-days: 1
-      - name: Retain rendered-text assertions
-        if: ${{ !cancelled() && contains(join(matrix.shard.groups, ' '), 'text-') && (inputs.test == '' || startsWith(inputs.test, 'LiveControlAuditUITests/testLongTextAt'))
-          }}
+      - name: 📤 Retain rendered-text assertions
+        if: ${{ !cancelled() && contains(join(matrix.shard.groups, ' '), 'text-') && (inputs.test == '' || startsWith(inputs.test, 'LiveControlAuditUITests/testLongTextAt')) }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: rendered-ui-${{ inputs.runtime-major }}-${{ matrix.shard.name }}

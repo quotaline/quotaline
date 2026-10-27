@@ -1,33 +1,143 @@
-name: Prepare Release
-
+name: 🏷️ Prepare Release
 on:
   workflow_dispatch:
     inputs:
       bump:
-        description: Which part of the version to raise
+        description: Version bump type
+        required: true
         type: choice
-        options: [patch, minor, major]
-        default: patch
-      version:
-        description: Exact version to release (1.2.3), overriding the bump
-        type: string
-        default: ""
-
-permissions:
-  contents: read
-
+        options: [auto, major, minor, patch]
+        default: auto
+permissions: {}
+concurrency:
+  group: prepare-release
+  cancel-in-progress: false
 jobs:
-  tag:
-    name: Tag the release
+  assemble:
+    name: 🏷️ Assemble release
     if: github.repository == 'quotaline/quotaline'
+    runs-on: ubuntu-26.04
+    timeout-minutes: 60
+    permissions:
+      actions: read
+      contents: read
+      pull-requests: read
+    outputs:
+      version: ${{ steps.existing.outputs.version || steps.prepare.outputs.version }}
+      artifact-id: ${{ steps.existing.outputs.artifact-id || steps.patch.outputs.artifact-id }}
+    steps:
+      - name: 📥 Check out code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: 📩 Reuse this run's release patch
+        id: existing
+        if: github.run_attempt > 1
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          artifact_id=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts" \
+            --jq '[.artifacts[] | select(.name == "release-patch" and .expired == false) | .id] | first // empty')
+          if [[ -n "$artifact_id" ]]; then
+            version=$(python3 -c 'import tomllib; from pathlib import Path; print("v" + tomllib.loads(Path("gnome/Cargo.toml").read_text())["package"]["version"])')
+            echo "version=$version" >> "$GITHUB_OUTPUT"
+            echo "artifact-id=$artifact_id" >> "$GITHUB_OUTPUT"
+          fi
+      - name: 🐍 Install uv and Python
+        uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+        if: steps.existing.outputs.artifact-id == ''
+        with:
+          version: latest-known
+          python-version: "3.15"
+          enable-cache: false
+      - name: 🦀 Install Rust toolchain
+        uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f # v2.0.0
+        if: steps.existing.outputs.artifact-id == ''
+        with:
+          cache: false
+      - name: 🧰 Install mise tools
+        uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8 # v5.1.2
+        if: steps.existing.outputs.artifact-id == ''
+        with:
+          version: 2026.10.11
+          install_args: --locked
+          cache: false
+      - name: 📦 Install locked release tools
+        if: steps.existing.outputs.artifact-id == ''
+        uses: tox-dev/github-workflows/install-locked-tools@259a3d3fb578d00517ffb73341fdd463259b0b2f # 6.0.1
+        with:
+          groups: release-prepare
+          venv: ${{ runner.temp }}/release-tools
+      - name: 🏷️ Select version from fragments
+        id: version
+        if: steps.existing.outputs.artifact-id == ''
+        env:
+          BUMP: ${{ inputs.bump }}
+        run: |
+          set -euo pipefail
+          if [[ -n $(git tag --list 'v*') ]]; then
+            version=$(git tag --list | release-creator tags --next "$BUMP" --prefix v)
+          else
+            previous=$(awk '$1 == "##" { print "v" $2; exit }' website/content/changelog/_index.md)
+            version=$(printf '%s\n' "$previous" | release-creator tags --next "$BUMP" --prefix v)
+          fi
+          printf 'version=%s\n' "$version" >> "$GITHUB_OUTPUT"
+      - name: 📝 Render changelog
+        id: prepare
+        if: steps.existing.outputs.artifact-id == ''
+        uses: tox-dev/github-workflows/prepare-towncrier@259a3d3fb578d00517ffb73341fdd463259b0b2f # 6.0.1
+        env:
+          SKIP: swift-format,swiftlint
+        with:
+          version: ${{ steps.version.outputs.version }}
+      - name: 📤 Upload release patch
+        id: patch
+        if: steps.existing.outputs.artifact-id == ''
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: release-patch
+          path: ${{ runner.temp }}/release.patch
+          if-no-files-found: error
+  push:
+    name: ⬆️ Push release commit and tag
+    needs: assemble
     runs-on: ubuntu-26.04
     timeout-minutes: 120
     environment: release-auth
     permissions:
       contents: read
-      actions: write
     steps:
-      - id: token
+      - name: 📥 Check out code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: 📩 Download release patch
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          artifact-ids: ${{ needs.assemble.outputs.artifact-id }}
+          path: ${{ runner.temp }}/release-patch
+      - name: 🔍 Inspect remote release commit
+        id: remote
+        run: |
+          git fetch origin main
+          remote=$(git rev-parse origin/main)
+          if [[ "$remote" != "$GITHUB_SHA" ]]; then
+            echo "published-commit=$remote" >> "$GITHUB_OUTPUT"
+          fi
+      - name: 🔍 Validate release patch
+        uses: tox-dev/github-workflows/validate-release-patch@259a3d3fb578d00517ffb73341fdd463259b0b2f # 6.0.1
+        if: steps.remote.outputs.published-commit == ''
+      - name: 🔍 Reuse prepared release commit
+        if: steps.remote.outputs.published-commit != ''
+        env:
+          PUBLISHED_COMMIT: ${{ steps.remote.outputs.published-commit }}
+        run: |
+          git reset --hard "$GITHUB_SHA"
+          git switch --detach "$PUBLISHED_COMMIT"
+      - name: 🔑 Create release App token
+        id: token
         uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
         with:
           client-id: ${{ vars.RELEASE_APP_CLIENT_ID }}
@@ -35,113 +145,47 @@ jobs:
           owner: ${{ github.repository_owner }}
           repositories: ${{ github.event.repository.name }}
           permission-contents: write
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          fetch-depth: 0
-          token: ${{ steps.token.outputs.token }}
-          persist-credentials: true # zizmor: ignore[artipacked] this job pushes main and its tag
-      - name: Work out the version
-        id: version
+      - name: ⚙️ Set App commit identity
         env:
-          BUMP: ${{ inputs.bump }}
-          EXPLICIT: ${{ inputs.version }}
-        run: |
-          git fetch origin main
-          git reset --hard origin/main
-          if [ -n "$EXPLICIT" ]; then
-            next="${EXPLICIT#v}"
-          else
-            current=$(git tag --list 'v*' --sort=-v:refname | head -1)
-            if [ -z "$current" ]; then
-              current=$(sed -n 's/^  version "\([^"]*\)"/\1/p' Casks/quotaline.rb)
-            fi
-            current="${current#v}"
-            current="${current:-0.0.0}"
-            IFS='.' read -r major minor patch <<< "$current"
-            case "$BUMP" in
-              major) next="$((major + 1)).0.0" ;;
-              minor) next="$major.$((minor + 1)).0" ;;
-              patch) next="$major.$minor.$((patch + 1))" ;;
-            esac
-          fi
-          source_version=$(sed -n 's/^version = "\([^"]*\)"/\1/p' gnome/Cargo.toml | head -1)
-          if [ "$next" != "$source_version" ]; then
-            echo "::error::Tag v$next requires GNOME package version $next; source has $source_version"
-            exit 1
-          fi
-          echo "next=$next" >> "$GITHUB_OUTPUT"
-          echo "Releasing $next"
-      - name: Commit release notes
-        env:
-          NEXT: ${{ steps.version.outputs.next }}
           GH_TOKEN: ${{ steps.token.outputs.token }}
           APP_SLUG: ${{ steps.token.outputs.app-slug }}
         run: |
-          set -euo pipefail
-          if git rev-parse "v$NEXT" >/dev/null 2>&1; then
-            echo "::error::v$NEXT already exists"
-            exit 1
-          fi
-          mapfile -d '' fragments < <(find changelog.d -maxdepth 1 -type f -name '*.md' -print0 | sort -z)
-          if (( ${#fragments[@]} > 0 )); then
-            for fragment in "${fragments[@]}"; do
-              if [[ ! "$fragment" =~ ^changelog\.d/[0-9]+\.(feature|bugfix|doc)\.md$ || ! -s "$fragment" ]]; then
-                echo "::error::invalid or empty news fragment: $fragment"
-                exit 1
-              fi
-            done
-            {
-              printf '# Changelog\n\n## v%s (%s)\n\n' "$NEXT" "$(date -u +%F)"
-              for fragment in "${fragments[@]}"; do
-                cat "$fragment"
-                printf '\n\n'
-              done
-              tail -n +3 CHANGELOG.md
-            } > "$RUNNER_TEMP/changelog.md"
-            mv "$RUNNER_TEMP/changelog.md" CHANGELOG.md
-            git rm -- "${fragments[@]}"
-            app_user_id=$(gh api "/users/${APP_SLUG}[bot]" --jq .id)
-            git config user.name "${APP_SLUG}[bot]"
-            git config user.email "${app_user_id}+${APP_SLUG}[bot]@users.noreply.github.com"
-            git add CHANGELOG.md changelog.d
-            git commit -m "Prepare v$NEXT"
-            git push origin HEAD:main
-          elif ! grep -Fq "## v$NEXT (" CHANGELOG.md; then
-            echo "::error::no news fragments to release"
-            exit 1
-          fi
-      - name: Require full CI on the release commit
+          app_user_id=$(gh api "/users/${APP_SLUG}[bot]" --jq .id)
+          git config user.name "${APP_SLUG}[bot]"
+          git config user.email "${app_user_id}+${APP_SLUG}[bot]@users.noreply.github.com"
+      - name: 🔑 Configure App git credentials
         env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          sha=$(git rev-parse HEAD)
-          gh workflow run ci.yml --ref main
-          for (( attempt=0; attempt<24; attempt++ )); do
-            run_id=$(gh api --method GET "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs" \
-              -f head_sha="$sha" -f event=workflow_dispatch -f per_page=10 --jq '.workflow_runs[0].id // empty')
-            if [[ -n "$run_id" ]]; then
-              gh run watch "$run_id" --exit-status
-              exit 0
-            fi
-            sleep 5
-          done
-          echo "::error::full CI run did not appear for $sha"
-          exit 1
-      - name: Push the version tag
+          GH_TOKEN: ${{ steps.token.outputs.token }}
+        run: gh auth setup-git --hostname github.com --force
+      - name: 🏷️ Commit release changelog
+        if: steps.remote.outputs.published-commit == ''
         env:
-          NEXT: ${{ steps.version.outputs.next }}
+          VERSION: ${{ needs.assemble.outputs.version }}
+        run: git commit -m "Prepare $VERSION"
+      - name: ⬆️ Push release commit
+        if: steps.remote.outputs.published-commit == ''
+        env:
+          GH_TOKEN: ${{ steps.token.outputs.token }}
+        run: git push origin HEAD:refs/heads/main
+      - name: 🏷️ Inspect remote release tag
+        id: remote-tag
+        env:
+          VERSION: ${{ needs.assemble.outputs.version }}
         run: |
-          git fetch origin main
-          if [[ "$(git rev-parse origin/main)" != "$(git rev-parse HEAD)" ]]; then
-            echo "::error::main moved after release CI"
-            exit 1
+          remote=$(git ls-remote origin "refs/tags/$VERSION")
+          if [[ -n "$remote" ]]; then
+            echo 'exists=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'exists=false' >> "$GITHUB_OUTPUT"
           fi
-          git tag -a "v$NEXT" -m "Release $NEXT"
-          git push origin "v$NEXT"
-      - name: Say what happens next
+      - name: 🏷️ Create annotated tag
+        if: steps.remote-tag.outputs.exists == 'false'
         env:
-          NEXT: ${{ steps.version.outputs.next }}
-        run: |
-          echo "Tagged v$NEXT. Release builds GNOME and macOS downloads, the cask and the App Store upload." \
-            >> "$GITHUB_STEP_SUMMARY"
+          VERSION: ${{ needs.assemble.outputs.version }}
+        run: git tag -a "$VERSION" -m "Release $VERSION"
+      - name: ⬆️ Push release tag
+        if: steps.remote-tag.outputs.exists == 'false'
+        env:
+          GH_TOKEN: ${{ steps.token.outputs.token }}
+          VERSION: ${{ needs.assemble.outputs.version }}
+        run: git push origin "refs/tags/$VERSION"

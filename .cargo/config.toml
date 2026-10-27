@@ -1,0 +1,3 @@
+[net]
+# The pinned Git dependency fails TLS in Cargo's libgit2 on GitHub runners.
+git-fetch-with-cli = true

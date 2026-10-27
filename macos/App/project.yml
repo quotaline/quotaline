@@ -18,10 +18,10 @@ settings:
     SWIFT_STRICT_CONCURRENCY: complete
     SWIFT_UPCOMING_FEATURE_EXISTENTIAL_ANY: YES
     SWIFT_TREAT_WARNINGS_AS_ERRORS: YES
-    MARKETING_VERSION: "0.1.8"
+    MARKETING_VERSION: "0.2.0"
     CURRENT_PROJECT_VERSION: "1000"
     # The git-derived version, which names the commit a dev build came from; see Scripts/version.sh
-    SOURCE_VERSION: "0.1.8"
+    SOURCE_VERSION: "0.2.0"
     MACOSX_DEPLOYMENT_TARGET: "15.0"
     ARCHS: arm64 x86_64
     ONLY_ACTIVE_ARCH: NO

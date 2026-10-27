@@ -11,6 +11,7 @@
   "minimumReleaseAge": "3 days",
   "schedule": ["before 6am on Tuesday"],
   "pre-commit": {
-    "enabled": true
+    "enabled": true,
+    "minimumReleaseAge": "7 days"
   }
 }
