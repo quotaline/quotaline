@@ -7,5 +7,7 @@ build:
   tools: {}
   commands:
     - curl --fail --location https://mise.run | sh
+    # Since mise 2026.10.19 an untrusted project's lockfile URLs are ignored, which makes --locked fail.
+    - MISE_SAFE=1 ~/.local/bin/mise trust
     - MISE_SAFE=1 ~/.local/bin/mise install --locked hugo just
     - MISE_EXEC_AUTO_INSTALL=0 MISE_SAFE=1 ~/.local/bin/mise exec -- just site-readthedocs
