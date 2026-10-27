@@ -11,6 +11,49 @@ Earlier macOS releases were published from the
 
 <!-- release notes -->
 
+<a name="release-0-2-0"></a>
+
+## 0.2.0 (2026-10-27)
+
+<a name="release-0-2-0-added"></a>
+
+### Added
+
+- Bring the macOS and GNOME apps together as Quotaline, with shared provider, quota, settings, and history behavior
+  ([#12](https://github.com/quotaline/quotaline/pull/12)) by [@gaborbernat](https://github.com/gaborbernat).
+- Support GNOME Shell 51, including Fedora 45 ([#12](https://github.com/quotaline/quotaline/pull/12)) by
+  [@gaborbernat](https://github.com/gaborbernat).
+
+<a name="release-0-2-0-changes"></a>
+
+### Changes
+
+- Migrate GNOME configuration, data, and cache directories and import accessible macOS preferences and app data when
+  upgrading from Token Menu Bar. Existing App Store sandbox data cannot be imported automatically
+  ([#12](https://github.com/quotaline/quotaline/pull/12)) by [@gaborbernat](https://github.com/gaborbernat).
+- Show quota windows in the same order on macOS and GNOME and align GNOME panel spacing and colors with macOS
+  ([#12](https://github.com/quotaline/quotaline/pull/12)) by [@gaborbernat](https://github.com/gaborbernat).
+
+<a name="release-0-2-0-fixed"></a>
+
+### Fixed
+
+- Reject certificates chained through distrusted emSign intermediates in the GNOME adapter
+  ([#15](https://github.com/quotaline/quotaline/pull/15)) by [@gaborbernat](https://github.com/gaborbernat).
+- Keep GNOME status within the available panel width when other indicators take space
+  ([#12](https://github.com/quotaline/quotaline/pull/12)) by [@gaborbernat](https://github.com/gaborbernat).
+- Use darker usage colors in the macOS menu bar when light appearance would wash out the values
+  ([#12](https://github.com/quotaline/quotaline/pull/12)) by [@gaborbernat](https://github.com/gaborbernat).
+
+<a name="release-0-2-0-documentation"></a>
+
+### Documentation
+
+- Add Usage, History, and Settings screenshots for both frontends and shared provider guidance
+  ([#12](https://github.com/quotaline/quotaline/pull/12)) by [@gaborbernat](https://github.com/gaborbernat).
+- Move GNOME usage and contribution guidance into the hosted documentation
+  ([#12](https://github.com/quotaline/quotaline/pull/12)) by [@gaborbernat](https://github.com/gaborbernat).
+
 <a name="release-0-1-7"></a>
 
 ## 0.1.7 (2026-10-02)
