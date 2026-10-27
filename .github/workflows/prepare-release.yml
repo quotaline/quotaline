@@ -65,7 +65,7 @@ jobs:
           cache: false
       - name: 📦 Install locked release tools
         if: steps.existing.outputs.artifact-id == ''
-        uses: tox-dev/github-workflows/install-locked-tools@29d4d5e6900db30502d7249043b59c18284a9777 # 6.2.0
+        uses: tox-dev/github-workflows/install-locked-tools@57a765127aae73adf7d0e24a7fe0f067f2d3ea3e # 6.2.1
         with:
           groups: release-prepare
           venv: ${{ runner.temp }}/release-tools
@@ -86,7 +86,7 @@ jobs:
       - name: 📝 Render changelog
         id: prepare
         if: steps.existing.outputs.artifact-id == ''
-        uses: tox-dev/github-workflows/prepare-towncrier@29d4d5e6900db30502d7249043b59c18284a9777 # 6.2.0
+        uses: tox-dev/github-workflows/prepare-towncrier@57a765127aae73adf7d0e24a7fe0f067f2d3ea3e # 6.2.1
         env:
           SKIP: swift-format,swiftlint
         with:
@@ -127,7 +127,7 @@ jobs:
             echo "published-commit=$remote" >> "$GITHUB_OUTPUT"
           fi
       - name: 🔍 Validate release patch
-        uses: tox-dev/github-workflows/validate-release-patch@29d4d5e6900db30502d7249043b59c18284a9777 # 6.2.0
+        uses: tox-dev/github-workflows/validate-release-patch@57a765127aae73adf7d0e24a7fe0f067f2d3ea3e # 6.2.1
         if: steps.remote.outputs.published-commit == ''
       - name: 🔍 Reuse prepared release commit
         if: steps.remote.outputs.published-commit != ''
