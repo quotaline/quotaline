@@ -11,6 +11,17 @@ Earlier macOS releases were published from the
 
 <!-- release notes -->
 
+<a name="release-0-2-1"></a>
+
+## 0.2.1 (2026-10-27)
+
+<a name="release-0-2-1-fixed"></a>
+
+### Fixed
+
+- Make the Mac App Store package readable by every user, so App Store Connect accepts the upload
+  ([#17](https://github.com/quotaline/quotaline/pull/17)) by [@gaborbernat](https://github.com/gaborbernat).
+
 <a name="release-0-2-0"></a>
 
 ## 0.2.0 (2026-10-27)
