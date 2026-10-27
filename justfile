@@ -753,9 +753,9 @@ macos-build-app-store:
     out="dist/app-store"
     archive="$out/Quotaline.xcarchive"
     key="$RUNNER_TEMP/AuthKey_${APP_STORE_CONNECT_KEY_ID}.p8"
-    umask 077
     trap 'rm -f "$key"' EXIT
-    echo "$APP_STORE_CONNECT_KEY_BASE64" | base64 --decode > "$key"
+    # App Store Connect rejects a package whose files only root can read, so the strict umask stays on the key alone.
+    (umask 077 && echo "$APP_STORE_CONNECT_KEY_BASE64" | base64 --decode > "$key")
     rm -rf "$out"
     mkdir -p "$out"
 
