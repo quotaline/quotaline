@@ -1,24 +1,54 @@
 # Security policy
 
+Quotaline is a macOS menu bar app and GNOME Shell extension that reads AI coding tools' credentials to show quota usage.
+This policy says how to report a security problem and how we decide whether a report is one.
+
 ## Reporting a vulnerability
 
-Use [GitHub security advisories](https://github.com/quotaline/quotaline/security/advisories/new) for issues
-that could expose credentials. Do not post tokens, credential files or private transcripts in public issues.
+**Do not open a public issue for a security problem.** Use
+[GitHub's private vulnerability reporting](https://github.com/quotaline/quotaline/security/advisories/new). If neither
+works for you, email [gaborjbernat@gmail.com](mailto:gaborjbernat@gmail.com).
 
-Include the source version and channel from Settings > About, reproduction steps and the observed result. **Copy
-Diagnostics** is in the Settings footer. Review its account, usage and path information before sharing it.
+Include what the attacker controls and what they gain, the steps or a proof of concept, and the versions and platform
+you tested. Write the report yourself; unreviewed tool or model output takes longer to triage.
 
-This is a one-person project without a bounty programme. Reports receive investigation and credit in the advisory unless
-the reporter asks to remain unnamed.
+## What to expect
 
-## Scope
+Volunteers maintain Quotaline, with no on-call rotation. We aim to acknowledge a report within **5 working days** and
+assess it within **15 working days**. Fixes are developed in a private fork attached to the draft advisory, ship in a
+new release, and the advisory, with a CVE requested through GitHub, goes out with that release. The default embargo is
+**90 days** from the report; we agree any change with the reporter. We credit reporters in the advisory under the name
+they choose, or not at all. There is no bug bounty.
 
-Report credential disclosure, unauthorized file access or modification, account-mixing bugs and requests that send
-credentials to an unintended host. The signing, notarization, update and release workflows are also in scope.
+## Supported versions
 
-Provider API availability or incorrect quota values are product bugs unless they expose data or cross an access
-boundary. Vulnerabilities in the provider clients belong with their vendors. An attacker with access to your unlocked
-account and Keychain is outside this app's security boundary.
+Only the latest release receives fixes. Confirm the problem reproduces on it before reporting.
+
+## Vulnerability or bug
+
+A report is a vulnerability when an attacker who controls only an input that the [threat model](THREAT_MODEL.md) lists
+as untrusted breaks a guarantee Quotaline makes. A report that first needs control of something the threat model trusts,
+such as your unlocked account and Keychain, or the provider clients whose credentials it reads, is a bug: we fix it in
+the open and publish no advisory. Classify by who supplies the dangerous input, not by how bad the outcome sounds.
+
+**In scope**
+
+- Credential disclosure: a token or credential file content reaching logs, diagnostics, exports, the widget, or any host
+  other than the provider's documented destination.
+- Unauthorized file access or modification beyond the documented credential sources and Quotaline's own data
+  directories, including writes when token refresh is off.
+- Account mixing: one account's data or credentials used for or shown as another's.
+- Requests that send credentials to an unintended host.
+- The signing, notarization, update and release workflows, including accepting an unsigned update.
+
+**Out of scope**
+
+- Provider API availability or incorrect quota values, unless they expose data or cross an access boundary.
+- Vulnerabilities in the provider clients; report those to their vendors.
+- An attacker with access to your unlocked account and Keychain.
+- A dependency CVE without evidence that the vulnerable code is reachable from Quotaline.
+
+If you cannot tell which side a finding falls on, report it privately and we will decide.
 
 ## Credential handling
 
@@ -40,10 +70,10 @@ shell startup files. Check Authentication and Connection details in Settings bef
 
 ## Stored data and network traffic
 
-On macOS, Direct and Homebrew support files live under `~/Library/Application Support/Quotaline/`. App Store files
-live under `~/Library/Containers/tech.bernat.quotaline/Data/Library/Application Support/Quotaline/`. On GNOME,
-settings, history, and cached snapshots live under `~/.config/quotaline/`,
-`~/.local/share/quotaline/`, and `~/.cache/quotaline/` by default.
+On macOS, Direct and Homebrew support files live under `~/Library/Application Support/Quotaline/`. App Store files live
+under `~/Library/Containers/tech.bernat.quotaline/Data/Library/Application Support/Quotaline/`. On GNOME, settings,
+history, and cached snapshots live under `~/.config/quotaline/`, `~/.local/share/quotaline/`, and `~/.cache/quotaline/`
+by default.
 
 The snapshot cache can contain plan names and account email. History stores quota and analytics records, with account
 scoping and configurable retention. Hiding account/project details masks presentation, not the files on disk. Exported
