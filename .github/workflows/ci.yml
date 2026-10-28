@@ -864,7 +864,7 @@ jobs:
           if-no-files-found: error
           retention-days: 1
   required-checks:
-    name: 🚦 ${{ github.event_name == 'pull_request' && 'required-checks' || 'required-checks (non-PR)' }}
+    name: 🚦 ${{ github.event_name == 'pull_request' && 'Required checks pass' || 'Non-PR checks pass' }}
     if: ${{ always() }}
     needs:
       - changes
