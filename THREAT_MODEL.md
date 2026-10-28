@@ -57,12 +57,12 @@ An attacker who controls any of these already has what Quotaline could give them
 
 ## Threats and controls
 
-| STRIDE                 | Threat                                                         | Control                                                                                                   |
-| ---------------------- | -------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| Information disclosure | A token appears in copied diagnostics or logs.                 | Logs sanitize URLs and sensitive values; the HTTP logger records no headers or bodies.                    |
-| Spoofing               | A forged update replaces the app.                              | EdDSA-signed appcast and notarized Developer ID builds.                                                   |
-| Tampering              | Refresh overwrites a CLI's credential unexpectedly.            | Refresh is off by default and limited to Claude, Codex and Gemini sources.                                |
-| Elevation of privilege | A provider response steers a request with the token elsewhere. | Requests go only to the documented provider destinations; Copilot enterprise hosts only where configured. |
+| STRIDE                 | Threat                                                         | Control                                                                                                                      |
+| ---------------------- | -------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| Information disclosure | A token appears in copied diagnostics or logs.                 | Logs sanitize URLs and sensitive values; the HTTP logger records no headers or bodies.                                       |
+| Spoofing               | A forged update replaces the app.                              | EdDSA-signed appcast and notarized Developer ID builds.                                                                      |
+| Tampering              | Refresh overwrites a CLI's credential unexpectedly.            | Refresh is off by default; only Claude, Codex and Gemini sources are written back, and Antigravity refreshes stay in memory. |
+| Elevation of privilege | A provider response steers a request with the token elsewhere. | Requests go only to the documented provider destinations; Copilot enterprise hosts only where configured.                    |
 
 ## Release chain
 
@@ -78,6 +78,14 @@ App Store review, and the GNOME tarball ships with a SHA-256 file on the immutab
 | Codex quota shows the wrong percentage              | Bug                 | Product correctness, no data exposed.      |
 | Account A's usage shows under account B             | Vulnerability       | Account mixing.                            |
 | Malware running as the user reads the Keychain item | Not a vulnerability | Unlocked account and Keychain are trusted. |
+
+## Severity
+
+- **High:** a credential reaches logs, diagnostics, exports, the widget or an unintended host, or an unsigned update
+  installs.
+- **Medium:** one account's data or credentials used for another, or a write beyond the documented sources and
+  Quotaline's own directories, including any write while token refresh is off.
+- **Low:** a crash or wrong value on a malformed provider response without exposing data.
 
 ## Accepted risks
 
