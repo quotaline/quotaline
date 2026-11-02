@@ -2,8 +2,10 @@ name: 📝 Changelog
 on:
   pull_request:
     types: [opened, reopened, synchronize, labeled, unlabeled]
+# Label events get their own group: a label added while opening the PR must not cancel the run for opening, which would
+# show as a failed check. A new push still cancels the run for the previous one.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}-${{ contains(fromJSON('["labeled", "unlabeled"]'), github.event.action) }}
   cancel-in-progress: true
 permissions:
   contents: read
@@ -26,9 +28,9 @@ jobs:
           python-version: "3.15"
           enable-cache: false
       - name: 📦 Install locked release tools
-        uses: tox-dev/github-workflows/install-locked-tools@57a765127aae73adf7d0e24a7fe0f067f2d3ea3e # 6.2.1
+        uses: tox-dev/github-workflows/install-locked-tools@99024bcb5749b178c5514f86acfcf1e80c865e75 # 6.3.0
         with:
           groups: release-news
           venv: ${{ runner.temp }}/release-tools
       - name: 🔍 Validate news fragments
-        uses: tox-dev/github-workflows/validate-news@57a765127aae73adf7d0e24a7fe0f067f2d3ea3e # 6.2.1
+        uses: tox-dev/github-workflows/validate-news@99024bcb5749b178c5514f86acfcf1e80c865e75 # 6.3.0
