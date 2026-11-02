@@ -282,9 +282,20 @@ await test('custom reset clocks retain day and elapsed deadline wording', () => 
     required(state.providers.claude.windows[0]).reset_precision = 'day';
     assert.equal(required(statusCells(state)[0]).text, 'Jan 1');
     required(state.providers.claude.windows[0]).reset_precision = 'instant';
+    const clock = (at: number) =>
+        new Date(at * 1000).toLocaleTimeString('en-GB', {hour: '2-digit', minute: '2-digit', hour12: false});
+    assert.equal(required(statusCells(state)[0]).text, clock(200));
+    const nearby = 100 + 3 * 86400;
+    required(state.status_entries[0]).reset_at = nearby;
     assert.equal(
         required(statusCells(state)[0]).text,
-        new Date(200000).toLocaleTimeString('en-GB', {hour: '2-digit', minute: '2-digit', hour12: false}),
+        `${new Date(nearby * 1000).toLocaleDateString('en-US', {weekday: 'short'})} ${clock(nearby)}`,
+    );
+    const distant = 100 + 10 * 86400;
+    required(state.status_entries[0]).reset_at = distant;
+    assert.equal(
+        required(statusCells(state)[0]).text,
+        `${new Date(distant * 1000).toLocaleDateString('en-US', {month: 'short', day: 'numeric'})} ${clock(distant)}`,
     );
 });
 await test('custom limited text remains visible around blank and multi-line templates', () => {

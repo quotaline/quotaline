@@ -8,12 +8,13 @@ fn claude_spend_reason_and_purchase_reach_shell() {
     let _shell = shell_lock();
     let runtime = tokio::runtime::Runtime::new().unwrap();
     let server = runtime.block_on(MockServer::start());
+    let reset = (chrono::Utc::now() + chrono::Duration::days(30)).to_rfc3339();
     runtime.block_on(async {
         Mock::given(matchers::method("GET"))
             .and(matchers::path("/api/oauth/usage"))
             .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
                 "five_hour":{"utilization":42},
-                "credit_reset_at":"2026-11-01T00:00:00Z",
+                "credit_reset_at":reset,
                 "spend":{"enabled":false,"disabled_reason":"organization_disabled",
                     "can_purchase_credits":true,"can_toggle":true,
                     "balance":{"amount_minor":3760,"currency":"USD"},"auto_reload":true}
