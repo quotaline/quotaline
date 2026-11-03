@@ -2,7 +2,7 @@
   "private": true,
   "type": "module",
   "devDependencies": {
-    "@biomejs/biome": "2.5.15",
+    "@biomejs/biome": "2.6.4",
     "@eslint/js": "10.0.1",
     "@girs/clutter-18": "5.5.0",
     "@girs/gio-2.0": "5.5.0",
@@ -14,13 +14,13 @@
     "@girs/st-18": "5.5.0",
     "@types/istanbul-lib-coverage": "2.0.6",
     "@types/istanbul-lib-instrument": "1.7.8",
-    "@types/node": "26.6.5",
-    "eslint": "10.12.0",
+    "@types/node": "26.6.6",
+    "eslint": "10.14.0",
     "globals": "17.13.0",
     "istanbul-lib-coverage": "3.2.2",
     "istanbul-lib-instrument": "6.0.3",
     "typescript": "6.0.3",
-    "typescript-eslint": "8.71.2"
+    "typescript-eslint": "8.72.1"
   },
   "scripts": {
     "format": "cd .. && gnome/node_modules/.bin/biome format --write .",

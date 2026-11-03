@@ -28,7 +28,7 @@ jobs:
         with:
           persist-credentials: false
       - name: 🛡️ Initialize CodeQL
-        uses: github/codeql-action/init@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee # v4.39.0
+        uses: github/codeql-action/init@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
         with:
           languages: ${{ matrix.language }}
           build-mode: none
@@ -41,7 +41,7 @@ jobs:
               - gnome/extension/tests
               - website/tests
       - name: 🛡️ Analyze
-        uses: github/codeql-action/analyze@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee # v4.39.0
+        uses: github/codeql-action/analyze@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
         with:
           category: "/language:${{ matrix.language }}"
   analyze-swift:
@@ -59,9 +59,9 @@ jobs:
         with:
           persist-credentials: false
       - name: 🧰 Install mise tools
-        uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8 # v5.1.2
+        uses: jdx/mise-action@6be3c7ed4c21d4f76b208d351d95aac273ebb76d # v5.2.4
         with:
-          version: 2026.10.11
+          version: 2026.10.24
           working_directory: macos
           install_args: --locked just rust swift
       - name: 🍎 Select Xcode
@@ -86,7 +86,7 @@ jobs:
         working-directory: macos
         run: just macos-bindings
       - name: 🛡️ Initialize CodeQL
-        uses: github/codeql-action/init@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee # v4.39.0
+        uses: github/codeql-action/init@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
         with:
           languages: swift
           build-mode: manual
@@ -102,6 +102,6 @@ jobs:
         working-directory: macos
         run: swift build --jobs 2
       - name: 🛡️ Analyze
-        uses: github/codeql-action/analyze@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee # v4.39.0
+        uses: github/codeql-action/analyze@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
         with:
           category: "/language:swift"

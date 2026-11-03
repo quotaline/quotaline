@@ -45,7 +45,7 @@ jobs:
             echo "artifact-id=$artifact_id" >> "$GITHUB_OUTPUT"
           fi
       - name: 🐍 Install uv and Python
-        uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
         if: steps.existing.outputs.artifact-id == ''
         with:
           version: latest-known
@@ -57,15 +57,15 @@ jobs:
         with:
           cache: false
       - name: 🧰 Install mise tools
-        uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8 # v5.1.2
+        uses: jdx/mise-action@6be3c7ed4c21d4f76b208d351d95aac273ebb76d # v5.2.4
         if: steps.existing.outputs.artifact-id == ''
         with:
-          version: 2026.10.11
+          version: 2026.10.24
           install_args: --locked
           cache: false
       - name: 📦 Install locked release tools
         if: steps.existing.outputs.artifact-id == ''
-        uses: tox-dev/github-workflows/install-locked-tools@57a765127aae73adf7d0e24a7fe0f067f2d3ea3e # 6.2.1
+        uses: tox-dev/github-workflows/install-locked-tools@2511056b16f5e4040ba3fe71b53224910267b29e # 6.2.2
         with:
           groups: release-prepare
           venv: ${{ runner.temp }}/release-tools
@@ -86,7 +86,7 @@ jobs:
       - name: 📝 Render changelog
         id: prepare
         if: steps.existing.outputs.artifact-id == ''
-        uses: tox-dev/github-workflows/prepare-towncrier@57a765127aae73adf7d0e24a7fe0f067f2d3ea3e # 6.2.1
+        uses: tox-dev/github-workflows/prepare-towncrier@2511056b16f5e4040ba3fe71b53224910267b29e # 6.2.2
         env:
           SKIP: swift-format,swiftlint
         with:
@@ -127,7 +127,7 @@ jobs:
             echo "published-commit=$remote" >> "$GITHUB_OUTPUT"
           fi
       - name: 🔍 Validate release patch
-        uses: tox-dev/github-workflows/validate-release-patch@57a765127aae73adf7d0e24a7fe0f067f2d3ea3e # 6.2.1
+        uses: tox-dev/github-workflows/validate-release-patch@2511056b16f5e4040ba3fe71b53224910267b29e # 6.2.2
         if: steps.remote.outputs.published-commit == ''
       - name: 🔍 Reuse prepared release commit
         if: steps.remote.outputs.published-commit != ''

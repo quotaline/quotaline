@@ -69,9 +69,9 @@ jobs:
           name: macos-rust-bindings
           path: macos
       - name: 🧰 Install mise tools
-        uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8 # v5.1.2
+        uses: jdx/mise-action@6be3c7ed4c21d4f76b208d351d95aac273ebb76d # v5.2.4
         with:
-          version: 2026.10.11
+          version: 2026.10.24
           working_directory: macos
           install_args: --locked just jq uv xcodegen
       - &select_xcode
@@ -189,9 +189,9 @@ jobs:
           persist-credentials: false
       - *verify_runtime
       - name: 🧰 Install mise tools
-        uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8 # v5.1.2
+        uses: jdx/mise-action@6be3c7ed4c21d4f76b208d351d95aac273ebb76d # v5.2.4
         with:
-          version: 2026.10.11
+          version: 2026.10.24
           working_directory: macos
           install_args: --locked just jq uv xcodegen
       - name: 📩 Download Rust bindings
