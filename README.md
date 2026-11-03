@@ -1,5 +1,8 @@
 # Quotaline
 
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/quotaline/quotaline/badge)](https://scorecard.dev/viewer/?uri=github.com/quotaline/quotaline)
+[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/16280/badge)](https://www.bestpractices.dev/projects/16280)
+
 Quotaline tracks coding quota usage in the macOS menu bar and GNOME Shell panel. It supports Claude, Codex, Gemini CLI,
 Antigravity, Cursor, and GitHub Copilot, with usage, history, and settings in a native interface.
 
