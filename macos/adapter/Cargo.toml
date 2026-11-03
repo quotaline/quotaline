@@ -48,7 +48,7 @@ url = "2.5.8"
 base64 = "0.23"
 futures-executor = "0.3"
 mockall = "0.15"
-rusqlite = { version = "0.40", features = ["bundled"] }
+rusqlite = { version = "0.41", features = ["bundled"] }
 
 [target.'cfg(target_os = "macos")'.dev-dependencies]
 core-foundation = "0.10.1"

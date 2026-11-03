@@ -39,19 +39,19 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
       - name: 🐍 Install uv and Python
-        uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
         with:
           version: latest-known
           python-version: "3.15"
           enable-cache: false
       - name: 📦 Install locked release tools
-        uses: tox-dev/github-workflows/install-locked-tools@57a765127aae73adf7d0e24a7fe0f067f2d3ea3e # 6.2.1
+        uses: tox-dev/github-workflows/install-locked-tools@2511056b16f5e4040ba3fe71b53224910267b29e # 6.2.2
         with:
           groups: release-notes
           venv: ${{ runner.temp }}/release-tools
       - name: 🏷️ Select previous tag
         id: previous
-        uses: tox-dev/github-workflows/select-previous-tag@57a765127aae73adf7d0e24a7fe0f067f2d3ea3e # 6.2.1
+        uses: tox-dev/github-workflows/select-previous-tag@2511056b16f5e4040ba3fe71b53224910267b29e # 6.2.2
         with:
           tag: ${{ env.TAG }}
   notes:
@@ -71,18 +71,18 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
       - name: 🐍 Install uv and Python
-        uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
         with:
           version: latest-known
           python-version: "3.15"
           enable-cache: false
       - name: 📦 Install locked release tools
-        uses: tox-dev/github-workflows/install-locked-tools@57a765127aae73adf7d0e24a7fe0f067f2d3ea3e # 6.2.1
+        uses: tox-dev/github-workflows/install-locked-tools@2511056b16f5e4040ba3fe71b53224910267b29e # 6.2.2
         with:
           groups: release-notes
           venv: ${{ runner.temp }}/release-tools
       - name: 📝 Render release notes
-        uses: tox-dev/github-workflows/render-release-notes@57a765127aae73adf7d0e24a7fe0f067f2d3ea3e # 6.2.1
+        uses: tox-dev/github-workflows/render-release-notes@2511056b16f5e4040ba3fe71b53224910267b29e # 6.2.2
         with:
           tag: ${{ env.TAG }}
           previous: ${{ needs.previous-tag.outputs.tag }}
@@ -138,9 +138,9 @@ jobs:
         with:
           cache: false
       - name: 🧰 Install mise tools
-        uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8 # v5.1.2
+        uses: jdx/mise-action@6be3c7ed4c21d4f76b208d351d95aac273ebb76d # v5.2.4
         with:
-          version: 2026.10.11
+          version: 2026.10.24
           install_args: --locked
           cache: false
       - name: 🏗️ Build release package
@@ -179,9 +179,9 @@ jobs:
         with:
           cache: false
       - name: 🧰 Install mise tools
-        uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8 # v5.1.2
+        uses: jdx/mise-action@6be3c7ed4c21d4f76b208d351d95aac273ebb76d # v5.2.4
         with:
-          version: 2026.10.11
+          version: 2026.10.24
           install_args: --locked
           working_directory: macos
           cache: false
@@ -308,7 +308,7 @@ jobs:
             Casks/quotaline.rb \
             "$RUNNER_TEMP/release-assets/"
       - name: 🚀 Publish GitHub release
-        uses: tox-dev/github-workflows/publish-github-release@57a765127aae73adf7d0e24a7fe0f067f2d3ea3e # 6.2.1
+        uses: tox-dev/github-workflows/publish-github-release@2511056b16f5e4040ba3fe71b53224910267b29e # 6.2.2
         env:
           GH_TOKEN: ${{ github.token }}
         with:
@@ -440,9 +440,9 @@ jobs:
         with:
           cache: false
       - name: 🧰 Install mise tools
-        uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8 # v5.1.2
+        uses: jdx/mise-action@6be3c7ed4c21d4f76b208d351d95aac273ebb76d # v5.2.4
         with:
-          version: 2026.10.11
+          version: 2026.10.24
           install_args: --locked
           working_directory: macos
           cache: false
