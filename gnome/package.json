@@ -28,5 +28,8 @@
     "lint": "(cd .. && gnome/node_modules/.bin/biome lint --error-on-warnings .) && eslint extension eslint.config.mjs --max-warnings 0",
     "typecheck": "tsc --noEmit && tsc -p tsconfig.node.json",
     "check": "(cd .. && gnome/node_modules/.bin/biome check --error-on-warnings .) && eslint extension eslint.config.mjs --max-warnings 0 && npm run typecheck"
+  },
+  "overrides": {
+    "minimatch": "^11.0.4"
   }
 }
