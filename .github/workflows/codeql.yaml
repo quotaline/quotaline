@@ -13,7 +13,7 @@ permissions: {}
 jobs:
   analyze:
     name: 🛡️ Analyze
-    uses: tox-dev/github-workflows/.github/workflows/codeql.yaml@2c1f5e4ceda37c41eb8367b5cbeaa741aa60a566 # 6.5.2
+    uses: tox-dev/github-workflows/.github/workflows/codeql.yaml@13381289334b15375958be7f7438f3c3d860e575 # 6.5.5
     permissions:
       contents: read
       security-events: write
@@ -22,8 +22,6 @@ jobs:
       paths-ignore: '["crates/*/tests","crates/demo","gnome/tests","gnome/extension/tests","website/tests"]'
   analyze-swift:
     name: 🛡️ Analyze swift
-    # A macOS build per PR is slow to schedule, so Swift is scanned on main and weekly only.
-    if: github.event_name != 'pull_request'
     runs-on: macos-26
     timeout-minutes: 60
     permissions:
