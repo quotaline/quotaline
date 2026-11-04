@@ -9,6 +9,7 @@
   ],
   "timezone": "Europe/London",
   "minimumReleaseAge": "7 days",
+  "dependencyDashboard": false,
   "schedule": ["before 6am on Tuesday"],
   "pre-commit": {
     "enabled": true,
