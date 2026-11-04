@@ -898,8 +898,27 @@ jobs:
           JOB_RESULT: ${{ needs.validate.result }}
         run: test "$JOB_RESULT" = success
       - name: 🚦 Require every applicable CI job
-        env:
-          CI_RESULTS: ${{ toJSON(needs) }}
-        run: |
-          jq -r 'to_entries[] | "\(.key): \(.value.result)"' <<< "$CI_RESULTS"
-          jq -e 'all(.[]; .result == "success" or .result == "skipped")' <<< "$CI_RESULTS" >/dev/null
+        uses: tox-dev/github-workflows/required-checks@2c1f5e4ceda37c41eb8367b5cbeaa741aa60a566 # 6.5.2
+        with:
+          needs: ${{ toJSON(needs) }}
+          # Each applicable job must pass; a job that does not apply to this change set may be skipped.
+          allow-skipped: |
+            changes
+            macos-runtimes
+            crates-coverage
+            lint
+            validate
+            dependencies
+            build
+            rust-tests
+            gnome-coverage
+            rust-coverage
+            release
+            macos-ffi-coverage
+            macos-build
+            macos-lint
+            macos-coverage
+            macos-package
+            macos-rendered
+            macos-ui
+            macos-application

@@ -8,10 +8,7 @@
     "group:all"
   ],
   "timezone": "Europe/London",
-  "minimumReleaseAge": "3 days",
-  "schedule": ["before 6am on Tuesday"],
-  "pre-commit": {
-    "enabled": true,
-    "minimumReleaseAge": "7 days"
-  }
+  "minimumReleaseAge": "7 days",
+  "enabledManagers": ["mise"],
+  "schedule": ["before 6am on Tuesday"]
 }
