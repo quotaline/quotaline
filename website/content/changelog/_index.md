@@ -11,6 +11,10 @@ Earlier macOS releases were published from the
 
 <!-- release notes -->
 
+<a name="release-0-2-2"></a>
+
+## 0.2.2 (2026-11-04)
+
 <a name="release-0-2-1"></a>
 
 ## 0.2.1 (2026-10-27)
