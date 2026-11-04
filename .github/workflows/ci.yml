@@ -7,15 +7,15 @@ on:
     types: [opened, synchronize, reopened]
   workflow_dispatch:
   # Pull requests and main run macOS 26 only, to fit the organization's five macOS runners; every runtime, package
-  # mode and distribution runs nightly.
+  # mode and distribution runs weekly.
   schedule:
-    - cron: "23 2 * * *"
+    - cron: "23 2 * * 1"
 permissions:
   contents: read
   pull-requests: read
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 jobs:
   changes:
     name: 🧭 Detect changes
@@ -898,7 +898,7 @@ jobs:
           JOB_RESULT: ${{ needs.validate.result }}
         run: test "$JOB_RESULT" = success
       - name: 🚦 Require every applicable CI job
-        uses: tox-dev/github-workflows/required-checks@2c1f5e4ceda37c41eb8367b5cbeaa741aa60a566 # 6.5.2
+        uses: tox-dev/github-workflows/required-checks@13381289334b15375958be7f7438f3c3d860e575 # 6.5.5
         with:
           needs: ${{ toJSON(needs) }}
           # Each applicable job must pass; a job that does not apply to this change set may be skipped.
