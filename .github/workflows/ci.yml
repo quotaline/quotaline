@@ -7,15 +7,15 @@ on:
     types: [opened, synchronize, reopened]
   workflow_dispatch:
   # Pull requests and main run macOS 26 only, to fit the organization's five macOS runners; every runtime, package
-  # mode and distribution runs nightly.
+  # mode and distribution runs weekly.
   schedule:
-    - cron: "23 2 * * *"
+    - cron: "15 9 * * 1"
 permissions:
   contents: read
   pull-requests: read
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 jobs:
   changes:
     name: 🧭 Detect changes
