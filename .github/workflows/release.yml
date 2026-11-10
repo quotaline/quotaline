@@ -33,25 +33,25 @@ jobs:
       tag: ${{ steps.previous.outputs.previous }}
     steps:
       - name: 📥 Check out code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        uses: actions/checkout@v7.0.1
         with:
           ref: ${{ needs.verify-source.outputs.commit }}
           fetch-depth: 0
           persist-credentials: false
       - name: 🐍 Install uv and Python
-        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        uses: astral-sh/setup-uv@v10.3.3
         with:
           version: latest-known
           python-version: "3.15"
           enable-cache: false
       - name: 📦 Install locked release tools
-        uses: tox-dev/github-workflows/install-locked-tools@13381289334b15375958be7f7438f3c3d860e575 # 6.5.5
+        uses: tox-dev/github-workflows/install-locked-tools@6.8.0
         with:
           groups: release-notes
           venv: ${{ runner.temp }}/release-tools
       - name: 🏷️ Select previous tag
         id: previous
-        uses: tox-dev/github-workflows/select-previous-tag@13381289334b15375958be7f7438f3c3d860e575 # 6.5.5
+        uses: tox-dev/github-workflows/select-previous-tag@6.8.0
         with:
           tag: ${{ env.TAG }}
   notes:
@@ -65,24 +65,24 @@ jobs:
       artifact-id: ${{ steps.upload.outputs.artifact-id }}
     steps:
       - name: 📥 Check out code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        uses: actions/checkout@v7.0.1
         with:
           ref: ${{ needs.verify-source.outputs.commit }}
           fetch-depth: 0
           persist-credentials: false
       - name: 🐍 Install uv and Python
-        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        uses: astral-sh/setup-uv@v10.3.3
         with:
           version: latest-known
           python-version: "3.15"
           enable-cache: false
       - name: 📦 Install locked release tools
-        uses: tox-dev/github-workflows/install-locked-tools@13381289334b15375958be7f7438f3c3d860e575 # 6.5.5
+        uses: tox-dev/github-workflows/install-locked-tools@6.8.0
         with:
           groups: release-notes
           venv: ${{ runner.temp }}/release-tools
       - name: 📝 Render release notes
-        uses: tox-dev/github-workflows/render-release-notes@13381289334b15375958be7f7438f3c3d860e575 # 6.5.5
+        uses: tox-dev/github-workflows/render-release-notes@6.8.0
         with:
           tag: ${{ env.TAG }}
           previous: ${{ needs.previous-tag.outputs.tag }}
@@ -91,7 +91,7 @@ jobs:
           artifact-label: Downloads
       - name: 📤 Upload release notes
         id: upload
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        uses: actions/upload-artifact@v7.0.2
         with:
           name: github-release-notes
           path: ${{ runner.temp }}/release-notes.md
@@ -107,7 +107,7 @@ jobs:
       commit: ${{ steps.commit.outputs.sha }}
     steps:
       - name: 📥 Check out code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        uses: actions/checkout@v7.0.1
         with:
           ref: ${{ env.TAG }}
           persist-credentials: false
@@ -125,7 +125,7 @@ jobs:
       artifact-id: ${{ steps.upload.outputs.artifact-id }}
     steps:
       - name: 📥 Check out code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        uses: actions/checkout@v7.0.1
         with:
           ref: ${{ needs.verify-source.outputs.commit }}
           persist-credentials: false
@@ -134,11 +134,11 @@ jobs:
           sudo apt-get update
           sudo apt-get install --yes --no-install-recommends gnome-shell unzip
       - name: 🦀 Install Rust toolchain
-        uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f # v2.0.0
+        uses: actions-rust-lang/setup-rust-toolchain@v2.0.0
         with:
           cache: false
       - name: 🧰 Install mise tools
-        uses: jdx/mise-action@6be3c7ed4c21d4f76b208d351d95aac273ebb76d # v5.2.4
+        uses: jdx/mise-action@v5.2.4
         with:
           version: 2026.10.24
           install_args: --locked
@@ -147,7 +147,7 @@ jobs:
         run: mise exec -- just release-package
       - name: 📤 Upload GNOME release package
         id: upload
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        uses: actions/upload-artifact@v7.0.2
         with:
           name: gnome-download
           path: |
@@ -169,24 +169,24 @@ jobs:
       artifact-id: ${{ steps.upload.outputs.artifact-id }}
     steps:
       - name: 📥 Check out code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        uses: actions/checkout@v7.0.1
         with:
           ref: ${{ needs.verify-source.outputs.commit }}
           fetch-depth: 0
           persist-credentials: false
       - name: 🦀 Install Rust toolchain
-        uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f # v2.0.0
+        uses: actions-rust-lang/setup-rust-toolchain@v2.0.0
         with:
           cache: false
       - name: 🧰 Install mise tools
-        uses: jdx/mise-action@6be3c7ed4c21d4f76b208d351d95aac273ebb76d # v5.2.4
+        uses: jdx/mise-action@v5.2.4
         with:
           version: 2026.10.24
           install_args: --locked
           working_directory: macos
           cache: false
       - name: 📩 Download GNOME release package
-        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        uses: actions/download-artifact@v8.0.2
         with:
           artifact-ids: ${{ needs.gnome.outputs.artifact-id }}
           path: macos/dist/gnome
@@ -256,7 +256,7 @@ jobs:
         run: Scripts/update-cask.sh "${TAG#v}" dist/homebrew/Quotaline-Homebrew.dmg
       - name: 📤 Upload artifacts
         id: upload
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        uses: actions/upload-artifact@v7.0.2
         with:
           name: downloads
           path: |
@@ -281,12 +281,12 @@ jobs:
       contents: write
     steps:
       - name: 📩 Download release downloads
-        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        uses: actions/download-artifact@v8.0.2
         with:
           artifact-ids: ${{ needs.direct.outputs.artifact-id }}
           path: .
       - name: 📩 Download release notes
-        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        uses: actions/download-artifact@v8.0.2
         with:
           artifact-ids: ${{ needs.notes.outputs.artifact-id }}
           path: ${{ runner.temp }}
@@ -308,7 +308,7 @@ jobs:
             Casks/quotaline.rb \
             "$RUNNER_TEMP/release-assets/"
       - name: 🚀 Publish GitHub release
-        uses: tox-dev/github-workflows/publish-github-release@13381289334b15375958be7f7438f3c3d860e575 # 6.5.5
+        uses: tox-dev/github-workflows/publish-github-release@6.8.0
         env:
           GH_TOKEN: ${{ github.token }}
         with:
@@ -328,7 +328,7 @@ jobs:
     steps:
       - name: 🔑 Create release App token
         id: token
-        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        uses: actions/create-github-app-token@v3.3.0
         with:
           client-id: ${{ vars.RELEASE_APP_CLIENT_ID }}
           private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
@@ -338,13 +338,13 @@ jobs:
           permission-pull-requests: write
           permission-issues: write
       - name: 📥 Check out code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        uses: actions/checkout@v7.0.1
         with:
           ref: main
           token: ${{ steps.token.outputs.token }}
           persist-credentials: true # zizmor: ignore[artipacked] this job pushes a cask branch
       - name: 📩 Download release downloads
-        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        uses: actions/download-artifact@v8.0.2
         with:
           artifact-ids: ${{ needs.direct.outputs.artifact-id }}
           path: release
@@ -430,17 +430,17 @@ jobs:
             fi
           done < "$RUNNER_TEMP/prior-release-runs"
       - name: 📥 Check out code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        uses: actions/checkout@v7.0.1
         with:
           ref: ${{ needs.verify-source.outputs.commit }}
           fetch-depth: 0
           persist-credentials: false
       - name: 🦀 Install Rust toolchain
-        uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f # v2.0.0
+        uses: actions-rust-lang/setup-rust-toolchain@v2.0.0
         with:
           cache: false
       - name: 🧰 Install mise tools
-        uses: jdx/mise-action@6be3c7ed4c21d4f76b208d351d95aac273ebb76d # v5.2.4
+        uses: jdx/mise-action@v5.2.4
         with:
           version: 2026.10.24
           install_args: --locked

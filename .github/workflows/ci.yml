@@ -33,7 +33,7 @@ jobs:
       docs: ${{ steps.paths.outputs.docs }}
     steps:
       - name: 📥 Check out code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
           fetch-depth: 0
@@ -58,7 +58,7 @@ jobs:
             -f event=pull_request -f status=success -f branch="$HEAD_REF" -f per_page=100 |
             bash macos/Scripts/ci-change-base.sh
       - name: 🧭 Detect changed paths
-        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+        uses: dorny/paths-filter@v4.0.3
         if: github.event_name != 'schedule'
         id: paths
         with:
@@ -110,7 +110,7 @@ jobs:
       ui-shards: ${{ steps.matrix.outputs.ui-shards }}
     steps:
       - name: 📥 Check out code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
       - name: ⚙️ Create temp directory
@@ -132,20 +132,20 @@ jobs:
     timeout-minutes: 30
     steps:
       - name: 📥 Check out code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
       - name: 🦀 Install Rust toolchain
-        uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f # v2.0.0
+        uses: actions-rust-lang/setup-rust-toolchain@v2.0.0
         with:
           cache: false
       - name: 🧰 Install mise tools
-        uses: jdx/mise-action@6be3c7ed4c21d4f76b208d351d95aac273ebb76d # v5.2.4
+        uses: jdx/mise-action@v5.2.4
         with:
           version: 2026.10.24
           install_args: --locked
       - name: 💾 Restore Rust build cache
-        uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+        uses: Swatinem/rust-cache@v2.9.3
         with:
           shared-key: crates-coverage
           workspaces: . -> target/llvm-cov-target
@@ -164,22 +164,22 @@ jobs:
       TMB_RUST_SCOPE: ${{ (needs.changes.outputs.crates == 'true' || needs.changes.outputs.shared == 'true' || contains(fromJSON('["workflow_dispatch","schedule"]'), github.event_name)) && 'workspace' || 'gnome' }}
     steps:
       - name: 📥 Check out code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
       - name: 🦀 Install Rust toolchain
-        uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f # v2.0.0
+        uses: actions-rust-lang/setup-rust-toolchain@v2.0.0
         with:
           cache: false
       - name: 🧰 Install mise tools
-        uses: jdx/mise-action@6be3c7ed4c21d4f76b208d351d95aac273ebb76d # v5.2.4
+        uses: jdx/mise-action@v5.2.4
         with:
           version: 2026.10.24
           install_args: --locked
       - name: 💾 Restore Rust build cache
-        uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+        uses: Swatinem/rust-cache@v2.9.3
       - name: 💾 Restore npm cache
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        uses: actions/cache@v6.1.0
         with:
           path: target/npm-cache
           key: npm-${{ runner.os }}-${{ hashFiles('gnome/package-lock.json') }}
@@ -198,11 +198,11 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: 📥 Check out code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
       - name: 🧰 Install mise tools
-        uses: jdx/mise-action@6be3c7ed4c21d4f76b208d351d95aac273ebb76d # v5.2.4
+        uses: jdx/mise-action@v5.2.4
         with:
           version: 2026.10.24
           install_args: --locked
@@ -230,15 +230,15 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: 📥 Check out code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
       - name: 🦀 Install Rust toolchain
-        uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f # v2.0.0
+        uses: actions-rust-lang/setup-rust-toolchain@v2.0.0
         with:
           cache: false
       - name: 🧰 Install mise tools
-        uses: jdx/mise-action@6be3c7ed4c21d4f76b208d351d95aac273ebb76d # v5.2.4
+        uses: jdx/mise-action@v5.2.4
         with:
           version: 2026.10.24
           install_args: --locked
@@ -252,7 +252,7 @@ jobs:
     timeout-minutes: 30
     steps:
       - name: 📥 Check out code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
       - name: 📦 Install extension packaging tools
@@ -260,25 +260,25 @@ jobs:
           sudo apt-get update
           sudo apt-get install --yes --no-install-recommends gnome-shell unzip
       - name: 🦀 Install Rust toolchain
-        uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f # v2.0.0
+        uses: actions-rust-lang/setup-rust-toolchain@v2.0.0
         with:
           cache: false
       - name: 🧰 Install mise tools
-        uses: jdx/mise-action@6be3c7ed4c21d4f76b208d351d95aac273ebb76d # v5.2.4
+        uses: jdx/mise-action@v5.2.4
         with:
           version: 2026.10.24
           install_args: --locked
       - name: 💾 Restore Rust build cache
-        uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+        uses: Swatinem/rust-cache@v2.9.3
       - name: 💾 Restore npm cache
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        uses: actions/cache@v6.1.0
         with:
           path: target/npm-cache
           key: npm-${{ runner.os }}-${{ hashFiles('gnome/package-lock.json') }}
       - name: 🏗️ Build release package
         run: mise exec -- just release-package
       - name: 📤 Upload release candidate
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        uses: actions/upload-artifact@v7.0.2
         with:
           name: release-candidate
           path: |
@@ -296,20 +296,20 @@ jobs:
       TMB_RUST_SCOPE: ${{ (needs.changes.outputs.crates == 'true' || needs.changes.outputs.shared == 'true' || contains(fromJSON('["workflow_dispatch","schedule"]'), github.event_name)) && 'workspace' || 'gnome' }}
     steps:
       - name: 📥 Check out code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
       - name: 🦀 Install Rust toolchain
-        uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f # v2.0.0
+        uses: actions-rust-lang/setup-rust-toolchain@v2.0.0
         with:
           cache: false
       - name: 🧰 Install mise tools
-        uses: jdx/mise-action@6be3c7ed4c21d4f76b208d351d95aac273ebb76d # v5.2.4
+        uses: jdx/mise-action@v5.2.4
         with:
           version: 2026.10.24
           install_args: --locked
       - name: 💾 Restore Rust build cache
-        uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+        uses: Swatinem/rust-cache@v2.9.3
         with:
           shared-key: llvm-cov
           workspaces: . -> target/llvm-cov-target
@@ -319,7 +319,7 @@ jobs:
           TMB_TMPDIR: ${{ runner.temp }}/tmb
           TMB_NEXTEST_PROFILE: ci-hosted
       - name: 📤 Upload Rust coverage report
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        uses: actions/upload-artifact@v7.0.2
         with:
           name: rust-report
           path: target/rust-coverage-report.json
@@ -336,7 +336,7 @@ jobs:
       LIBGL_ALWAYS_SOFTWARE: "1"
     steps:
       - name: 📥 Check out code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
       - name: 📦 Install GNOME Shell test dependencies
@@ -347,21 +347,21 @@ jobs:
         run: gnome-shell --version | grep '^GNOME Shell 50[.]'
         shell: bash
       - name: 🦀 Install Rust toolchain
-        uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f # v2.0.0
+        uses: actions-rust-lang/setup-rust-toolchain@v2.0.0
         with:
           cache: false
       - name: 🧰 Install mise tools
-        uses: jdx/mise-action@6be3c7ed4c21d4f76b208d351d95aac273ebb76d # v5.2.4
+        uses: jdx/mise-action@v5.2.4
         with:
           version: 2026.10.24
           install_args: --locked
       - name: 💾 Restore Rust build cache
-        uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+        uses: Swatinem/rust-cache@v2.9.3
         with:
           shared-key: llvm-cov
           workspaces: . -> target/llvm-cov-target
       - name: 💾 Restore npm cache
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        uses: actions/cache@v6.1.0
         with:
           path: target/npm-cache
           key: npm-${{ runner.os }}-${{ hashFiles('gnome/package-lock.json') }}
@@ -371,7 +371,7 @@ jobs:
           TMB_TMPDIR: ${{ runner.temp }}/tmb
           TMB_NEXTEST_PROFILE: ci-hosted
       - name: 📤 Upload GNOME Rust coverage report
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        uses: actions/upload-artifact@v7.0.2
         with:
           name: gnome-rust-report
           path: target/rust-coverage-report.json
@@ -379,7 +379,7 @@ jobs:
           retention-days: 7
       - name: 📤 Retain Shell renders and coverage reports
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        uses: actions/upload-artifact@v7.0.2
         with:
           name: shell-evidence
           path: |
@@ -394,28 +394,28 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: 📥 Check out code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
       - name: 🧰 Install mise tools
-        uses: jdx/mise-action@6be3c7ed4c21d4f76b208d351d95aac273ebb76d # v5.2.4
+        uses: jdx/mise-action@v5.2.4
         with:
           version: 2026.10.24
           install_args: --locked
       - name: 📩 Download Rust coverage report
-        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        uses: actions/download-artifact@v8.0.2
         with:
           name: rust-report
           path: target/coverage-rust
       - name: 📩 Download GNOME Rust coverage report
-        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        uses: actions/download-artifact@v8.0.2
         with:
           name: gnome-rust-report
           path: target/coverage-gnome
       - name: 📊 Merge Rust coverage
         run: mise exec -- just coverage-merge
       - name: 📤 Upload merged Rust coverage
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        uses: actions/upload-artifact@v7.0.2
         with:
           name: rust-coverage
           path: target/rust-coverage-report.json
@@ -429,23 +429,23 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: 📥 Check out code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
       - name: 🧰 Install mise tools
-        uses: jdx/mise-action@6be3c7ed4c21d4f76b208d351d95aac273ebb76d # v5.2.4
+        uses: jdx/mise-action@v5.2.4
         with:
           version: 2026.10.24
           install_args: --locked
       - name: 📩 Download release candidate
-        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        uses: actions/download-artifact@v8.0.2
         with:
           name: release-candidate
           path: target
       - name: 🔍 Verify release package
         run: mise exec -- just verify-release-package
       - name: 📤 Upload GNOME release package
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        uses: actions/upload-artifact@v7.0.2
         with:
           name: quotaline-gnome-linux-x86_64
           path: |
@@ -460,20 +460,20 @@ jobs:
     timeout-minutes: 30
     steps:
       - name: 📥 Check out code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
       - name: 🦀 Install Rust toolchain
-        uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f # v2.0.0
+        uses: actions-rust-lang/setup-rust-toolchain@v2.0.0
         with:
           cache: false
       - name: 🧰 Install mise tools
-        uses: jdx/mise-action@6be3c7ed4c21d4f76b208d351d95aac273ebb76d # v5.2.4
+        uses: jdx/mise-action@v5.2.4
         with:
           version: 2026.10.24
           install_args: --locked
       - name: 💾 Restore Rust build cache
-        uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+        uses: Swatinem/rust-cache@v2.9.3
         with:
           shared-key: macos-ffi-coverage
           workspaces: . -> target/llvm-cov-target
@@ -499,11 +499,11 @@ jobs:
         working-directory: macos
     steps:
       - name: 📥 Check out code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
       - name: 🧰 Install mise tools
-        uses: jdx/mise-action@6be3c7ed4c21d4f76b208d351d95aac273ebb76d # v5.2.4
+        uses: jdx/mise-action@v5.2.4
         with:
           version: 2026.10.24
           working_directory: macos
@@ -515,7 +515,7 @@ jobs:
           echo "cache=$(xcodebuild -version | shasum -a 256 | cut -c 1-12)" >> "$GITHUB_OUTPUT"
       - name: 💾 Restore verified Rust bindings
         id: bindings
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        uses: actions/cache@v6.1.0
         with:
           path: |
             macos/Generated/QuotalineRustFFI.xcframework
@@ -523,7 +523,7 @@ jobs:
           key: macos-bindings-v2-${{ runner.os }}-${{ runner.arch }}-${{ steps.xcode.outputs.cache }}-${{ hashFiles('crates/**', 'macos/adapter/**', 'macos/platform/**', 'macos/uniffi.toml', 'Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml', 'mise.toml', 'mise.lock', 'justfile') }}
       - name: 🧰 Install mise tools
         if: steps.bindings.outputs.cache-hit != 'true'
-        uses: jdx/mise-action@6be3c7ed4c21d4f76b208d351d95aac273ebb76d # v5.2.4
+        uses: jdx/mise-action@v5.2.4
         with:
           version: 2026.10.24
           working_directory: macos
@@ -532,13 +532,13 @@ jobs:
         run: just macos-toolchain
       - name: 💾 Restore Rust build cache
         if: steps.bindings.outputs.cache-hit != 'true'
-        uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+        uses: Swatinem/rust-cache@v2.9.3
         with:
           shared-key: macos-rust
           workspaces: . -> target/macos-rust
       - name: 💾 Restore UniFFI tools cache
         if: steps.bindings.outputs.cache-hit != 'true'
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        uses: actions/cache@v6.1.0
         with:
           path: target/uniffi-tools
           key: uniffi-0.32.2-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('Cargo.lock', 'rust-toolchain.toml') }}
@@ -549,7 +549,7 @@ jobs:
         if: steps.bindings.outputs.cache-hit != 'true'
         run: just macos-bridge-verify
       - name: 📤 Upload Rust bindings
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        uses: actions/upload-artifact@v7.0.2
         with:
           name: macos-rust-bindings
           path: |
@@ -568,11 +568,11 @@ jobs:
         working-directory: macos
     steps:
       - name: 📥 Check out code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
       - name: 🧰 Install mise tools
-        uses: jdx/mise-action@6be3c7ed4c21d4f76b208d351d95aac273ebb76d # v5.2.4
+        uses: jdx/mise-action@v5.2.4
         with:
           version: 2026.10.24
           working_directory: macos
@@ -598,17 +598,17 @@ jobs:
       QUOTALINE_RENDER_CAPTURE_ONLY: 1
     steps:
       - name: 📥 Check out code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
       - name: 🧰 Install mise tools
-        uses: jdx/mise-action@6be3c7ed4c21d4f76b208d351d95aac273ebb76d # v5.2.4
+        uses: jdx/mise-action@v5.2.4
         with:
           version: 2026.10.24
           working_directory: macos
           install_args: --locked just jq ripgrep swift uv
       - name: 📩 Download Rust bindings
-        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        uses: actions/download-artifact@v8.0.2
         with:
           name: macos-rust-bindings
           path: macos
@@ -628,7 +628,7 @@ jobs:
           echo "fingerprint=$(shasum -a 256 "$RUNNER_TEMP/coverage-toolchain" | cut -d ' ' -f 1)" >> "$GITHUB_OUTPUT"
       - name: 💾 Restore matching coverage products
         id: coverage-cache
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        uses: actions/cache@v6.1.0
         with:
           path: macos/.build/coverage
           key: macos-native-coverage-v1-${{ runner.os }}-${{ runner.arch }}-${{ steps.coverage-toolchain.outputs.fingerprint }}-${{ hashFiles('macos/Package.swift', 'macos/src/**', 'macos/tests/**', 'macos/Generated/**', 'macos/Scripts/**', 'macos/mise.*', 'mise.*', 'justfile', '.github/workflows/ci.yml') }}
@@ -641,7 +641,7 @@ jobs:
           if [[ "$COVERAGE_CACHE_HIT" == true ]]; then args+=(--skip-build); fi
           just macos-with-hang-samples 10 "$RUNNER_TEMP/hang" just macos-coverage-prepared .build/coverage "${args[@]}"
       - name: 📤 Upload hang samples
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        uses: actions/upload-artifact@v7.0.2
         if: ${{ failure() }}
         with:
           name: macos-coverage-hang
@@ -649,7 +649,7 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
       - name: 📤 Upload rendered package
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        uses: actions/upload-artifact@v7.0.2
         if: ${{ !cancelled() }}
         with:
           name: macos-rendered-package
@@ -657,7 +657,7 @@ jobs:
           if-no-files-found: warn
           retention-days: 7
       - name: 📤 Upload Swift coverage
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        uses: actions/upload-artifact@v7.0.2
         if: ${{ !cancelled() }}
         with:
           name: macos-swift-coverage
@@ -680,22 +680,22 @@ jobs:
       QUOTALINE_RENDER_CAPTURE_ONLY: 1
     steps:
       - name: 📥 Check out code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
       - name: 🧰 Install mise tools
-        uses: jdx/mise-action@6be3c7ed4c21d4f76b208d351d95aac273ebb76d # v5.2.4
+        uses: jdx/mise-action@v5.2.4
         with:
           version: 2026.10.24
           working_directory: macos
           install_args: --locked just jq ripgrep swift uv
       - name: 📩 Download Rust bindings
-        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        uses: actions/download-artifact@v8.0.2
         with:
           name: macos-rust-bindings
           path: macos
       - name: 💾 Restore SwiftPM cache
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        uses: actions/cache@v6.1.0
         with:
           path: |
             macos/.build/checkouts
@@ -722,7 +722,7 @@ jobs:
         env:
           QUOTALINE_RENDER_ARTIFACTS: ${{ runner.temp }}/settings-render
       - name: 📤 Upload hang samples
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        uses: actions/upload-artifact@v7.0.2
         if: ${{ failure() && matrix.mode == 'native' }}
         with:
           name: macos-package-hang-${{ matrix.runtime-major }}
@@ -730,7 +730,7 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
       - name: 📤 Upload rendered package
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        uses: actions/upload-artifact@v7.0.2
         if: ${{ !cancelled() }}
         with:
           name: macos-package-${{ matrix.runtime-major }}-${{ matrix.mode }}
@@ -748,11 +748,11 @@ jobs:
         working-directory: macos
     steps:
       - name: 📥 Check out code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
       - name: 📩 Download rendered package
-        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        uses: actions/download-artifact@v8.0.2
         with:
           name: macos-rendered-package
           path: ${{ runner.temp }}/settings-render
@@ -800,22 +800,22 @@ jobs:
         working-directory: macos
     steps:
       - name: 📥 Check out code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
       - name: 🧰 Install mise tools
-        uses: jdx/mise-action@6be3c7ed4c21d4f76b208d351d95aac273ebb76d # v5.2.4
+        uses: jdx/mise-action@v5.2.4
         with:
           version: 2026.10.24
           working_directory: macos
           install_args: --locked just jq uv xcodegen
       - name: 📩 Download Rust bindings
-        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        uses: actions/download-artifact@v8.0.2
         with:
           name: macos-rust-bindings
           path: macos
       - name: 💾 Restore Xcode package cache
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        uses: actions/cache@v6.1.0
         with:
           path: macos/.build/xcode-packages
           key: macos-xcode-spm-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('macos/Package.swift', 'macos/App/project.yml') }}
@@ -857,7 +857,7 @@ jobs:
         run: >-
           ditto -c -k ".build/app-derived/Build/Products/$CONFIGURATION/Quotaline.app" ".build/quotaline-$CONFIGURATION-macos.zip"
       - name: 📤 Upload application
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        uses: actions/upload-artifact@v7.0.2
         with:
           name: macos-${{ matrix.configuration }}-${{ matrix.runtime-major }}-candidate
           path: macos/.build/quotaline-${{ matrix.configuration }}-macos.zip
@@ -898,7 +898,7 @@ jobs:
           JOB_RESULT: ${{ needs.validate.result }}
         run: test "$JOB_RESULT" = success
       - name: 🚦 Require every applicable CI job
-        uses: tox-dev/github-workflows/required-checks@13381289334b15375958be7f7438f3c3d860e575 # 6.5.5
+        uses: tox-dev/github-workflows/required-checks@6.8.0
         with:
           needs: ${{ toJSON(needs) }}
           # Each applicable job must pass; a job that does not apply to this change set may be skipped.
