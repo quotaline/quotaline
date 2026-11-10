@@ -13,7 +13,7 @@ permissions: {}
 jobs:
   analyze:
     name: 🛡️ Analyze
-    uses: tox-dev/github-workflows/.github/workflows/codeql.yaml@13381289334b15375958be7f7438f3c3d860e575 # 6.5.5
+    uses: tox-dev/github-workflows/.github/workflows/codeql.yaml@bf1c3ab0aa137d307a07aad844d507af73039387 # 6.8.0
     permissions:
       contents: read
       security-events: write
@@ -29,11 +29,11 @@ jobs:
       security-events: write
     steps:
       - name: 📥 Check out code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
       - name: 🧰 Install mise tools
-        uses: jdx/mise-action@6be3c7ed4c21d4f76b208d351d95aac273ebb76d # v5.2.4
+        uses: jdx/mise-action@v5.2.4
         with:
           version: 2026.10.24
           working_directory: macos
@@ -46,7 +46,7 @@ jobs:
           echo "cache=$(xcodebuild -version | shasum -a 256 | cut -c 1-12)" >> "$GITHUB_OUTPUT"
       - name: 💾 Restore verified Rust bindings
         id: bindings
-        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        uses: actions/cache/restore@v6.1.0
         with:
           path: |
             macos/Generated/QuotalineRustFFI.xcframework
@@ -60,7 +60,7 @@ jobs:
         working-directory: macos
         run: just macos-bindings
       - name: 🛡️ Initialize CodeQL
-        uses: github/codeql-action/init@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
+        uses: github/codeql-action/init@v4.39.1
         with:
           languages: swift
           build-mode: manual
@@ -76,6 +76,6 @@ jobs:
         working-directory: macos
         run: swift build --jobs 2
       - name: 🛡️ Analyze
-        uses: github/codeql-action/analyze@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
+        uses: github/codeql-action/analyze@v4.39.1
         with:
           category: "/language:swift"
