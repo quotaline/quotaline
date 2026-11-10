@@ -2,7 +2,7 @@ import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import Shell from 'gi://Shell';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
-import {containsText, failure, findActor, indicator as getIndicator, required} from '../support/actors.js';
+import {clickButton, containsText, failure, findActor, indicator as getIndicator, required} from '../support/actors.js';
 import {afterPaint, waitOrFail} from '../support/shell-events.js';
 
 export async function run() {
@@ -26,7 +26,7 @@ export async function run() {
         const disclosure = findActor(root, actor => actor.has_style_class_name?.('tmb-disclosure'));
         if (!disclosure || !containsText(disclosure, 'Credit details'))
             throw new Error('Codex credit details are missing');
-        disclosure.emit('clicked', 1);
+        clickButton(disclosure);
         await waitOrFail(
             () =>
                 findActor(
@@ -75,12 +75,14 @@ export async function run() {
                 });
             });
         }
-        required(
-            findActor(
-                root,
-                actor => actor.has_style_class_name?.('tmb-disclosure') && containsText(actor, 'Credit details'),
+        clickButton(
+            required(
+                findActor(
+                    root,
+                    actor => actor.has_style_class_name?.('tmb-disclosure') && containsText(actor, 'Credit details'),
+                ),
             ),
-        ).emit('clicked', 1);
+        );
         await waitOrFail(
             () =>
                 !findActor(

@@ -4,6 +4,7 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import {
     accessibleName,
     buttonLabel,
+    clickButton,
     containsText,
     findActor,
     indicator as getIndicator,
@@ -67,7 +68,7 @@ export async function run() {
             global.stage.queue_redraw();
             return true;
         };
-        required(findActor(indicator.menu.box, actor => buttonLabel(actor) === 'Report issue')).emit('clicked', 1);
+        clickButton(required(findActor(indicator.menu.box, actor => buttonLabel(actor) === 'Report issue')));
         await waitOrFail(
             () => draft.includes('/issues/new?'),
             'Report issue did not open an offline draft after proxy failure',
@@ -79,7 +80,7 @@ export async function run() {
         if (!Main.extensionManager.disableExtension(UUID) || getIndicator())
             throw new Error('The failed proxy left its panel item behind after disable');
         Gio.DBusProxy.new_for_bus_finish = original;
-        proxyCalls.connect = function (signal: string, callback: (...args: unknown[]) => unknown) {
+        proxyCalls.connect = function (this: Gio.DBusProxy, signal, callback) {
             if (signal === 'g-signal' && this.g_interface_name === 'tech.bernat.Quotaline.Gnome')
                 throw new Error('Fixture signal connection failed');
             return originalConnect.call(this, signal, callback);

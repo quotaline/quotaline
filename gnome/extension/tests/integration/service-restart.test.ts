@@ -6,6 +6,7 @@ import type {Indicator} from '../../src/panel.js';
 import {
     accessibleName,
     buttonLabel,
+    clickButton,
     containsText,
     failure,
     findActor,
@@ -112,7 +113,7 @@ export async function run() {
             global.stage.queue_redraw();
             return true;
         };
-        required(findActor(indicator.menu.box, actor => buttonLabel(actor) === 'Report issue')).emit('clicked', 1);
+        clickButton(required(findActor(indicator.menu.box, actor => buttonLabel(actor) === 'Report issue')));
         await waitOrFail(
             () => draft.includes('/issues/new?'),
             'Report issue did not open an offline draft after service loss',
@@ -122,7 +123,7 @@ export async function run() {
         Gio.AppInfo.launch_default_for_uri = launchUri;
         const refresh = findActor(indicator.menu.box, actor => buttonLabel(actor)?.includes('Refresh'));
         if (!refresh) throw new Error('The disconnected menu has no refresh action');
-        refresh.emit('clicked', 1);
+        clickButton(refresh);
         await waitOrFail(
             () => refreshRequests > 0 && containsText(indicator.menu.box, 'ServiceUnknown'),
             'Refresh did not explain the disconnected service',

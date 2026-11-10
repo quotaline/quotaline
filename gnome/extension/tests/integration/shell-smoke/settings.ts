@@ -4,7 +4,7 @@ import GioUnix from 'gi://GioUnix';
 import GLib from 'gi://GLib';
 import St from 'gi://St';
 import type {TestActor} from '../../support/actors.js';
-import {buttonLabel, contentOf, instance, required} from '../../support/actors.js';
+import {buttonLabel, clickButton, contentOf, instance, required} from '../../support/actors.js';
 import {readProvider, readProviderSettings} from '../../support/dbus.js';
 import type {SmokeContext} from './helpers.js';
 import {
@@ -28,7 +28,7 @@ export async function run({
     adjustment,
     source,
 }: Pick<SmokeContext, 'root' | 'footer' | 'adjustment' | 'source'>) {
-    required(required(required(root.get_children()[0]).get_children()[1]).get_children()[2]).emit('clicked', 1);
+    clickButton(required(required(required(root.get_children()[0]).get_children()[1]).get_children()[2]));
     await afterPaint(() => {});
     if (
         !required(
@@ -40,7 +40,7 @@ export async function run({
         throw new Error('Settings footer actions are hidden on Settings');
     const diagnostics = await copiedTextAfter(
         () => {
-            required(findActor(footer, actor => buttonLabel(actor) === 'Copy diagnostics')).emit('clicked', 1);
+            clickButton(required(findActor(footer, actor => buttonLabel(actor) === 'Copy diagnostics')));
         },
         value => value?.includes('"providers"'),
     );
@@ -61,12 +61,14 @@ export async function run({
                 .every(actor => instance(actor, St.Widget).has_style_class_name('tmb-preview-cell'))
         )
             throw new Error('Settings preview does not show all quota cells in a full-height track');
-        required(
-            preview
-                .get_children()
-                .flatMap(row => row.get_children())
-                .at(-1),
-        ).emit('clicked', 1);
+        clickButton(
+            required(
+                preview
+                    .get_children()
+                    .flatMap(row => row.get_children())
+                    .at(-1),
+            ),
+        );
         await waitOrFail(
             () =>
                 (adjustment.upper <= adjustment.page_size || adjustment.value > 0) &&
@@ -160,18 +162,15 @@ export async function run({
     try {
         const settingsPage = contentOf(root.get_children()[1]);
         const copiedPath = await copiedTextAfter(() => {
-            required(findActor(settingsPage, actor => actor.accessible_name === 'Copy history path')).emit(
-                'clicked',
-                1,
-            );
+            clickButton(required(findActor(settingsPage, actor => actor.accessible_name === 'Copy history path')));
         });
         if (copiedPath !== serviceState().history_path)
             throw new Error('History path control did not copy the full path');
         for (const title of ['Privacy Policy', 'Acknowledgements'] as const)
-            required(findActor(settingsPage, actor => buttonLabel(actor) === title)).emit('clicked', 1);
-        required(findActor(settingsPage, actor => buttonLabel(actor) === 'Open folder')).emit('clicked', 1);
+            clickButton(required(findActor(settingsPage, actor => buttonLabel(actor) === title)));
+        clickButton(required(findActor(settingsPage, actor => buttonLabel(actor) === 'Open folder')));
         for (const title of ['Report issue', 'Source'] as const)
-            required(findActor(footer, actor => buttonLabel(actor) === title)).emit('clicked', 1);
+            clickButton(required(findActor(footer, actor => buttonLabel(actor) === title)));
         await waitOrFail(() => launched.some(uri => uri.includes('/issues/new?')), 'Report issue did not open a draft');
     } finally {
         Gio.AppInfo.launch_default_for_uri = launchUri;
@@ -192,9 +191,11 @@ export async function run({
             throw new Error('No document handler');
         };
         try {
-            required(
-                findActor(contentOf(root.get_children()[1]), actor => buttonLabel(actor) === 'Acknowledgements'),
-            ).emit('clicked', 1);
+            clickButton(
+                required(
+                    findActor(contentOf(root.get_children()[1]), actor => buttonLabel(actor) === 'Acknowledgements'),
+                ),
+            );
         } finally {
             Gio.AppInfo.launch_default_for_uri = launchUri;
         }
@@ -216,41 +217,49 @@ export async function run({
                 openedApp.id = this.get_id();
                 return true;
             };
-            required(
-                findActor(contentOf(root.get_children()[1]), actor => buttonLabel(actor) === 'Open Extensions'),
-            ).emit('clicked', 1);
+            clickButton(
+                required(
+                    findActor(contentOf(root.get_children()[1]), actor => buttonLabel(actor) === 'Open Extensions'),
+                ),
+            );
             if (openedApp.id !== 'org.gnome.Shell.Extensions.desktop')
                 throw new Error('Startup control did not open GNOME Extensions');
             desktopApps.new = () => null;
-            required(
-                findActor(contentOf(root.get_children()[1]), actor => buttonLabel(actor) === 'Open Extensions'),
-            ).emit('clicked', 1);
+            clickButton(
+                required(
+                    findActor(contentOf(root.get_children()[1]), actor => buttonLabel(actor) === 'Open Extensions'),
+                ),
+            );
             if (!containsText(contentOf(root.get_children()[1]), 'GNOME Extensions is not installed'))
                 throw new Error('Missing Extensions app was not explained');
             desktopApps.new = desktopApp;
             desktopMethods.launch = () => {
                 throw new Error('Cannot start Extensions');
             };
-            required(
-                findActor(contentOf(root.get_children()[1]), actor => buttonLabel(actor) === 'Open Extensions'),
-            ).emit('clicked', 1);
+            clickButton(
+                required(
+                    findActor(contentOf(root.get_children()[1]), actor => buttonLabel(actor) === 'Open Extensions'),
+                ),
+            );
             if (!containsText(contentOf(root.get_children()[1]), 'Cannot start Extensions'))
                 throw new Error('Extensions launch failure was not explained');
         } finally {
             desktopApps.new = desktopApp;
             desktopMethods.launch = desktopLaunch;
         }
-        required(
-            findActor(
-                contentOf(root.get_children()[1]),
-                actor => actor.accessible_name === 'Hide account and project details',
+        clickButton(
+            required(
+                findActor(
+                    contentOf(root.get_children()[1]),
+                    actor => actor.accessible_name === 'Hide account and project details',
+                ),
             ),
-        ).emit('clicked', 1);
+        );
         await waitOrFail(
             () => serviceSettings().hide_identity && readProvider('claude').identity === 'account',
             'Privacy control did not mask the service account',
         );
-        required(required(required(root.get_children()[0]).get_children()[1]).get_children()[0]).emit('clicked', 1);
+        clickButton(required(required(required(root.get_children()[0]).get_children()[1]).get_children()[0]));
         const accountChip = () =>
             findActor(
                 contentOf(root.get_children()[1]),
@@ -270,13 +279,15 @@ export async function run({
                     setting: serviceSettings().hide_identity,
                 })}`,
         );
-        required(required(required(root.get_children()[0]).get_children()[1]).get_children()[2]).emit('clicked', 1);
-        required(
-            findActor(
-                contentOf(root.get_children()[1]),
-                actor => actor.accessible_name === 'Hide account and project details',
+        clickButton(required(required(required(root.get_children()[0]).get_children()[1]).get_children()[2]));
+        clickButton(
+            required(
+                findActor(
+                    contentOf(root.get_children()[1]),
+                    actor => actor.accessible_name === 'Hide account and project details',
+                ),
             ),
-        ).emit('clicked', 1);
+        );
         await waitOrFail(() => !serviceSettings().hide_identity, 'Privacy control did not restore account details');
     }
     adjustment.set_value((adjustment.upper - adjustment.page_size) * 0.57);
@@ -289,7 +300,7 @@ export async function run({
         );
         if (!disclosure || !Gio.File.new_for_uri(`${source}/provider-setup.html`).query_exists(null))
             throw new Error('Claude connection details or local setup guide is missing');
-        disclosure.emit('clicked', 1);
+        clickButton(disclosure);
         const details = findActor(
             contentOf(root.get_children()[1]),
             actor =>
@@ -308,10 +319,7 @@ export async function run({
             return true;
         };
         try {
-            required(findActor(details, actor => actor.accessible_name === 'Setup guide for Claude')).emit(
-                'clicked',
-                1,
-            );
+            clickButton(required(findActor(details, actor => actor.accessible_name === 'Setup guide for Claude')));
         } finally {
             Gio.AppInfo.launch_default_for_uri = launchUri;
         }
@@ -339,12 +347,14 @@ export async function run({
         );
         await afterPaint(() => {});
         await capture('settings-provider-details');
-        required(
-            findActor(
-                contentOf(root.get_children()[1]),
-                actor => actor.accessible_name === 'Hide account and project details',
+        clickButton(
+            required(
+                findActor(
+                    contentOf(root.get_children()[1]),
+                    actor => actor.accessible_name === 'Hide account and project details',
+                ),
             ),
-        ).emit('clicked', 1);
+        );
         await waitOrFail(() => {
             const masked = findActor(
                 contentOf(root.get_children()[1]),
@@ -360,12 +370,14 @@ export async function run({
                 !containsText(masked, 'you@example.com')
             );
         }, 'Provider connection details revealed the account in privacy mode');
-        required(
-            findActor(
-                contentOf(root.get_children()[1]),
-                actor => actor.accessible_name === 'Hide account and project details',
+        clickButton(
+            required(
+                findActor(
+                    contentOf(root.get_children()[1]),
+                    actor => actor.accessible_name === 'Hide account and project details',
+                ),
             ),
-        ).emit('clicked', 1);
+        );
         await waitOrFail(
             () =>
                 !serviceSettings().hide_identity &&
@@ -375,12 +387,14 @@ export async function run({
                 ),
             'Provider connection details did not restore after privacy mode',
         );
-        required(
-            findActor(
-                contentOf(root.get_children()[1]),
-                actor => actor.accessible_name === 'Connection details for Claude',
+        clickButton(
+            required(
+                findActor(
+                    contentOf(root.get_children()[1]),
+                    actor => actor.accessible_name === 'Connection details for Claude',
+                ),
             ),
-        ).emit('clicked', 1);
+        );
         if (
             required(
                 findActor(
@@ -393,36 +407,35 @@ export async function run({
         )
             throw new Error('Claude connection details did not collapse');
         const providerPage = contentOf(root.get_children()[1]);
-        required(findActor(providerPage, actor => actor.accessible_name === 'Show all providers')).emit('clicked', 1);
+        clickButton(required(findActor(providerPage, actor => actor.accessible_name === 'Show all providers')));
         await waitOrFail(() => serviceSettings().show_all_providers, 'Provider setup switch did not open');
-        required(findActor(providerPage, actor => actor.accessible_name === 'Enable Claude')).emit('clicked', 1);
+        clickButton(required(findActor(providerPage, actor => actor.accessible_name === 'Enable Claude')));
         await waitOrFail(
             () =>
                 !readProviderSettings('claude').enabled &&
                 checkMark(findActor(providerPage, actor => actor.accessible_name === 'Enable Claude')) === '☐',
             'Disabling Claude did not update the provider control',
         );
-        required(findActor(providerPage, actor => actor.accessible_name === 'Enable Claude')).emit('clicked', 1);
+        clickButton(required(findActor(providerPage, actor => actor.accessible_name === 'Enable Claude')));
         await waitOrFail(
             () =>
                 readProviderSettings('claude').enabled &&
                 checkMark(findActor(providerPage, actor => actor.accessible_name === 'Enable Claude')) === '☑',
             'Re-enabling Claude did not restore its provider control',
         );
-        required(findActor(providerPage, actor => actor.accessible_name === 'Show all providers')).emit('clicked', 1);
+        clickButton(required(findActor(providerPage, actor => actor.accessible_name === 'Show all providers')));
         await waitOrFail(() => !serviceSettings().show_all_providers, 'Provider setup switch did not close');
-        required(findActor(providerPage, actor => actor.accessible_name === 'Connection details for Claude')).emit(
-            'clicked',
-            1,
+        clickButton(
+            required(findActor(providerPage, actor => actor.accessible_name === 'Connection details for Claude')),
         );
-        required(findActor(providerPage, actor => actor.accessible_name === 'Move Claude down')).emit('clicked', 1);
+        clickButton(required(findActor(providerPage, actor => actor.accessible_name === 'Move Claude down')));
         await waitOrFail(
             () =>
                 serviceSettings().provider_order[0] === 'codex' &&
                 findActor(providerPage, actor => actor.accessible_name === 'Move Claude up')?.reactive,
             'Moving Claude down did not reorder providers',
         );
-        required(findActor(providerPage, actor => actor.accessible_name === 'Move Claude up')).emit('clicked', 1);
+        clickButton(required(findActor(providerPage, actor => actor.accessible_name === 'Move Claude up')));
         await waitOrFail(
             () => serviceSettings().provider_order[0] === 'claude',
             'Moving Claude up did not restore its order',
@@ -450,9 +463,8 @@ export async function run({
                 .reactive
         )
             throw new Error('Claude interval can exceed 30 minutes');
-        required(findActor(claudeRow(), actor => actor.accessible_name === 'Decrease Claude refresh interval')).emit(
-            'clicked',
-            1,
+        clickButton(
+            required(findActor(claudeRow(), actor => actor.accessible_name === 'Decrease Claude refresh interval')),
         );
         await waitOrFail(
             () => readProviderSettings('claude').intervalMinutes === 29 && containsText(claudeRow(), 'Every 29 min'),
@@ -468,9 +480,8 @@ export async function run({
                 .reactive
         )
             throw new Error('Claude interval can fall below two minutes');
-        required(findActor(claudeRow(), actor => actor.accessible_name === 'Increase Claude refresh interval')).emit(
-            'clicked',
-            1,
+        clickButton(
+            required(findActor(claudeRow(), actor => actor.accessible_name === 'Increase Claude refresh interval')),
         );
         await waitOrFail(
             () => readProviderSettings('claude').intervalMinutes === 3,
@@ -478,10 +489,7 @@ export async function run({
         );
         await setSetting('interval_minutes', {...serviceSettings().interval_minutes, claude: interval});
         await changedAfter(() => {
-            required(findActor(providerPage, actor => actor.accessible_name === 'Check Claude again')).emit(
-                'clicked',
-                1,
-            );
+            clickButton(required(findActor(providerPage, actor => actor.accessible_name === 'Check Claude again')));
         });
     }
     adjustment.set_value(adjustment.upper - adjustment.page_size);
@@ -499,7 +507,7 @@ export async function run({
     const logRows = contentOf(logScroll).get_n_children();
     if (GLib.getenv('TMB_EXPECT_DEMO') === '1' && logScroll.height > Math.max(60, 28 * logRows + 16))
         throw new Error('Log entries reserve too much space in Settings');
-    required(findActor(logPage, actor => actor.accessible_name === 'Log level Debug')).emit('clicked', 1);
+    clickButton(required(findActor(logPage, actor => actor.accessible_name === 'Log level Debug')));
     if (
         findActor(
             logPage,
@@ -507,7 +515,7 @@ export async function run({
         )
     )
         throw new Error('Log severity filter did not hide information entries');
-    required(findActor(logPage, actor => actor.accessible_name === 'Log level All')).emit('clicked', 1);
+    clickButton(required(findActor(logPage, actor => actor.accessible_name === 'Log level All')));
     const logSearch = required(findActor(logPage, actor => actor.accessible_name === 'Search log'));
     instance(logSearch, St.Entry).set_text('missing message');
     if (
@@ -526,7 +534,7 @@ export async function run({
     )
         throw new Error('Log search did not restore matching entries');
     const copiedLog = await copiedTextAfter(() => {
-        required(findActor(logPage, actor => buttonLabel(actor) === 'Copy')).emit('clicked', 1);
+        clickButton(required(findActor(logPage, actor => buttonLabel(actor) === 'Copy')));
     });
     if (!copiedLog.includes('[info] Service started'))
         throw new Error('Copy log did not export the visible filtered entry');
@@ -548,8 +556,8 @@ export async function run({
         throw new Error('Log search did not match a trimmed severity and message');
     instance(logSearch, St.Entry).set_text('');
     const previewCell = findActor(logPage, actor => actor.has_style_class_name?.('tmb-preview-cell'));
-    previewCell?.emit('clicked', 1);
-    required(findActor(logPage, actor => buttonLabel(actor) === 'Show full log')).emit('clicked', 1);
+    if (previewCell) clickButton(previewCell);
+    clickButton(required(findActor(logPage, actor => buttonLabel(actor) === 'Show full log')));
     await waitOrFail(
         () => containsText(logPage, 'Show recent log') && containsText(logPage, 'Service started'),
         'Full log did not load retained entries',
@@ -575,17 +583,17 @@ export async function run({
         if (!containsText(logPage, 'Page 1 of 1') || list.get_n_children() !== 1)
             throw new Error('Full log search did not filter retained entries');
         instance(fullSearch, St.Entry).set_text('');
-        required(findActor(logPage, actor => buttonLabel(actor) === 'Older')).emit('clicked', 1);
+        clickButton(required(findActor(logPage, actor => buttonLabel(actor) === 'Older')));
         if (
             !containsText(logPage, 'Page 2 of 2') ||
             !containsText(list, 'Log fixture 0') ||
             list.get_n_children() > 200
         )
             throw new Error('Older log page did not show the earliest retained entries');
-        required(findActor(logPage, actor => buttonLabel(actor) === 'Newer')).emit('clicked', 1);
+        clickButton(required(findActor(logPage, actor => buttonLabel(actor) === 'Newer')));
         if (!containsText(logPage, 'Page 1 of 2')) throw new Error('Newer log page did not restore recent entries');
     }
-    required(findActor(logPage, actor => buttonLabel(actor) === 'Show recent log')).emit('clicked', 1);
+    clickButton(required(findActor(logPage, actor => buttonLabel(actor) === 'Show recent log')));
     await waitOrFail(
         () => containsText(logPage, 'Show full log') && containsText(logPage, 'Service started'),
         'Recent log did not reload',
@@ -593,22 +601,22 @@ export async function run({
     if (!findActor(logPage, actor => actor.text === 'ABOUT'))
         throw new Error('Returning from the full log did not restore Settings');
     const detail = required(findActor(logPage, actor => actor.accessible_name === 'Detailed logging'));
-    detail.emit('clicked', 1);
+    clickButton(detail);
     await waitOrFail(
         () =>
             serviceSettings().detailed_logging &&
             checkMark(findActor(logPage, actor => actor.accessible_name === 'Detailed logging')) === '☑',
         'Detailed logging preference was not saved',
     );
-    required(findActor(logPage, actor => actor.accessible_name === 'Detailed logging')).emit('clicked', 1);
+    clickButton(required(findActor(logPage, actor => actor.accessible_name === 'Detailed logging')));
     await waitOrFail(
         () =>
             !serviceSettings().detailed_logging &&
             checkMark(findActor(logPage, actor => actor.accessible_name === 'Detailed logging')) === '☐',
         'Detailed logging preference could not be disabled',
     );
-    required(findActor(logPage, actor => buttonLabel(actor) === 'Clear…')).emit('clicked', 1);
-    required(findActor(logPage, actor => buttonLabel(actor) === 'Confirm clear log')).emit('clicked', 1);
+    clickButton(required(findActor(logPage, actor => buttonLabel(actor) === 'Clear…')));
+    clickButton(required(findActor(logPage, actor => buttonLabel(actor) === 'Confirm clear log')));
     await waitOrFail(
         () =>
             !findActor(
@@ -636,7 +644,7 @@ export async function run({
         const refresh = refreshControl();
         if (!refresh || refresh.get_accessible().ref_state_set().contains_state(Atk.StateType.CHECKED))
             throw new Error('Token refresh is not opt-in');
-        refresh.emit('clicked', 1);
+        clickButton(refresh);
         await waitOrFail(
             () =>
                 serviceSettings().allow_token_refresh &&
@@ -644,13 +652,12 @@ export async function run({
             'Token refresh consent was not saved',
         );
         await capture('settings-token-refresh');
-        required(refreshControl()).emit('clicked', 1);
+        clickButton(required(refreshControl()));
         await waitOrFail(() => !serviceSettings().allow_token_refresh, 'Token refresh consent could not be withdrawn');
         const controlsPage = () => contentOf(root.get_children()[1]);
         const previousRetention = serviceSettings().retention_days;
-        required(findActor(controlsPage(), actor => actor.accessible_name === 'Increase history retention')).emit(
-            'clicked',
-            1,
+        clickButton(
+            required(findActor(controlsPage(), actor => actor.accessible_name === 'Increase history retention')),
         );
         await waitOrFail(
             () =>
@@ -658,9 +665,8 @@ export async function run({
                 findActor(controlsPage(), actor => actor.text === `${previousRetention + 1} days`),
             'Retention control did not save an arbitrary day',
         );
-        required(findActor(controlsPage(), actor => actor.accessible_name === 'Decrease history retention')).emit(
-            'clicked',
-            1,
+        clickButton(
+            required(findActor(controlsPage(), actor => actor.accessible_name === 'Decrease history retention')),
         );
         await waitOrFail(
             () =>
@@ -693,9 +699,8 @@ export async function run({
             () => findActor(controlsPage(), actor => actor.text === `${previousRetention} days`),
             'Restored retention did not reach Settings',
         );
-        required(findActor(controlsPage(), actor => actor.accessible_name === 'Increase analytics interval')).emit(
-            'clicked',
-            1,
+        clickButton(
+            required(findActor(controlsPage(), actor => actor.accessible_name === 'Increase analytics interval')),
         );
         await waitOrFail(
             () =>
@@ -703,9 +708,8 @@ export async function run({
                 findActor(controlsPage(), actor => actor.text === '20 min'),
             'Analytics interval control skipped a valid step',
         );
-        required(findActor(controlsPage(), actor => actor.accessible_name === 'Decrease analytics interval')).emit(
-            'clicked',
-            1,
+        clickButton(
+            required(findActor(controlsPage(), actor => actor.accessible_name === 'Decrease analytics interval')),
         );
         await waitOrFail(
             () =>
@@ -740,10 +744,7 @@ export async function run({
         );
         if (required(findActor(controlsPage(), actor => actor.accessible_name === 'Increase pace workdays')).reactive)
             throw new Error('Pace workdays control is active above its maximum');
-        required(findActor(controlsPage(), actor => actor.accessible_name === 'Decrease pace workdays')).emit(
-            'clicked',
-            1,
-        );
+        clickButton(required(findActor(controlsPage(), actor => actor.accessible_name === 'Decrease pace workdays')));
         await waitOrFail(
             () => serviceSettings().workdays === 6 && findActor(controlsPage(), actor => actor.text === '6 / week'),
             'Pace workdays control did not decrease',
@@ -755,42 +756,39 @@ export async function run({
         );
         if (required(findActor(controlsPage(), actor => actor.accessible_name === 'Decrease pace workdays')).reactive)
             throw new Error('Pace workdays control is active below its minimum');
-        required(findActor(controlsPage(), actor => actor.accessible_name === 'Increase pace workdays')).emit(
-            'clicked',
-            1,
-        );
+        clickButton(required(findActor(controlsPage(), actor => actor.accessible_name === 'Increase pace workdays')));
         await waitOrFail(
             () => serviceSettings().workdays === 5 && findActor(controlsPage(), actor => actor.text === '5 / week'),
             'Pace workdays control did not increase',
         );
         await setSetting('workdays', 7);
-        required(findActor(controlsPage(), actor => actor.accessible_name === 'Notify at 50%')).emit('clicked', 1);
+        clickButton(required(findActor(controlsPage(), actor => actor.accessible_name === 'Notify at 50%')));
         await waitOrFail(
             () =>
                 serviceSettings().notify_thresholds.includes(50) &&
                 checkMark(findActor(controlsPage(), actor => actor.accessible_name === 'Notify at 50%')) === '☑',
             'Notification threshold control did not add 50%',
         );
-        required(findActor(controlsPage(), actor => actor.accessible_name === 'Notify at 50%')).emit('clicked', 1);
+        clickButton(required(findActor(controlsPage(), actor => actor.accessible_name === 'Notify at 50%')));
         await waitOrFail(
             () => !serviceSettings().notify_thresholds.includes(50),
             'Notification threshold control did not remove 50%',
         );
-        required(findActor(controlsPage(), actor => actor.accessible_name === 'Sound')).emit('clicked', 1);
+        clickButton(required(findActor(controlsPage(), actor => actor.accessible_name === 'Sound')));
         await waitOrFail(
             () =>
                 !serviceSettings().notify_sound &&
                 checkMark(findActor(controlsPage(), actor => actor.accessible_name === 'Sound')) === '☐',
             'Notification sound control did not save',
         );
-        required(findActor(controlsPage(), actor => actor.accessible_name === 'Sound')).emit('clicked', 1);
+        clickButton(required(findActor(controlsPage(), actor => actor.accessible_name === 'Sound')));
         await waitOrFail(
             () =>
                 serviceSettings().notify_sound &&
                 checkMark(findActor(controlsPage(), actor => actor.accessible_name === 'Sound')) === '☑',
             'Notification sound control did not restore',
         );
-        required(findActor(controlsPage(), actor => actor.accessible_name === 'Notifications')).emit('clicked', 1);
+        clickButton(required(findActor(controlsPage(), actor => actor.accessible_name === 'Notifications')));
         await waitOrFail(
             () =>
                 !serviceSettings().notifications &&
@@ -804,7 +802,7 @@ export async function run({
                 ),
             'Disabling notifications did not hide event options',
         );
-        required(findActor(controlsPage(), actor => actor.accessible_name === 'Notifications')).emit('clicked', 1);
+        clickButton(required(findActor(controlsPage(), actor => actor.accessible_name === 'Notifications')));
         await waitOrFail(
             () =>
                 serviceSettings().notifications &&
@@ -823,36 +821,35 @@ export async function run({
             actor => actor.has_style_class_name?.('tmb-setting-row') && actor.get_children()[0]?.text === 'Claude',
         );
         const previousInterval = readProviderSettings('claude').intervalMinutes;
-        required(findActor(claudeControls, actor => actor.accessible_name === 'Increase Claude refresh interval')).emit(
-            'clicked',
-            1,
+        clickButton(
+            required(findActor(claudeControls, actor => actor.accessible_name === 'Increase Claude refresh interval')),
         );
         await waitOrFail(
             () => readProviderSettings('claude').intervalMinutes === required(previousInterval) + 1,
             'Provider polling interval control did not save',
         );
         await setSetting('interval_minutes', {...serviceSettings().interval_minutes, claude: previousInterval});
-        required(findActor(controlsPage(), actor => actor.accessible_name === 'Show all providers')).emit('clicked', 1);
+        clickButton(required(findActor(controlsPage(), actor => actor.accessible_name === 'Show all providers')));
         await waitOrFail(() => serviceSettings().show_all_providers, 'Provider setup switch did not open');
-        required(findActor(controlsPage(), actor => actor.accessible_name === 'Enable Claude')).emit('clicked', 1);
+        clickButton(required(findActor(controlsPage(), actor => actor.accessible_name === 'Enable Claude')));
         await waitOrFail(
             () =>
                 readProviderSettings('claude').enabled === false &&
                 checkMark(findActor(controlsPage(), actor => actor.accessible_name === 'Enable Claude')) === '☐',
             'Provider switch did not disable Claude',
         );
-        required(findActor(controlsPage(), actor => actor.accessible_name === 'Enable Claude')).emit('clicked', 1);
+        clickButton(required(findActor(controlsPage(), actor => actor.accessible_name === 'Enable Claude')));
         await waitOrFail(
             () => readProviderSettings('claude').enabled === true,
             'Provider switch did not restore Claude',
         );
-        required(findActor(controlsPage(), actor => actor.accessible_name === 'Show all providers')).emit('clicked', 1);
+        clickButton(required(findActor(controlsPage(), actor => actor.accessible_name === 'Show all providers')));
         await waitOrFail(() => !serviceSettings().show_all_providers, 'Provider setup switch did not close');
         const clearHistory = required(findActor(controlsPage(), actor => buttonLabel(actor) === 'Clear history…'));
-        clearHistory.emit('clicked', 1);
+        clickButton(clearHistory);
         if (instance(clearHistory, St.Button).get_label() !== 'Confirm clear history')
             throw new Error('History clear confirmation is missing');
-        clearHistory.emit('clicked', 1);
+        clickButton(clearHistory);
         await waitOrFail(
             () => containsText(controlsPage(), 'History cleared'),
             'History clear action did not report completion',

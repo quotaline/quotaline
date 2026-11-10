@@ -1,7 +1,7 @@
 import Clutter from 'gi://Clutter';
 import GLib from 'gi://GLib';
 import St from 'gi://St';
-import {findActor, indicator as getIndicator, instance, optionalInstance} from '../support/actors.js';
+import {clickButton, findActor, indicator as getIndicator, instance, optionalInstance} from '../support/actors.js';
 import {afterPaint, waitOrFail} from '../support/shell-events.js';
 
 async function press(keyboard: Clutter.VirtualInputDevice, symbol: number, control = false) {
@@ -23,7 +23,7 @@ export async function run() {
             actor => actor.accessible_name === 'Settings' && actor.has_style_class_name?.('tmb-tab'),
         );
         if (!settings) throw new Error('Settings tab is missing');
-        settings.emit('clicked', 1);
+        clickButton(settings);
         await waitOrFail(
             () => findActor(indicator.menu.box, actor => actor.has_style_class_name?.('tmb-model-filter')),
             'Model filter did not load',

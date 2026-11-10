@@ -1,5 +1,5 @@
 import GLib from 'gi://GLib';
-import {buttonLabel, findActor, indicator as getIndicator, required} from '../support/actors.js';
+import {buttonLabel, clickButton, findActor, indicator as getIndicator, required} from '../support/actors.js';
 import {proxyCalls} from '../support/dbus.js';
 import {afterPaint, waitOrFail} from '../support/shell-events.js';
 
@@ -11,16 +11,16 @@ export async function run() {
         indicator.menu.open(false);
         const root = findActor(indicator.menu.box, actor => actor.has_style_class_name?.('tmb-root'));
         if (!root) throw new Error('Quotaline menu is missing');
-        required(findActor(root, actor => actor.accessible_name === 'History')).emit('clicked', 1);
+        clickButton(required(findActor(root, actor => actor.accessible_name === 'History')));
         const previous = () => findActor(root, actor => buttonLabel(actor) === 'Previous reading');
         await waitOrFail(() => previous(), 'History has no previous-reading control');
-        required(previous()).emit('clicked', 1);
+        clickButton(required(previous()));
         const selected = () =>
             findActor(root, actor => actor.has_style_class_name?.('tmb-section') && actor.text?.startsWith('Selected '))
                 ?.text;
         await waitOrFail(() => selected(), 'Previous reading did not select the latest point');
         const latest = selected();
-        required(previous()).emit('clicked', 1);
+        clickButton(required(previous()));
         await waitOrFail(
             () => selected() && selected() !== latest,
             'Previous reading did not move to an earlier point',
@@ -53,16 +53,16 @@ export async function run() {
         const next = () => findActor(root, actor => buttonLabel(actor) === 'Next reading');
         const before = selected();
         const stale = intercept(false, true);
-        required(next()).emit('clicked', 1);
-        required(next()).emit('clicked', 1);
+        clickButton(required(next()));
+        clickButton(required(next()));
         await waitOrFail(() => stale.release && selected() !== before, 'Queued History reading events lost a step');
         const settled = selected();
         required<() => void>(stale.release)();
         await afterPaint();
         if (selected() !== settled) throw new Error('A late History reading response changed the current selection');
         const staleError = intercept(true, true);
-        required(previous()).emit('clicked', 1);
-        required(previous()).emit('clicked', 1);
+        clickButton(required(previous()));
+        clickButton(required(previous()));
         await waitOrFail(
             () => staleError.release && selected() !== settled,
             'History reading did not advance past a delayed error',
@@ -72,14 +72,14 @@ export async function run() {
         if (findActor(root, actor => actor.text?.includes('Invalid history reading index')))
             throw new Error('A late History reading error replaced the current state');
         intercept(true, false);
-        required(previous()).emit('clicked', 1);
+        clickButton(required(previous()));
         await waitOrFail(
             () => findActor(root, actor => actor.text?.includes('Invalid history reading index')),
             'History reading error was hidden',
         );
         proxyCalls.call = call;
         const selectedBeforeRecovery = selected();
-        required(previous()).emit('clicked', 1);
+        clickButton(required(previous()));
         await waitOrFail(
             () => selected() !== selectedBeforeRecovery,
             'History reading did not recover after a service error',

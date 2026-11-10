@@ -4,7 +4,15 @@ import Shell from 'gi://Shell';
 import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import type {TestActor} from '../support/actors.js';
-import {buttonLabel, contentOf, failure, findActor, indicator as getIndicator, required} from '../support/actors.js';
+import {
+    buttonLabel,
+    clickButton,
+    contentOf,
+    failure,
+    findActor,
+    indicator as getIndicator,
+    required,
+} from '../support/actors.js';
 import {afterPaint, waitOrFail} from '../support/shell-events.js';
 
 async function capture(name: string, root: TestActor) {
@@ -86,7 +94,7 @@ export async function run() {
         );
         if (required(cardBadges(root)).join() !== 'Pro,profile@example.com,Example Team')
             throw new Error(`Claude account chips are out of order: ${JSON.stringify(cardBadges(root))}`);
-        required(findActor(root, actor => buttonLabel(actor) === 'Example Team')).emit('clicked', 1);
+        clickButton(required(findActor(root, actor => buttonLabel(actor) === 'Example Team')));
         const copiedWorkspace = await new Promise<string>(resolve => {
             St.Clipboard.get_default().get_text(St.ClipboardType.CLIPBOARD, (_clipboard, value) => {
                 resolve(value);
@@ -107,19 +115,19 @@ export async function run() {
                   : 'claude-organization-menu',
             root,
         );
-        required(required(required(root.get_children()[0]).get_children()[1]).get_children()[2]).emit('clicked', 1);
+        clickButton(required(required(required(root.get_children()[0]).get_children()[1]).get_children()[2]));
         const privacy = findActor(
             contentOf(required(root.get_children()[1])),
             actor => actor.accessible_name === 'Hide account and project details',
         );
         if (!privacy) throw new Error('Privacy control is missing');
-        privacy.emit('clicked', 1);
-        required(required(required(root.get_children()[0]).get_children()[1]).get_children()[0]).emit('clicked', 1);
+        clickButton(privacy);
+        clickButton(required(required(required(root.get_children()[0]).get_children()[1]).get_children()[0]));
         await waitOrFail(
             () => cardBadges(root)?.join() === 'Pro,account,workspace',
             `Privacy did not mask both chips: ${JSON.stringify(cardBadges(root))}`,
         );
-        required(findActor(root, actor => buttonLabel(actor) === 'account')).emit('clicked', 1);
+        clickButton(required(findActor(root, actor => buttonLabel(actor) === 'account')));
         const copiedAccount = await new Promise<string>(resolve => {
             St.Clipboard.get_default().get_text(St.ClipboardType.CLIPBOARD, (_clipboard, value) => {
                 resolve(value);
@@ -130,14 +138,16 @@ export async function run() {
             compact ? 'claude-masked-compact-menu' : centered ? 'claude-masked-wide-menu' : 'claude-masked-menu',
             root,
         );
-        required(required(required(root.get_children()[0]).get_children()[1]).get_children()[2]).emit('clicked', 1);
-        required(
-            findActor(
-                contentOf(required(root.get_children()[1])),
-                actor => actor.accessible_name === 'Hide account and project details',
+        clickButton(required(required(required(root.get_children()[0]).get_children()[1]).get_children()[2]));
+        clickButton(
+            required(
+                findActor(
+                    contentOf(required(root.get_children()[1])),
+                    actor => actor.accessible_name === 'Hide account and project details',
+                ),
             ),
-        ).emit('clicked', 1);
-        required(required(required(root.get_children()[0]).get_children()[1]).get_children()[0]).emit('clicked', 1);
+        );
+        clickButton(required(required(required(root.get_children()[0]).get_children()[1]).get_children()[0]));
         await waitOrFail(
             () => cardBadges(root)?.join() === 'Pro,profile@example.com,Example Team',
             'Restoring privacy did not restore account chips',

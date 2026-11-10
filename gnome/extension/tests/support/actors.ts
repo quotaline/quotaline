@@ -85,6 +85,10 @@ export function buttonLabel(actor: Clutter.Actor | null | undefined): string | n
     return actor instanceof St.Button ? actor.get_label() : null;
 }
 
+export function clickButton(actor: Clutter.Actor): void {
+    instance(actor, St.Button).emit('clicked', 1);
+}
+
 export function failure(error: unknown): Error {
     return error instanceof Error ? error : new Error(String(error));
 }

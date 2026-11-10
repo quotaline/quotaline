@@ -1,6 +1,6 @@
 import GLib from 'gi://GLib';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
-import {accessibleName, findActor, indicator as getIndicator, required} from '../support/actors.js';
+import {accessibleName, clickButton, findActor, indicator as getIndicator, required} from '../support/actors.js';
 import {proxyCalls} from '../support/dbus.js';
 import {waitOrFail} from '../support/shell-events.js';
 
@@ -28,9 +28,9 @@ export async function run() {
             () => findActor(indicator.menu.box, actor => actor.accessible_name === 'History'),
             'The History tab did not load',
         );
-        required(findActor(indicator.menu.box, actor => actor.accessible_name === 'History')).emit('clicked', 1);
+        clickButton(required(findActor(indicator.menu.box, actor => actor.accessible_name === 'History')));
         await waitOrFail(() => releaseHistory, 'The History request did not return');
-        required(findActor(indicator.menu.box, actor => actor.accessible_name === 'Usage')).emit('clicked', 1);
+        clickButton(required(findActor(indicator.menu.box, actor => actor.accessible_name === 'Usage')));
         required<() => void>(releaseHistory)();
         if (
             !findActor(

@@ -3,7 +3,15 @@ import GLib from 'gi://GLib';
 import Shell from 'gi://Shell';
 import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
-import {buttonLabel, failure, findActor, indicator as getIndicator, instance, required} from '../support/actors.js';
+import {
+    buttonLabel,
+    clickButton,
+    failure,
+    findActor,
+    indicator as getIndicator,
+    instance,
+    required,
+} from '../support/actors.js';
 import {waitOrFail} from '../support/shell-events.js';
 
 function afterPaint(action: () => void) {
@@ -66,12 +74,14 @@ async function runScenario() {
         const root = required(indicator.menu.box.get_children()[0]);
         if (GLib.getenv('TMB_CENTERED_COMPACT')) {
             await afterPaint(() => {
-                required(
-                    findActor(
-                        root,
-                        actor => actor.accessible_name === 'History' && actor.has_style_class_name?.('tmb-tab'),
+                clickButton(
+                    required(
+                        findActor(
+                            root,
+                            actor => actor.accessible_name === 'History' && actor.has_style_class_name?.('tmb-tab'),
+                        ),
                     ),
-                ).emit('clicked', 1);
+                );
             });
             await waitFor(() => {
                 const chart = findActor(root, actor => actor.has_style_class_name?.('tmb-chart'));
@@ -94,12 +104,14 @@ async function runScenario() {
                 required(Main.panel.statusArea.dateMenu).container.hide();
             });
             await afterPaint(() => {
-                required(
-                    findActor(
-                        root,
-                        actor => actor.accessible_name === 'Settings' && actor.has_style_class_name?.('tmb-tab'),
+                clickButton(
+                    required(
+                        findActor(
+                            root,
+                            actor => actor.accessible_name === 'Settings' && actor.has_style_class_name?.('tmb-tab'),
+                        ),
                     ),
-                ).emit('clicked', 1);
+                );
             });
             await waitFor(
                 () =>
@@ -155,9 +167,14 @@ async function runScenario() {
         await capture('menubar-centered-popover');
         for (const tab of ['History', 'Settings'] as const) {
             await afterPaint(() => {
-                required(
-                    findActor(root, actor => actor.accessible_name === tab && actor.has_style_class_name?.('tmb-tab')),
-                ).emit('clicked', 1);
+                clickButton(
+                    required(
+                        findActor(
+                            root,
+                            actor => actor.accessible_name === tab && actor.has_style_class_name?.('tmb-tab'),
+                        ),
+                    ),
+                );
             });
             await waitFor(() =>
                 findActor(root, actor =>
@@ -236,9 +253,14 @@ async function runScenario() {
         }
         try {
             Main.layoutManager.primaryMonitor = null;
-            required(
-                findActor(root, actor => actor.accessible_name === 'Usage' && actor.has_style_class_name?.('tmb-tab')),
-            ).emit('clicked', 1);
+            clickButton(
+                required(
+                    findActor(
+                        root,
+                        actor => actor.accessible_name === 'Usage' && actor.has_style_class_name?.('tmb-tab'),
+                    ),
+                ),
+            );
             const fallback = {x: 0, width: Math.max(800, global.stage.width)};
             if (root.width < 280 || root.width > Math.min(880, fallback.width - 32))
                 throw new Error('Menu lost its width while the primary monitor was unavailable');
@@ -257,9 +279,11 @@ async function runScenario() {
     });
     const root = required(indicator.menu.box.get_children()[0]);
     await afterPaint(() => {
-        required(
-            findActor(root, actor => actor.accessible_name === 'Usage' && actor.has_style_class_name?.('tmb-tab')),
-        ).emit('clicked', 1);
+        clickButton(
+            required(
+                findActor(root, actor => actor.accessible_name === 'Usage' && actor.has_style_class_name?.('tmb-tab')),
+            ),
+        );
     });
     const rootX = root.get_transformed_position()[0];
     const indicatorX = indicator.get_transformed_position()[0];
@@ -284,9 +308,11 @@ async function runScenario() {
     await capture('menubar-right-popover');
     for (const tab of ['History', 'Settings'] as const) {
         await afterPaint(() => {
-            required(
-                findActor(root, actor => actor.accessible_name === tab && actor.has_style_class_name?.('tmb-tab')),
-            ).emit('clicked', 1);
+            clickButton(
+                required(
+                    findActor(root, actor => actor.accessible_name === tab && actor.has_style_class_name?.('tmb-tab')),
+                ),
+            );
         });
         await waitFor(() =>
             findActor(root, actor =>

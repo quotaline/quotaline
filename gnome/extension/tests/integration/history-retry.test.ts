@@ -4,6 +4,7 @@ import Shell from 'gi://Shell';
 import {
     accessibleName,
     buttonLabel,
+    clickButton,
     containsText,
     failure,
     findActor,
@@ -17,9 +18,9 @@ export async function run() {
         const indicator = getIndicator();
         if (!indicator) throw new Error('Quotaline indicator is missing');
         indicator.menu.open(false);
-        required(findActor(indicator.menu.box, actor => actor.accessible_name === 'History')).emit('clicked', 1);
+        clickButton(required(findActor(indicator.menu.box, actor => actor.accessible_name === 'History')));
         await waitOrFail(() => containsText(indicator.menu.box, '32%'), 'Initial History chart did not load');
-        required(findActor(indicator.menu.box, actor => buttonLabel(actor) === 'Now')).emit('clicked', 1);
+        clickButton(required(findActor(indicator.menu.box, actor => buttonLabel(actor) === 'Now')));
         await waitOrFail(
             () =>
                 containsText(indicator.menu.box, 'Update failed:') &&
@@ -49,7 +50,7 @@ export async function run() {
                 });
             });
         }
-        required(findActor(indicator.menu.box, actor => buttonLabel(actor) === 'Retry')).emit('clicked', 1);
+        clickButton(required(findActor(indicator.menu.box, actor => buttonLabel(actor) === 'Retry')));
         await waitOrFail(() => containsText(indicator.menu.box, '52%'), 'Retry did not refresh the History chart');
         if (containsText(indicator.menu.box, 'Update failed'))
             throw new Error('Retry did not refresh the History chart');

@@ -1,7 +1,7 @@
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import Shell from 'gi://Shell';
-import {failure, findActor, indicator as getIndicator, required} from '../support/actors.js';
+import {clickButton, failure, findActor, indicator as getIndicator, required} from '../support/actors.js';
 import {waitOrFail} from '../support/shell-events.js';
 
 export async function run() {
@@ -30,10 +30,7 @@ export async function run() {
             ['Codex', 'Keychain'],
             ['Gemini', 'Not checked yet'],
         ] as const) {
-            required(findActor(root, actor => actor.accessible_name === `Connection details for ${name}`)).emit(
-                'clicked',
-                1,
-            );
+            clickButton(required(findActor(root, actor => actor.accessible_name === `Connection details for ${name}`)));
             if (
                 !findActor(
                     root,

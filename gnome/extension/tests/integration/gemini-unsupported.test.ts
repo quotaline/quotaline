@@ -4,7 +4,7 @@ import Pango from 'gi://Pango';
 import Shell from 'gi://Shell';
 import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
-import {failure, findActor, indicator as getIndicator, instance, required} from '../support/actors.js';
+import {clickButton, failure, findActor, indicator as getIndicator, instance, required} from '../support/actors.js';
 import {afterPaint, waitOrFail} from '../support/shell-events.js';
 
 export async function run() {
@@ -63,7 +63,7 @@ export async function run() {
                 );
             });
         }
-        required(findActor(root, actor => actor.accessible_name === 'Set up Gemini')).emit('clicked', 1);
+        clickButton(required(findActor(root, actor => actor.accessible_name === 'Set up Gemini')));
         await waitOrFail(
             () =>
                 findActor(

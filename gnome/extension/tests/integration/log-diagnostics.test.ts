@@ -2,7 +2,7 @@ import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import type {LogEntry} from '../../src/service-state.js';
-import {failure, findActor, indicator as getIndicator} from '../support/actors.js';
+import {clickButton, failure, findActor, indicator as getIndicator} from '../support/actors.js';
 
 const BUS = 'tech.bernat.Quotaline.Gnome';
 const PATH = '/tech/bernat/Quotaline/Gnome';
@@ -98,7 +98,7 @@ export async function run() {
                         entry.message.includes('height='),
                 ) && entries.some(entry => entry.category === 'geometry' && entry.message.includes('tab=History')),
             () => {
-                history.emit('clicked', 1);
+                clickButton(history);
             },
         );
     } finally {

@@ -2,7 +2,7 @@ import Clutter from 'gi://Clutter';
 import GLib from 'gi://GLib';
 import {ExtensionState} from 'resource:///org/gnome/shell/misc/extensionUtils.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
-import {findActor, indicator as getIndicator} from '../support/actors.js';
+import {clickButton, findActor, indicator as getIndicator} from '../support/actors.js';
 import {waitOrFail} from '../support/shell-events.js';
 
 const UUID = 'quotaline@bernat.tech';
@@ -23,8 +23,8 @@ export async function run() {
             throw new Error('The extension was not enabled before Quit');
         const action = GLib.getenv('TMB_QUIT_ACTION');
         if (action === 'button') {
-            quit.emit('clicked', 1);
-            quit.emit('clicked', 1);
+            clickButton(quit);
+            clickButton(quit);
         } else {
             quit.grab_key_focus();
             const keyboard = global.stage.context

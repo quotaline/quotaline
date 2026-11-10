@@ -7,6 +7,7 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import {QuickMenuToggle} from 'resource:///org/gnome/shell/ui/quickSettings.js';
 import type {Indicator} from '../../src/panel.js';
 import {
+    clickButton,
     contentOf,
     failure,
     findActor,
@@ -129,12 +130,14 @@ export async function run() {
             () =>
                 `Menu theme for ${mode}; Shell scheme ${St.Settings.get().color_scheme}, contrast ${St.Settings.get().high_contrast}`,
         );
-        required(
-            findActor(
-                indicator.menu.box,
-                actor => actor.accessible_name === 'Usage' && actor.has_style_class_name?.('tmb-tab'),
+        clickButton(
+            required(
+                findActor(
+                    indicator.menu.box,
+                    actor => actor.accessible_name === 'Usage' && actor.has_style_class_name?.('tmb-tab'),
+                ),
             ),
-        ).emit('clicked', 1);
+        );
         await waitFor(() => findActor(indicator.menu.box, actor => actor.has_style_class_name?.('tmb-card')));
         await waitFor(() => widthSettled(indicator, 880), 'Usage width');
         await waitFor(() =>
@@ -169,7 +172,7 @@ export async function run() {
         Main.overview.hide();
         await waitFor(() => !Main.overview.visible);
         await capture(`usage-${mode}.png`);
-        required(findActor(indicator.menu.box, actor => actor.accessible_name === 'Settings')).emit('clicked', 1);
+        clickButton(required(findActor(indicator.menu.box, actor => actor.accessible_name === 'Settings')));
         await waitFor(() =>
             findActor(indicator.menu.box, actor => actor.has_style_class_name?.('tmb-setting-segments')),
         );
@@ -219,7 +222,7 @@ export async function run() {
                     )?.get_style() === lightStyle,
             );
         }
-        required(findActor(indicator.menu.box, actor => actor.accessible_name === 'History')).emit('clicked', 1);
+        clickButton(required(findActor(indicator.menu.box, actor => actor.accessible_name === 'History')));
         await waitFor(
             () =>
                 findActor(indicator.menu.box, actor => actor.has_style_class_name?.('tmb-chart')) &&

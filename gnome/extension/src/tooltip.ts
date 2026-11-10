@@ -43,12 +43,19 @@ export class Tooltip {
             if (actor.hover) this._arm(actor, title, body);
             else if (!focus.has_key_focus()) this.hide(actor);
         });
-        focus.connect('key-focus-in', () => {
+        const focusIn = () => {
             this._arm(actor, title, body);
-        });
-        focus.connect('key-focus-out', () => {
+        };
+        const focusOut = () => {
             if (!actor.hover) this.hide(actor);
-        });
+        };
+        if (actor instanceof St.Entry) {
+            actor.clutter_text.connect('key-focus-in', focusIn);
+            actor.clutter_text.connect('key-focus-out', focusOut);
+        } else {
+            actor.connect('key-focus-in', focusIn);
+            actor.connect('key-focus-out', focusOut);
+        }
         actor.connect('destroy', () => {
             this.hide(actor);
         });

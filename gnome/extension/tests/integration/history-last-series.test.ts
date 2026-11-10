@@ -5,7 +5,15 @@ import Pango from 'gi://Pango';
 import Shell from 'gi://Shell';
 import St from 'gi://St';
 import type {ServiceState} from '../../src/service-state.js';
-import {accessibleName, failure, findActor, indicator as getIndicator, instance, required} from '../support/actors.js';
+import {
+    accessibleName,
+    clickButton,
+    failure,
+    findActor,
+    indicator as getIndicator,
+    instance,
+    required,
+} from '../support/actors.js';
 import {afterPaint, waitOrFail} from '../support/shell-events.js';
 
 function hiddenKeys() {
@@ -34,7 +42,7 @@ export async function run() {
         indicator.menu.open(false);
         const root = findActor(indicator.menu.box, actor => actor.has_style_class_name?.('tmb-root'));
         if (!root) throw new Error('Quotaline menu is missing');
-        required(findActor(root, actor => actor.accessible_name === 'History')).emit('clicked', 1);
+        clickButton(required(findActor(root, actor => actor.accessible_name === 'History')));
         const isolate = () => findActor(root, actor => actor.has_style_class_name?.('tmb-legend-toggle'));
         await waitOrFail(() => isolate(), 'History has no series to isolate');
         required(isolate()).grab_key_focus();
@@ -54,7 +62,7 @@ export async function run() {
         const before = JSON.stringify(hiddenKeys());
         const isolatedCount = hiddenKeys().length;
         required(selected()).checked = false;
-        required(selected()).emit('clicked', 1);
+        clickButton(required(selected()));
         if (JSON.stringify(hiddenKeys()) !== before || !selected()?.checked)
             throw new Error('History hid the last visible series');
         const mark = required(findActor(selected(), actor => actor.has_style_class_name?.('tmb-legend-check')));
@@ -101,7 +109,7 @@ export async function run() {
                 const [x, y] = required(row).get_transformed_position();
                 const centerY = y + required(row).height / 2;
                 let clicked = false;
-                const signal = required(row).connect('clicked', () => {
+                const signal = instance(required(row), St.Button).connect('clicked', () => {
                     clicked = true;
                     global.stage.queue_redraw();
                 });

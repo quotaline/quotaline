@@ -4,6 +4,7 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import {
     accessibleName,
     buttonLabel,
+    clickButton,
     failure,
     findActor,
     indicator as getIndicator,
@@ -45,7 +46,7 @@ export async function run() {
             () => findActor(indicator.menu.box, actor => actor.accessible_name === 'Settings'),
             'Settings tab did not appear',
         );
-        required(findActor(indicator.menu.box, actor => actor.accessible_name === 'Settings')).emit('clicked', 1);
+        clickButton(required(findActor(indicator.menu.box, actor => actor.accessible_name === 'Settings')));
         await waitOrFail(
             () => findActor(indicator.menu.box, actor => actor.text?.startsWith('Model list unavailable:')),
             'Model request failure did not appear in Settings',
@@ -53,7 +54,7 @@ export async function run() {
         const retry = findActor(indicator.menu.box, actor => buttonLabel(actor) === 'Retry model list');
         if (!retry) throw new Error('Model list retry is missing');
         await enableActivity();
-        retry.emit('clicked', 1);
+        clickButton(retry);
         await waitOrFail(
             () => findActor(indicator.menu.box, actor => accessibleName(actor)?.startsWith('Show Claude ')),
             'Model list did not recover after retry',

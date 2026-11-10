@@ -1,6 +1,6 @@
 import GLib from 'gi://GLib';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
-import {buttonLabel, findActor, indicator as getIndicator, required} from '../support/actors.js';
+import {buttonLabel, clickButton, findActor, indicator as getIndicator, required} from '../support/actors.js';
 import {sessionCalls} from '../support/dbus.js';
 import {waitOrFail} from '../support/shell-events.js';
 
@@ -16,7 +16,7 @@ export async function run() {
         if (!indicator) throw new Error('Quotaline indicator is missing');
         indicator.menu.open(false);
         await waitFor(() => findActor(indicator.menu.box, actor => actor.accessible_name === 'Settings'));
-        required(findActor(indicator.menu.box, actor => actor.accessible_name === 'Settings')).emit('clicked', 1);
+        clickButton(required(findActor(indicator.menu.box, actor => actor.accessible_name === 'Settings')));
         await waitFor(() => findActor(indicator.menu.box, actor => buttonLabel(actor) === 'Export all history CSV…'));
         const replyMarker = GLib.getenv('TMB_PORTAL_REPLY_MARKER');
         if (replyMarker) {
@@ -31,10 +31,7 @@ export async function run() {
                 call.apply(this, args);
             };
         }
-        required(findActor(indicator.menu.box, actor => buttonLabel(actor) === 'Export all history CSV…')).emit(
-            'clicked',
-            1,
-        );
+        clickButton(required(findActor(indicator.menu.box, actor => buttonLabel(actor) === 'Export all history CSV…')));
         const expected = GLib.getenv('TMB_EXPECT_ERROR');
         await waitFor(() =>
             findActor(

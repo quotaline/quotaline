@@ -4,6 +4,7 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import type {TestActor} from '../support/actors.js';
 import {
     buttonLabel,
+    clickButton,
     containsText,
     findActor,
     indicator as getIndicator,
@@ -46,7 +47,7 @@ export async function run() {
                     disclosure('Credit estimates and totals')
                 )
                     throw new Error('Missing balance or reset summary is wrong');
-                required(disclosure('Reset credit details')).emit('clicked', 1);
+                clickButton(required(disclosure('Reset credit details')));
                 await waitOrFail(() => containsText(section(), 'Expires soon'), 'Textual reset expiry is missing');
                 const row = () =>
                     findActor(
@@ -70,19 +71,19 @@ export async function run() {
                     );
                 }, 'Reset credit explanation did not appear on hover');
                 instance(armed, St.Widget).set_hover(false);
-                required(disclosure('Reset credit details')).emit('clicked', 1);
+                clickButton(required(disclosure('Reset credit details')));
                 if (containsText(section(), 'Expires soon')) throw new Error('Reset credit details did not collapse');
                 break;
             }
             case 'reset-only':
                 if (creditTile() || !containsText(section(), '2 available') || disclosure('Reset credit details'))
                     throw new Error('Reset credits should appear without usage credits');
-                required(disclosure('Credit estimates and totals')).emit('clicked', 1);
+                clickButton(required(disclosure('Credit estimates and totals')));
                 await waitOrFail(
                     () => containsText(section(), 'Resets earned') && containsText(section(), '3'),
                     'Reset credit total is missing',
                 );
-                required(disclosure('Credit estimates and totals')).emit('clicked', 1);
+                clickButton(required(disclosure('Credit estimates and totals')));
                 if (containsText(section(), 'Resets earned')) throw new Error('Reset credit totals did not collapse');
                 break;
             default:

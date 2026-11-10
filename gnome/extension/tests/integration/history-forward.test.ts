@@ -1,6 +1,6 @@
 import GLib from 'gi://GLib';
 import St from 'gi://St';
-import {buttonLabel, findActor, indicator as getIndicator, instance, required} from '../support/actors.js';
+import {buttonLabel, clickButton, findActor, indicator as getIndicator, instance, required} from '../support/actors.js';
 import {waitOrFail} from '../support/shell-events.js';
 
 export async function run() {
@@ -10,7 +10,7 @@ export async function run() {
         indicator.menu.open(false);
         const root = findActor(indicator.menu.box, actor => actor.has_style_class_name?.('tmb-root'));
         if (!root) throw new Error('Quotaline menu is missing');
-        required(findActor(root, actor => actor.accessible_name === 'History')).emit('clicked', 1);
+        clickButton(required(findActor(root, actor => actor.accessible_name === 'History')));
         const range = () => findActor(root, actor => actor.has_style_class_name?.('tmb-history-path'))?.text;
         await waitOrFail(() => range()?.length, 'History did not load its current period');
         const period = (text: string) => findActor(root, actor => buttonLabel(actor) === text);
@@ -19,13 +19,13 @@ export async function run() {
             instance(required(period('Today')), St.Widget).has_style_class_name('tmb-tab-selected')
         )
             throw new Error('History did not start in the live Today period');
-        required(period('Day')).emit('clicked', 1);
+        clickButton(required(period('Day')));
         await waitOrFail(
             () => instance(required(period('Now')), St.Widget).has_style_class_name('tmb-tab-selected'),
             'Daily rollup stopped the live History period',
         );
         const before = range();
-        required(period('7d')).emit('clicked', 1);
+        clickButton(required(period('7d')));
         await waitOrFail(
             () =>
                 instance(required(period('7d')), St.Widget).has_style_class_name('tmb-tab-selected') &&
@@ -34,11 +34,11 @@ export async function run() {
             'Seven-day History period did not anchor its end',
         );
         const current = range();
-        required(findActor(root, actor => buttonLabel(actor) === '←')).emit('clicked', 1);
+        clickButton(required(findActor(root, actor => buttonLabel(actor) === '←')));
         await waitOrFail(() => range() && range() !== current, 'History did not page backward');
-        required(findActor(root, actor => buttonLabel(actor) === '→')).emit('clicked', 1);
+        clickButton(required(findActor(root, actor => buttonLabel(actor) === '→')));
         await waitOrFail(() => range() === current, `History did not return to the current period: ${range()}`);
-        required(period('Now')).emit('clicked', 1);
+        clickButton(required(period('Now')));
         await waitOrFail(
             () =>
                 instance(required(period('Now')), St.Widget).has_style_class_name('tmb-tab-selected') &&

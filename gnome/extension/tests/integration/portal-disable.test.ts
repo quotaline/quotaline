@@ -2,7 +2,7 @@ import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import {ExtensionState} from 'resource:///org/gnome/shell/misc/extensionUtils.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
-import {buttonLabel, findActor, indicator as getIndicator, required} from '../support/actors.js';
+import {buttonLabel, clickButton, findActor, indicator as getIndicator, required} from '../support/actors.js';
 import {afterPaint, waitOrFail} from '../support/shell-events.js';
 
 const UUID = 'quotaline@bernat.tech';
@@ -43,12 +43,9 @@ export async function run() {
         if (!indicator) throw new Error('Quotaline indicator is missing');
         indicator.menu.open(false);
         await waitFor(() => findActor(indicator.menu.box, actor => actor.accessible_name === 'Settings'));
-        required(findActor(indicator.menu.box, actor => actor.accessible_name === 'Settings')).emit('clicked', 1);
+        clickButton(required(findActor(indicator.menu.box, actor => actor.accessible_name === 'Settings')));
         await waitFor(() => findActor(indicator.menu.box, actor => buttonLabel(actor) === 'Export all history CSV…'));
-        required(findActor(indicator.menu.box, actor => buttonLabel(actor) === 'Export all history CSV…')).emit(
-            'clicked',
-            1,
-        );
+        clickButton(required(findActor(indicator.menu.box, actor => buttonLabel(actor) === 'Export all history CSV…')));
         await waitFor(() => GLib.file_test(required(GLib.getenv('TMB_PORTAL_MARKER')), GLib.FileTest.EXISTS));
         await afterPaint();
         if (!Main.extensionManager.disableExtension(UUID))

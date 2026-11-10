@@ -5,6 +5,7 @@ import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import {
     accessibleName,
+    clickButton,
     failure,
     findActor,
     indicator as getIndicator,
@@ -26,9 +27,14 @@ export async function run() {
         indicator.menu.open(false);
         await waitFor(() => indicator.accessible_name.includes('CC 5h'));
         const root = indicator.menu.box.get_children()[0];
-        required(
-            findActor(root, actor => actor.accessible_name === 'Settings' && actor.has_style_class_name?.('tmb-tab')),
-        ).emit('clicked', 1);
+        clickButton(
+            required(
+                findActor(
+                    root,
+                    actor => actor.accessible_name === 'Settings' && actor.has_style_class_name?.('tmb-tab'),
+                ),
+            ),
+        );
         await waitFor(() =>
             findActor(root, actor => accessibleName(actor)?.startsWith('Claude Current session short label')),
         );

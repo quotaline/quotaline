@@ -4,7 +4,15 @@ import Shell from 'gi://Shell';
 import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import type {TestActor} from '../support/actors.js';
-import {buttonLabel, failure, findActor, indicator as getIndicator, instance, required} from '../support/actors.js';
+import {
+    buttonLabel,
+    clickButton,
+    failure,
+    findActor,
+    indicator as getIndicator,
+    instance,
+    required,
+} from '../support/actors.js';
 import {afterPaint, waitOrFail} from '../support/shell-events.js';
 
 function accessibleNames(root: TestActor) {
@@ -58,7 +66,7 @@ export async function run() {
         indicator.menu.open(false);
         const root = required(findActor(indicator.menu.box, actor => actor.has_style_class_name?.('tmb-root')));
         const tabs = () => required(required(root.get_children()[0]).get_children()[1]).get_children();
-        required(tabs()[0]).emit('clicked', 1);
+        clickButton(required(tabs()[0]));
         await waitOrFail(
             () => findActor(root, actor => actor.accessible_name === 'Claude, ✶, 20% used'),
             `Cached quota did not reach Usage: ${accessibleNames(root)}`,
@@ -108,12 +116,12 @@ export async function run() {
         await capture(`cached-quota-${size}.png`);
         const details = findActor(root, actor => buttonLabel(actor)?.includes('Credit details'));
         if (!details) throw new Error('Credit details control disappeared after the redraw');
-        details.emit('clicked', 1);
+        clickButton(details);
         await waitOrFail(
             () => findActor(root, actor => actor.text === '$1.30'),
             'Balance without a currency did not use USD',
         );
-        required(tabs()[2]).emit('clicked', 1);
+        clickButton(required(tabs()[2]));
         await waitOrFail(
             () => findActor(root, actor => actor.accessible_name === 'Claude ✶ short label, 6 characters maximum'),
             `Symbolic window label did not reach Settings: ${accessibleNames(root)}`,

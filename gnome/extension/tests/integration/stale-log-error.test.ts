@@ -1,7 +1,14 @@
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
-import {accessibleName, buttonLabel, findActor, indicator as getIndicator, required} from '../support/actors.js';
+import {
+    accessibleName,
+    buttonLabel,
+    clickButton,
+    findActor,
+    indicator as getIndicator,
+    required,
+} from '../support/actors.js';
 import {proxyCalls} from '../support/dbus.js';
 import {afterPaint, waitOrFail} from '../support/shell-events.js';
 
@@ -27,7 +34,7 @@ export async function run() {
             () => findActor(indicator.menu.box, actor => actor.accessible_name === 'Settings'),
             'Settings did not load',
         );
-        required(findActor(indicator.menu.box, actor => actor.accessible_name === 'Settings')).emit('clicked', 1);
+        clickButton(required(findActor(indicator.menu.box, actor => actor.accessible_name === 'Settings')));
         await waitOrFail(() => pendingLog, 'Settings did not request the log');
         indicator.menu.close(false);
         proxyCalls.call = call;
@@ -42,12 +49,12 @@ export async function run() {
             throw new Error('A discarded log request showed its delayed error');
         indicator.menu.close(false);
         indicator.menu.open(false);
-        required(findActor(indicator.menu.box, actor => actor.accessible_name === 'Settings')).emit('clicked', 1);
+        clickButton(required(findActor(indicator.menu.box, actor => actor.accessible_name === 'Settings')));
         await waitOrFail(
             () => findActor(indicator.menu.box, actor => buttonLabel(actor) === 'Show full log'),
             'The log controls did not reopen',
         );
-        required(findActor(indicator.menu.box, actor => buttonLabel(actor) === 'Show full log')).emit('clicked', 1);
+        clickButton(required(findActor(indicator.menu.box, actor => buttonLabel(actor) === 'Show full log')));
         await waitOrFail(
             () => findActor(indicator.menu.box, actor => buttonLabel(actor) === 'Show recent log'),
             'The full log did not open',
@@ -64,7 +71,7 @@ export async function run() {
             }
             call.call(this, method, ...args);
         };
-        required(findActor(indicator.menu.box, actor => buttonLabel(actor) === 'Show recent log')).emit('clicked', 1);
+        clickButton(required(findActor(indicator.menu.box, actor => buttonLabel(actor) === 'Show recent log')));
         await waitOrFail(
             () => completed && !indicator.menu.isOpen,
             'Closing Settings did not cancel its pending log scroll',

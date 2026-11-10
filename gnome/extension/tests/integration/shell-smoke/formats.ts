@@ -4,7 +4,15 @@ import GLib from 'gi://GLib';
 import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import {miniBarGroups, statusVariants} from '../../../src/status-presentation.js';
-import {accessibleName, buttonLabel, contentOf, instance, optionalInstance, required} from '../../support/actors.js';
+import {
+    accessibleName,
+    buttonLabel,
+    clickButton,
+    contentOf,
+    instance,
+    optionalInstance,
+    required,
+} from '../../support/actors.js';
 import {readProvider} from '../../support/dbus.js';
 import type {SmokeContext} from './helpers.js';
 import {
@@ -32,7 +40,7 @@ export async function run({
 }: Pick<SmokeContext, 'demoPhase' | 'root' | 'adjustment' | 'panelCells' | 'indicator' | 'footer' | 'usageColor'>) {
     const statusCells = () => panelCells.get_children().filter(actor => actor.has_style_class_name?.('tmb-panel-cell'));
     if (demoPhase === 'formats') {
-        required(required(required(root.get_children()[0]).get_children()[1]).get_children()[2]).emit('clicked', 1);
+        clickButton(required(required(required(root.get_children()[0]).get_children()[1]).get_children()[2]));
         await waitOrFail(
             () => findActor(contentOf(root.get_children()[1]), actor => actor.accessible_name === 'format: stacked'),
             'Menu format controls did not render',
@@ -52,7 +60,7 @@ export async function run({
             )
         )
             throw new Error('Stacked format is not selected');
-        format.emit('clicked', 1);
+        clickButton(format);
         await waitOrFail(() => serviceSettings().format === 'inline', 'Inline menu bar format was not saved');
         await setSetting('selected_windows', ['claude:weekly', 'codex:session']);
         await waitOrFail(
@@ -168,7 +176,7 @@ export async function run({
         );
         await afterPaint(() => {});
         await capture('models-controls');
-        required(findActor(page, actor => actor.accessible_name === 'Hide unused in range')).emit('clicked', 1);
+        clickButton(required(findActor(page, actor => actor.accessible_name === 'Hide unused in range')));
         await waitOrFail(
             () =>
                 serviceSettings().hide_unused_models &&
@@ -178,7 +186,7 @@ export async function run({
                     .contains_state(Atk.StateType.CHECKED),
             'Hide-unused choice was not saved',
         );
-        required(findActor(page, actor => actor.accessible_name === 'Hide unused in range')).emit('clicked', 1);
+        clickButton(required(findActor(page, actor => actor.accessible_name === 'Hide unused in range')));
         await waitOrFail(() => !serviceSettings().hide_unused_models, 'Hide-unused choice could not be cleared');
         const filter = findActor(page, actor => actor.has_style_class_name?.('tmb-model-filter'));
         if (!filter) throw new Error('Model filter is missing');
@@ -351,9 +359,8 @@ export async function run({
             'Duplicate overrides should ignore letter case',
         );
         instance(required(codexEntry()), St.Entry).set_text('CX 5h');
-        required(findActor(page, actor => actor.accessible_name === 'Revert label for Claude Current session')).emit(
-            'clicked',
-            1,
+        clickButton(
+            required(findActor(page, actor => actor.accessible_name === 'Revert label for Claude Current session')),
         );
         await waitOrFail(
             () =>
@@ -370,7 +377,7 @@ export async function run({
                 indicator.accessible_name.includes('TEST12'),
             'The short label could not be saved after reverting it',
         );
-        required(findActor(page, actor => actor.accessible_name === 'Show all Claude models')).emit('clicked', 1);
+        clickButton(required(findActor(page, actor => actor.accessible_name === 'Show all Claude models')));
         await waitOrFail(
             () =>
                 serviceSettings().selected_windows.length > 0 &&
@@ -378,7 +385,7 @@ export async function run({
                 checkMark(findActor(page, actor => actor.accessible_name === 'Show all Claude models')) === '☐',
             'Clearing a provider model group did not update the menu bar selection',
         );
-        required(findActor(page, actor => actor.accessible_name === 'Show all Claude models')).emit('clicked', 1);
+        clickButton(required(findActor(page, actor => actor.accessible_name === 'Show all Claude models')));
         await waitOrFail(
             () =>
                 serviceSettings().selected_windows.includes('claude:session') &&
@@ -395,7 +402,7 @@ export async function run({
         const lastModel = required(findActor(page, actor => actor.accessible_name === 'Show Claude Current session'));
         if (lastModel.reactive || !containsText(page, 'At least one model stays selected.'))
             throw new Error('The last selected model is not protected from deselection');
-        lastModel.emit('clicked', 1);
+        clickButton(lastModel);
         if (serviceSettings().selected_windows.join() !== 'claude:session')
             throw new Error('The last selected model was removed');
         await setSetting('has_custom_selection', false);
@@ -403,14 +410,14 @@ export async function run({
             () => checkMark(findActor(page, actor => actor.accessible_name === 'Show Claude Current session')) === '☑',
             'Default model selection did not return after clearing the panel',
         );
-        required(findActor(page, actor => actor.accessible_name === 'Show Claude Current session')).emit('clicked', 1);
+        clickButton(required(findActor(page, actor => actor.accessible_name === 'Show Claude Current session')));
         await waitOrFail(
             () =>
                 !serviceSettings().selected_windows.includes('claude:session') &&
                 !indicator.accessible_name.includes('TEST12'),
             'Clearing one model did not remove its panel cell',
         );
-        required(findActor(page, actor => actor.accessible_name === 'Show Claude Current session')).emit('clicked', 1);
+        clickButton(required(findActor(page, actor => actor.accessible_name === 'Show Claude Current session')));
         await waitOrFail(
             () =>
                 serviceSettings().selected_windows.includes('claude:session') &&
@@ -427,7 +434,7 @@ export async function run({
         );
         const lastGroup = required(findActor(page, actor => actor.accessible_name === 'Show all Claude models'));
         if (lastGroup.reactive) throw new Error('The last selected provider group is not protected from deselection');
-        lastGroup.emit('clicked', 1);
+        clickButton(lastGroup);
         if (serviceSettings().selected_windows.length !== claudeWindows.length)
             throw new Error('The last selected provider group was removed');
         await setSetting('has_custom_selection', false);
@@ -479,15 +486,12 @@ export async function run({
             throw new Error('Stable order controls did not render their direction');
         const moveModel = findActor(page, actor => actor.accessible_name === 'Move Claude Current session down');
         if (!moveModel) throw new Error('Model order control is missing');
-        moveModel.emit('clicked', 1);
+        clickButton(moveModel);
         await waitOrFail(
             () => indicator.accessible_name.startsWith('CC 7d'),
             'Moving a model did not change panel order',
         );
-        required(findActor(page, actor => actor.accessible_name === 'Move Claude Current session up')).emit(
-            'clicked',
-            1,
-        );
+        clickButton(required(findActor(page, actor => actor.accessible_name === 'Move Claude Current session up')));
         await waitOrFail(
             () =>
                 indicator.accessible_name.startsWith('TEST12') && serviceSettings().model_order[0] === 'claude:session',
@@ -498,13 +502,13 @@ export async function run({
         );
         const moveProvider = findActor(page, actor => actor.accessible_name === 'Move Codex up');
         if (!moveProvider) throw new Error('Provider order control is missing');
-        moveProvider.emit('clicked', 1);
+        clickButton(moveProvider);
         await waitOrFail(
             () => indicator.accessible_name.startsWith('CX 5h'),
             'Moving a provider did not change panel order',
         );
         await setSetting('selected_windows', ['claude:session', 'claude:weekly', 'codex:session']);
-        required(findActor(page, actor => actor.accessible_name === 'format: mini-bars')).emit('clicked', 1);
+        clickButton(required(findActor(page, actor => actor.accessible_name === 'format: mini-bars')));
         await waitOrFail(
             () =>
                 serviceSettings().format === 'mini-bars' &&
@@ -569,7 +573,7 @@ export async function run({
             'Copilot usage did not fill its grouped mini bar proportionally',
         );
         await setSetting('selected_windows', ['claude:session', 'claude:weekly', 'codex:session']);
-        required(findActor(page, actor => actor.accessible_name === 'format: exhausted')).emit('clicked', 1);
+        clickButton(required(findActor(page, actor => actor.accessible_name === 'format: exhausted')));
         await waitOrFail(
             () =>
                 serviceSettings().format === 'exhausted' &&
@@ -579,7 +583,7 @@ export async function run({
             'At 100% format did not reach the panel',
         );
         await capture('menubar-at-100');
-        required(findActor(page, actor => actor.accessible_name === 'format: custom')).emit('clicked', 1);
+        clickButton(required(findActor(page, actor => actor.accessible_name === 'format: custom')));
         await waitOrFail(
             () =>
                 serviceSettings().format === 'custom' &&
@@ -598,7 +602,7 @@ export async function run({
             findActor(page, actor => actor instanceof St.Entry && actor.accessible_name === 'Template'),
         );
         instance(template, St.Entry).set_text('{label}-{pct}');
-        required(findActor(template.get_parent(), actor => buttonLabel(actor) === 'Save')).emit('clicked', 1);
+        clickButton(required(findActor(template.get_parent(), actor => buttonLabel(actor) === 'Save')));
         await waitOrFail(
             () => serviceSettings().template === '{label}-{pct}' && /TEST12-\d+%/.test(indicator.accessible_name),
             'Custom menu bar template did not reach the panel',
@@ -640,7 +644,7 @@ export async function run({
             control.get_accessible().ref_state_set().contains_state(Atk.StateType.CHECKED)
         )
             throw new Error('Provider setup switch is missing');
-        control.emit('clicked', 1);
+        clickButton(control);
         await waitOrFail(
             () =>
                 findActor(
@@ -655,10 +659,10 @@ export async function run({
         const settingsPage = contentOf(root.get_children()[1]);
         const reset = findActor(settingsPage, actor => buttonLabel(actor) === 'Reset all settings…');
         if (!reset) throw new Error('Reset settings control is missing');
-        reset.emit('clicked', 1);
+        clickButton(reset);
         if (instance(reset, St.Button).get_label() !== 'Confirm reset all settings')
             throw new Error('Reset settings confirmation is missing');
-        reset.emit('clicked', 1);
+        clickButton(reset);
         await waitOrFail(
             () =>
                 findActor(
@@ -667,9 +671,11 @@ export async function run({
                 ),
             'Reset did not restore provider setup settings',
         );
-        required(
-            findActor(root, actor => actor.accessible_name === 'Usage' && actor.has_style_class_name?.('tmb-tab')),
-        ).emit('clicked', 1);
+        clickButton(
+            required(
+                findActor(root, actor => actor.accessible_name === 'Usage' && actor.has_style_class_name?.('tmb-tab')),
+            ),
+        );
         await waitOrFail(
             () =>
                 readProvider('claude').status === 'unreadable' &&
@@ -690,9 +696,8 @@ export async function run({
                 ),
             })}`,
         );
-        required(findActor(contentOf(root.get_children()[1]), actor => buttonLabel(actor) === 'Open Providers')).emit(
-            'clicked',
-            1,
+        clickButton(
+            required(findActor(contentOf(root.get_children()[1]), actor => buttonLabel(actor) === 'Open Providers')),
         );
         await waitOrFail(
             () => containsText(contentOf(root.get_children()[1]), 'MENU BAR'),
@@ -713,16 +718,23 @@ export async function run({
             () => serviceState().settings.detailed_logging,
             'Detailed logging setting did not reach the Shell',
         );
-        required(
-            findActor(root, actor => actor.accessible_name === 'Usage' && actor.has_style_class_name?.('tmb-tab')),
-        ).emit('clicked', 1);
+        clickButton(
+            required(
+                findActor(root, actor => actor.accessible_name === 'Usage' && actor.has_style_class_name?.('tmb-tab')),
+            ),
+        );
         await waitOrFail(
             () => serviceLogs().some(entry => entry.message.includes('tab=Usage')),
             'The Shell did not record a tab diagnostic',
         );
-        required(
-            findActor(root, actor => actor.accessible_name === 'Settings' && actor.has_style_class_name?.('tmb-tab')),
-        ).emit('clicked', 1);
+        clickButton(
+            required(
+                findActor(
+                    root,
+                    actor => actor.accessible_name === 'Settings' && actor.has_style_class_name?.('tmb-tab'),
+                ),
+            ),
+        );
         const beforeRefresh = logSignals;
         Gio.DBus.session.call_sync(
             'tech.bernat.Quotaline.Gnome',
@@ -789,7 +801,7 @@ export async function run({
             return true;
         };
         try {
-            required(findActor(footer, actor => buttonLabel(actor) === 'Report issue')).emit('clicked', 1);
+            clickButton(required(findActor(footer, actor => buttonLabel(actor) === 'Report issue')));
             await waitOrFail(() => issueURL !== '', 'Report issue did not open a long diagnostic draft');
         } finally {
             Gio.AppInfo.launch_default_for_uri = launchIssue;

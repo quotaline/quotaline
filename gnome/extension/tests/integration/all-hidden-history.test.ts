@@ -1,7 +1,14 @@
 import Clutter from 'gi://Clutter';
 import GLib from 'gi://GLib';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
-import {accessibleName, buttonLabel, findActor, indicator as getIndicator, required} from '../support/actors.js';
+import {
+    accessibleName,
+    buttonLabel,
+    clickButton,
+    findActor,
+    indicator as getIndicator,
+    required,
+} from '../support/actors.js';
 import {proxyCalls} from '../support/dbus.js';
 import {afterPaint, waitOrFail} from '../support/shell-events.js';
 
@@ -15,7 +22,7 @@ export async function run() {
             () => findActor(indicator.menu.box, actor => actor.accessible_name === 'History'),
             'History tab is missing',
         );
-        required(findActor(indicator.menu.box, actor => actor.accessible_name === 'History')).emit('clicked', 1);
+        clickButton(required(findActor(indicator.menu.box, actor => actor.accessible_name === 'History')));
         await waitOrFail(
             () => findActor(indicator.menu.box, actor => actor.accessible_name === 'Data details'),
             'History did not load its hidden series',
@@ -46,7 +53,7 @@ export async function run() {
         }
         const hidden = findActor(indicator.menu.box, actor => accessibleName(actor)?.startsWith('☐'));
         if (!hidden) throw new Error('Hidden series cannot be restored');
-        hidden.emit('clicked', 1);
+        clickButton(hidden);
         await waitOrFail(
             () => findActor(indicator.menu.box, actor => buttonLabel(actor) === 'Previous reading'),
             'Restored series did not restore reading navigation',

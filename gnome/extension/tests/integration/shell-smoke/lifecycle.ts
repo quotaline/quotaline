@@ -4,14 +4,16 @@ import St from 'gi://St';
 import {ExtensionState} from 'resource:///org/gnome/shell/misc/extensionUtils.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import type {TestActor} from '../../support/actors.js';
-import {contentOf, indicator as getIndicator, optionalInstance, required} from '../../support/actors.js';
+import {clickButton, contentOf, indicator as getIndicator, optionalInstance, required} from '../../support/actors.js';
 import type {SmokeContext} from './helpers.js';
 import {afterPaint, capture, findActor, serviceSettings, UUID, waitOrFail} from './helpers.js';
 
 export async function run({root, press, indicator}: Pick<SmokeContext, 'root' | 'press' | 'indicator'>) {
-    required(
-        findActor(root, actor => actor.accessible_name === 'Usage' && actor.has_style_class_name?.('tmb-tab')),
-    ).emit('clicked', 1);
+    clickButton(
+        required(
+            findActor(root, actor => actor.accessible_name === 'Usage' && actor.has_style_class_name?.('tmb-tab')),
+        ),
+    );
     const usageTab = required(
         findActor(root, actor => actor.accessible_name === 'Usage' && actor.has_style_class_name?.('tmb-tab')),
     );
@@ -108,12 +110,14 @@ export async function run({root, press, indicator}: Pick<SmokeContext, 'root' | 
     await afterPaint(() => {
         layoutItem.menu.open(false);
     });
-    required(
-        findActor(
-            layoutItem.menu.box,
-            actor => actor.accessible_name === 'History' && actor.has_style_class_name?.('tmb-tab'),
+    clickButton(
+        required(
+            findActor(
+                layoutItem.menu.box,
+                actor => actor.accessible_name === 'History' && actor.has_style_class_name?.('tmb-tab'),
+            ),
         ),
-    ).emit('clicked', 1);
+    );
     if (!Main.extensionManager.disableExtension(UUID))
         throw new Error('Disabling after a tab change left its panel item behind');
     await waitOrFail(

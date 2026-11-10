@@ -3,7 +3,7 @@ import GLib from 'gi://GLib';
 import Shell from 'gi://Shell';
 import St from 'gi://St';
 import type {TestActor} from '../support/actors.js';
-import {failure, findActor, indicator as getIndicator, instance, required} from '../support/actors.js';
+import {clickButton, failure, findActor, indicator as getIndicator, instance, required} from '../support/actors.js';
 import {afterPaint, waitOrFail} from '../support/shell-events.js';
 
 function visibleDetails(actor: TestActor, text: string) {
@@ -44,7 +44,7 @@ export async function run() {
         ] as const) {
             const disclosure = findActor(root, actor => actor.accessible_name === `Connection details for ${provider}`);
             if (!disclosure) throw new Error(`${provider} connection details are missing`);
-            disclosure.emit('clicked', 1);
+            clickButton(disclosure);
             const text = `Authentication · ${expected}`;
             seen.set(text, (seen.get(text) ?? 0) + 1);
             if (visibleDetails(root, text) !== seen.get(text))

@@ -2,7 +2,7 @@ import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import Shell from 'gi://Shell';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
-import {failure, findActor, indicator as getIndicator, required} from '../support/actors.js';
+import {clickButton, failure, findActor, indicator as getIndicator, required} from '../support/actors.js';
 import {afterPaint} from '../support/shell-events.js';
 
 export async function run() {
@@ -13,7 +13,7 @@ export async function run() {
         indicator.menu.open(false);
         await afterPaint();
         const root = indicator.menu.box;
-        required(findActor(root, actor => actor.accessible_name === 'Settings')).emit('clicked', 1);
+        clickButton(required(findActor(root, actor => actor.accessible_name === 'Settings')));
         const toggle = findActor(root, actor => actor.accessible_name === 'Enable Antigravity');
         if (
             !toggle ||
