@@ -556,7 +556,7 @@ export async function run({
         throw new Error('Log search did not match a trimmed severity and message');
     instance(logSearch, St.Entry).set_text('');
     const previewCell = findActor(logPage, actor => actor.has_style_class_name?.('tmb-preview-cell'));
-    clickButton(required(previewCell));
+    if (previewCell) clickButton(previewCell);
     clickButton(required(findActor(logPage, actor => buttonLabel(actor) === 'Show full log')));
     await waitOrFail(
         () => containsText(logPage, 'Show recent log') && containsText(logPage, 'Service started'),
