@@ -3,7 +3,15 @@ import GLib from 'gi://GLib';
 import Shell from 'gi://Shell';
 import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
-import {containsText, failure, findActor, indicator as getIndicator, instance, required} from '../support/actors.js';
+import {
+    clickButton,
+    containsText,
+    failure,
+    findActor,
+    indicator as getIndicator,
+    instance,
+    required,
+} from '../support/actors.js';
 
 function waitForPainted(check: () => unknown) {
     if (check()) return Promise.resolve();
@@ -31,7 +39,7 @@ export async function run() {
                 actor => actor.has_style_class_name?.('tmb-window') && actor.accessible_name === 'Gemini, C, 30% used',
             );
         if (inactiveRow()) throw new Error('Usage showed a model outside the default selection');
-        required(findActor(root, actor => actor.accessible_name === 'Settings')).emit('clicked', 1);
+        clickButton(required(findActor(root, actor => actor.accessible_name === 'Settings')));
         const model = () => findActor(root, actor => actor.accessible_name === 'Show Gemini C');
         await waitForPainted(() => model());
         const group = () =>
@@ -69,11 +77,11 @@ export async function run() {
                 });
             });
         }
-        required(model()).emit('clicked', 1);
+        clickButton(required(model()));
         await waitForPainted(() => model()?.checked);
         if (!containsText(group(), '3 of 3 shown'))
             throw new Error('Selecting the third Gemini model did not update Settings');
-        required(findActor(root, actor => actor.accessible_name === 'Usage')).emit('clicked', 1);
+        clickButton(required(findActor(root, actor => actor.accessible_name === 'Usage')));
         await waitForPainted(() => inactiveRow());
         if (!containsText(inactiveRow(), 'inactive'))
             throw new Error('Selected inactive model was not identified in Usage');

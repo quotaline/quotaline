@@ -4,7 +4,15 @@ import Shell from 'gi://Shell';
 import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import type {TestActor} from '../support/actors.js';
-import {buttonLabel, failure, findActor, indicator as getIndicator, instance, required} from '../support/actors.js';
+import {
+    buttonLabel,
+    clickButton,
+    failure,
+    findActor,
+    indicator as getIndicator,
+    instance,
+    required,
+} from '../support/actors.js';
 import {afterPaint, waitOrFail} from '../support/shell-events.js';
 
 export async function run() {
@@ -15,7 +23,7 @@ export async function run() {
         const root = findActor(indicator.menu.box, actor => actor.has_style_class_name?.('tmb-root'));
         const disclosure = () => findActor(root, actor => buttonLabel(actor)?.includes('Details (1)'));
         await waitOrFail(() => disclosure(), 'Copilot provider details did not load');
-        required(disclosure()).emit('clicked', 1);
+        clickButton(required(disclosure()));
         const row = () =>
             findActor(
                 root,

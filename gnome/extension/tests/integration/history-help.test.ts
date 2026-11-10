@@ -6,6 +6,7 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import type {TestActor} from '../support/actors.js';
 import {
     buttonLabel,
+    clickButton,
     failure,
     findActor,
     indicator as getIndicator,
@@ -26,22 +27,24 @@ export async function run() {
         if (!indicator) throw new Error('Quotaline indicator is missing');
         indicator.menu.open(false);
         await waitFor(() => findActor(indicator.menu.box, actor => actor.accessible_name === 'History'));
-        required(findActor(indicator.menu.box, actor => actor.accessible_name === 'History')).emit('clicked', 1);
+        clickButton(required(findActor(indicator.menu.box, actor => actor.accessible_name === 'History')));
         const mode = GLib.getenv('TMB_HISTORY_HELP') ?? 'metric';
         if (mode === 'stack') {
             await waitFor(() => findActor(indicator.menu.box, actor => actor.accessible_name === 'Metric'));
-            required(findActor(indicator.menu.box, actor => actor.accessible_name === 'Metric')).emit('clicked', 1);
+            clickButton(required(findActor(indicator.menu.box, actor => actor.accessible_name === 'Metric')));
             await waitFor(() =>
                 findActor(indicator.menu.box, actor => actor.accessible_name === 'Choose metric: modelCredits'),
             );
-            required(
-                findActor(indicator.menu.box, actor => actor.accessible_name === 'Choose metric: modelCredits'),
-            ).emit('clicked', 1);
+            clickButton(
+                required(
+                    findActor(indicator.menu.box, actor => actor.accessible_name === 'Choose metric: modelCredits'),
+                ),
+            );
         }
         if (mode === 'from' || mode === 'to' || mode === 'apply') {
             if (!findActor(indicator.menu.box, actor => actor.hint_text === 'From YYYY-MM-DD')) {
                 await waitFor(() => findActor(indicator.menu.box, actor => buttonLabel(actor) === 'Custom'));
-                required(findActor(indicator.menu.box, actor => buttonLabel(actor) === 'Custom')).emit('clicked', 1);
+                clickButton(required(findActor(indicator.menu.box, actor => buttonLabel(actor) === 'Custom')));
             }
         }
         const names: Record<string, string> = {

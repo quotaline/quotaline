@@ -2,7 +2,14 @@ import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import {ExtensionState} from 'resource:///org/gnome/shell/misc/extensionUtils.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
-import {accessibleName, buttonLabel, findActor, indicator as getIndicator, required} from '../support/actors.js';
+import {
+    accessibleName,
+    buttonLabel,
+    clickButton,
+    findActor,
+    indicator as getIndicator,
+    required,
+} from '../support/actors.js';
 import {afterPaint, waitOrFail} from '../support/shell-events.js';
 
 const UUID = 'quotaline@bernat.tech';
@@ -18,7 +25,7 @@ export async function run() {
             () => findActor(indicator.menu.box, actor => actor.accessible_name === 'Settings'),
             'Settings did not load',
         );
-        required(findActor(indicator.menu.box, actor => actor.accessible_name === 'Settings')).emit('clicked', 1);
+        clickButton(required(findActor(indicator.menu.box, actor => actor.accessible_name === 'Settings')));
         await waitOrFail(
             () => findActor(indicator.menu.box, actor => buttonLabel(actor) === 'Export all history CSV…'),
             'The export control did not load',
@@ -36,10 +43,7 @@ export async function run() {
             }
             return subscribe.call(this, busName, interfaceName, signalName, ...args);
         };
-        required(findActor(indicator.menu.box, actor => buttonLabel(actor) === 'Export all history CSV…')).emit(
-            'clicked',
-            1,
-        );
+        clickButton(required(findActor(indicator.menu.box, actor => buttonLabel(actor) === 'Export all history CSV…')));
         if (!response.rejected) throw new Error('The save dialog did not subscribe to its response');
         if (!Main.extensionManager.disableExtension(UUID))
             throw new Error('The extension did not disable after the save dialog failed');

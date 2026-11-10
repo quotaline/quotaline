@@ -2,7 +2,7 @@ import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import Shell from 'gi://Shell';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
-import {buttonLabel, failure, findActor, indicator as getIndicator, required} from '../support/actors.js';
+import {buttonLabel, clickButton, failure, findActor, indicator as getIndicator, required} from '../support/actors.js';
 import {afterPaint, waitOrFail} from '../support/shell-events.js';
 
 export async function run() {
@@ -117,7 +117,7 @@ export async function run() {
             });
         }
         if (expected) {
-            required(findActor(card(), actor => buttonLabel(actor) === 'Review providers')).emit('clicked', 1);
+            clickButton(required(findActor(card(), actor => buttonLabel(actor) === 'Review providers')));
             await waitOrFail(
                 () =>
                     findActor(
@@ -129,12 +129,12 @@ export async function run() {
             );
             const disclosure = findActor(root, actor => actor.accessible_name === 'Connection details for Cursor');
             if (!disclosure) throw new Error('Cursor connection details are missing');
-            disclosure.emit('clicked', 1);
+            clickButton(disclosure);
             if (!findActor(root, actor => actor.visible && actor.text === 'Authentication · Credential found'))
                 throw new Error('Cursor connection details lost the valid credential after a quota error');
         }
         if (!detected) {
-            required(findActor(card(), actor => buttonLabel(actor) === 'Review providers')).emit('clicked', 1);
+            clickButton(required(findActor(card(), actor => buttonLabel(actor) === 'Review providers')));
             await waitOrFail(
                 () =>
                     findActor(
@@ -144,11 +144,16 @@ export async function run() {
                     ),
                 'Review providers did not open Settings',
             );
-            required(
-                findActor(root, actor => actor.accessible_name === 'Usage' && actor.has_style_class_name?.('tmb-tab')),
-            ).emit('clicked', 1);
+            clickButton(
+                required(
+                    findActor(
+                        root,
+                        actor => actor.accessible_name === 'Usage' && actor.has_style_class_name?.('tmb-tab'),
+                    ),
+                ),
+            );
             await waitOrFail(() => card(), 'First-run card vanished after reviewing providers');
-            required(findActor(card(), actor => buttonLabel(actor) === 'Got it')).emit('clicked', 1);
+            clickButton(required(findActor(card(), actor => buttonLabel(actor) === 'Got it')));
             await waitOrFail(() => !card(), 'Got it did not dismiss the first-run card');
         }
         indicator.menu.close(false);

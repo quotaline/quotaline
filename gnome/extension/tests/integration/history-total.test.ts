@@ -4,6 +4,7 @@ import Shell from 'gi://Shell';
 import {
     accessibleName,
     buttonLabel,
+    clickButton,
     containsText,
     failure,
     findActor,
@@ -19,7 +20,7 @@ export async function run() {
         indicator.menu.open(false);
         const root = findActor(indicator.menu.box, actor => actor.has_style_class_name?.('tmb-root'));
         if (!root) throw new Error('Quotaline menu is missing');
-        required(findActor(root, actor => actor.accessible_name === 'History')).emit('clicked', 1);
+        clickButton(required(findActor(root, actor => actor.accessible_name === 'History')));
         const legend = (name: string) =>
             findActor(
                 root,
@@ -41,7 +42,7 @@ export async function run() {
             !required(legend('Surface · cli')).accessible_name.includes(' · 4 ·')
         )
             throw new Error('Count values do not match the macOS compact legend format');
-        required(legend('Surface · cli')).emit('clicked', 1);
+        clickButton(required(legend('Surface · cli')));
         await waitOrFail(
             () => containsText(root, '8 total') && legend('Surface · cli')?.accessible_name.startsWith('☐'),
             'Hiding a breakdown changed the canonical count',
@@ -68,14 +69,14 @@ export async function run() {
             });
         }
         const next = () => findActor(root, actor => buttonLabel(actor) === 'Next reading');
-        required(next()).emit('clicked', 1);
+        clickButton(required(next()));
         await waitOrFail(
             () =>
                 legend('cli')?.accessible_name.includes(' · — ·') &&
                 legend('Surface · cli')?.accessible_name.includes(' · 4 ·'),
             'Inspecting yesterday did not mark the absent current-day series',
         );
-        required(next()).emit('clicked', 1);
+        clickButton(required(next()));
         await waitOrFail(
             () =>
                 legend('Surface · cli')?.accessible_name.includes(' · — ·') &&

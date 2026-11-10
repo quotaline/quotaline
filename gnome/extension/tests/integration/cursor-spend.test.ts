@@ -1,7 +1,7 @@
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import Shell from 'gi://Shell';
-import {buttonLabel, failure, findActor, indicator as getIndicator, required} from '../support/actors.js';
+import {buttonLabel, clickButton, failure, findActor, indicator as getIndicator, required} from '../support/actors.js';
 import {afterPaint, waitOrFail} from '../support/shell-events.js';
 
 export async function run() {
@@ -21,10 +21,10 @@ export async function run() {
             !findActor(spend(), actor => actor.has_style_class_name?.('tmb-meter-fill'))
         )
             throw new Error('Cursor limit warning or meter is missing');
-        required(findActor(root, actor => buttonLabel(actor)?.startsWith('▸ Details'))).emit('clicked', 1);
+        clickButton(required(findActor(root, actor => buttonLabel(actor)?.startsWith('▸ Details'))));
         if (!findActor(root, actor => actor.has_style_class_name?.('tmb-key-value')))
             throw new Error('Cursor detail row did not expand');
-        required(findActor(root, actor => buttonLabel(actor)?.startsWith('▾ Details'))).emit('clicked', 1);
+        clickButton(required(findActor(root, actor => buttonLabel(actor)?.startsWith('▾ Details'))));
         if (findActor(root, actor => actor.has_style_class_name?.('tmb-key-value')))
             throw new Error('Cursor detail row did not collapse');
         await waitOrFail(

@@ -8,7 +8,7 @@ import {QuickMenuToggle} from 'resource:///org/gnome/shell/ui/quickSettings.js';
 import type {PanelState} from '../../src/service-state.js';
 import {statusIconTone} from '../../src/status-presentation.js';
 import type {TestActor} from '../support/actors.js';
-import {buttonLabel, indicator as getIndicator, instance, required} from '../support/actors.js';
+import {buttonLabel, clickButton, indicator as getIndicator, instance, required} from '../support/actors.js';
 import {readProvider} from '../support/dbus.js';
 import * as fixtures from '../support/state.js';
 import {run as runFormats} from './shell-smoke/formats.js';
@@ -275,7 +275,7 @@ async function runScenario() {
         );
         probe.destroy();
         quick.menu.close(BoxPointer.PopupAnimation.NONE);
-        widget.emit('clicked', 1);
+        clickButton(widget);
     } else {
         indicator.menu.open(false);
     }

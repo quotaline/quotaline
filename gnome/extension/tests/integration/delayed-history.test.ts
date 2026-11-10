@@ -1,7 +1,15 @@
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
-import {buttonLabel, containsText, failure, findActor, indicator as getIndicator, required} from '../support/actors.js';
+import {
+    buttonLabel,
+    clickButton,
+    containsText,
+    failure,
+    findActor,
+    indicator as getIndicator,
+    required,
+} from '../support/actors.js';
 import {waitOrFail} from '../support/shell-events.js';
 
 function waitFor(check: () => unknown) {
@@ -73,17 +81,17 @@ export async function run() {
         if (!indicator) throw new Error('Quotaline indicator is missing');
         indicator.menu.open(false);
         await waitFor(() => containsText(indicator.menu.box, 'Cost history error'));
-        required(findActor(indicator.menu.box, actor => actor.accessible_name === 'History')).emit('clicked', 1);
+        clickButton(required(findActor(indicator.menu.box, actor => actor.accessible_name === 'History')));
         await waitFor(() => containsText(indicator.menu.box, 'Loading history'));
         await waitForHistoryCall();
-        required(findActor(indicator.menu.box, actor => buttonLabel(actor) === '←')).emit('clicked', 1);
-        required(findActor(indicator.menu.box, actor => buttonLabel(actor) === 'Now')).emit('clicked', 1);
+        clickButton(required(findActor(indicator.menu.box, actor => buttonLabel(actor) === '←')));
+        clickButton(required(findActor(indicator.menu.box, actor => buttonLabel(actor) === 'Now')));
         await waitForHistoryCall();
         await releaseHistory();
         await afterPaint();
         await releaseHistory();
         await waitFor(() => containsText(indicator.menu.box, 'History unavailable'));
-        required(findActor(indicator.menu.box, actor => buttonLabel(actor) === 'Retry')).emit('clicked', 1);
+        clickButton(required(findActor(indicator.menu.box, actor => buttonLabel(actor) === 'Retry')));
         await waitForHistoryCall();
         indicator.menu.close(false);
         await afterPaint();

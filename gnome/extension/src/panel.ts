@@ -619,7 +619,7 @@ export class TokenPanel {
             this._panelSignature = null;
             this._render();
         };
-        this._themeSignals = ['notify::color-scheme', 'notify::high-contrast'].map(signal =>
+        this._themeSignals = (['notify::color-scheme', 'notify::high-contrast'] as const).map(signal =>
             this._themeSettings.connect(signal, themeChanged),
         );
         themeChanged();

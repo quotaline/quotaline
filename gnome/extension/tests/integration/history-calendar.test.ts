@@ -2,7 +2,15 @@ import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import St from 'gi://St';
 import type {HistoryAction, HistoryView, HistoryViewResponse} from '../../src/service-state.js';
-import {buttonLabel, failure, findActor, indicator as getIndicator, instance, required} from '../support/actors.js';
+import {
+    buttonLabel,
+    clickButton,
+    failure,
+    findActor,
+    indicator as getIndicator,
+    instance,
+    required,
+} from '../support/actors.js';
 import {proxyCalls} from '../support/dbus.js';
 import {waitOrFail} from '../support/shell-events.js';
 
@@ -81,7 +89,7 @@ export async function run() {
         indicator.menu.open(false);
         const root = findActor(indicator.menu.box, actor => actor.has_style_class_name?.('tmb-root'));
         if (!root) throw new Error('Quotaline menu is missing');
-        required(findActor(root, actor => actor.accessible_name === 'History')).emit('clicked', 1);
+        clickButton(required(findActor(root, actor => actor.accessible_name === 'History')));
         await waitOrFail(
             () => requests.length > 0 && requests.at(-1)?.done,
             'History did not request its initial period',
@@ -98,7 +106,7 @@ export async function run() {
             const expected = actions[text] ?? {kind: 'period', days: Number.parseInt(text, 10)};
             const actor = control(text);
             if (!actor) throw new Error(`Missing History control: ${text}`);
-            actor.emit('clicked', 1);
+            clickButton(actor);
             await waitOrFail(
                 () =>
                     requests.slice(before).some(request => {
@@ -116,9 +124,9 @@ export async function run() {
             return currentView();
         };
         const chooseMetric = async (id: string) => {
-            required(findActor(root, actor => actor.accessible_name === 'Metric')).emit('clicked', 1);
+            clickButton(required(findActor(root, actor => actor.accessible_name === 'Metric')));
             const before = requests.length;
-            required(findActor(root, actor => actor.accessible_name === `Choose metric: ${id}`)).emit('clicked', 1);
+            clickButton(required(findActor(root, actor => actor.accessible_name === `Choose metric: ${id}`)));
             await waitOrFail(
                 () => requests.length > before && requests.at(-1)?.done,
                 `History metric did not load: ${id}`,
@@ -141,7 +149,7 @@ export async function run() {
             throw new Error('Seven-day period did not use local calendar days');
         const utcControl = () => findActor(root, actor => actor.accessible_name === 'UTC');
         const beforeUtc = requests.length;
-        required(utcControl()).emit('clicked', 1);
+        clickButton(required(utcControl()));
         await waitOrFail(
             () => requests.length > beforeUtc && requests.at(-1)?.done,
             'UTC change did not reload History',
@@ -164,12 +172,12 @@ export async function run() {
             );
         await click('Now');
         const beforeLocal = requests.length;
-        required(utcControl()).emit('clicked', 1);
+        clickButton(required(utcControl()));
         await waitOrFail(
             () => requests.length > beforeLocal && requests.at(-1)?.done,
             'Local time change did not reload History',
         );
-        required(control('Custom')).emit('clicked', 1);
+        clickButton(required(control('Custom')));
         const apply = () => control('Apply dates');
         await waitOrFail(() => apply(), 'Custom date inputs did not open');
         const yesterdayDate = new Date();
@@ -177,11 +185,11 @@ export async function run() {
         instance(required(required(apply()).get_parent()).get_children()[0], St.Entry).set_text(stamp(yesterdayDate));
         instance(required(required(apply()).get_parent()).get_children()[2], St.Entry).set_text(stamp(new Date()));
         const beforeCustom = requests.length;
-        required(apply()).emit('clicked', 1);
+        clickButton(required(apply()));
         await waitOrFail(() => requests.length > beforeCustom && requests.at(-1)?.done, 'Custom period did not load');
         const custom = await currentView();
         const beforeCustomUtc = requests.length;
-        required(utcControl()).emit('clicked', 1);
+        clickButton(required(utcControl()));
         await waitOrFail(
             () => requests.length > beforeCustomUtc && requests.at(-1)?.done,
             'Custom UTC period did not load',
@@ -190,7 +198,7 @@ export async function run() {
         if (customUtc.start !== Date.parse(`${stamp(yesterdayDate)}T00:00:00Z`) / 1000)
             throw new Error('Custom UTC period kept local date boundaries');
         const beforeCustomLocal = requests.length;
-        required(utcControl()).emit('clicked', 1);
+        clickButton(required(utcControl()));
         await waitOrFail(
             () => requests.length > beforeCustomLocal && requests.at(-1)?.done,
             'Custom period did not restore local date boundaries',
@@ -226,9 +234,9 @@ export async function run() {
             throw new Error(
                 `Live custom daily period did not follow UTC days: ${JSON.stringify(liveDaily)} / ${JSON.stringify(resumedQuota)}`,
             );
-        required(control('Custom')).emit('clicked', 1);
+        clickButton(required(control('Custom')));
         const beforeDailyCustom = requests.length;
-        required(apply()).emit('clicked', 1);
+        clickButton(required(apply()));
         await waitOrFail(
             () => requests.length > beforeDailyCustom && requests.at(-1)?.done,
             'Custom daily period did not load',

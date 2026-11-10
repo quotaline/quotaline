@@ -2,7 +2,7 @@ import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import Shell from 'gi://Shell';
 import St from 'gi://St';
-import {failure, findActor, indicator as getIndicator, instance, required} from '../support/actors.js';
+import {clickButton, failure, findActor, indicator as getIndicator, instance, required} from '../support/actors.js';
 import {readProvider, readProviderSettings, readState} from '../support/dbus.js';
 import {afterPaint, waitOrFail} from '../support/shell-events.js';
 
@@ -63,7 +63,7 @@ export async function run() {
                 });
             });
         }
-        required(toggle()).emit('clicked', 1);
+        clickButton(required(toggle()));
         await waitOrFail(
             () =>
                 toggle()?.checked &&
@@ -73,12 +73,12 @@ export async function run() {
         );
         if (findActor(root, actor => actor.accessible_name === 'Check GitHub Copilot again'))
             throw new Error('Undiscovered Copilot gained a polling control');
-        required(toggle()).emit('clicked', 1);
+        clickButton(required(toggle()));
         await waitOrFail(
             () => !toggle()?.checked && status() === 'Off' && readProviderSettings('copilot').enabled === false,
             'Explicit Copilot deactivation did not persist',
         );
-        required(toggle()).emit('clicked', 1);
+        clickButton(required(toggle()));
         await waitOrFail(
             () =>
                 toggle()?.checked && status() === 'Not configured' && readProviderSettings('copilot').enabled === true,

@@ -3,7 +3,15 @@ import GLib from 'gi://GLib';
 import St from 'gi://St';
 import type {HistoryAction, HistoryViewResponse, Window} from '../../../src/service-state.js';
 import type {TestActor} from '../../support/actors.js';
-import {accessibleName, buttonLabel, contentOf, instance, optionalInstance, required} from '../../support/actors.js';
+import {
+    accessibleName,
+    buttonLabel,
+    clickButton,
+    contentOf,
+    instance,
+    optionalInstance,
+    required,
+} from '../../support/actors.js';
 import {readProvider} from '../../support/dbus.js';
 import type {SmokeContext} from './helpers.js';
 import {
@@ -66,10 +74,10 @@ export async function run({
     }
     if (GLib.getenv('TMB_EXPECT_DEMO') === '1') {
         await changedAfter(() => {
-            required(findActor(footer, actor => buttonLabel(actor)?.includes('Refresh'))).emit('clicked', 1);
+            clickButton(required(findActor(footer, actor => buttonLabel(actor)?.includes('Refresh'))));
         });
         await changedAfter(() => {
-            required(findActor(root, actor => actor.accessible_name === 'Refresh Claude')).emit('clicked', 1);
+            clickButton(required(findActor(root, actor => actor.accessible_name === 'Refresh Claude')));
         });
         await afterPaint(() => {});
     }
@@ -289,7 +297,7 @@ export async function run({
         if (!renewal?.reactive || !accessibleName(renewal)?.startsWith('Copy renewal date: Renews '))
             throw new Error('Codex renewal date is missing from its Usage card');
         const copiedRenewal = await copiedTextAfter(() => {
-            renewal.emit('clicked', 1);
+            clickButton(renewal);
         });
         if (copiedRenewal !== instance(renewal, St.Button).get_label())
             throw new Error('Codex renewal chip did not copy its displayed date');
@@ -448,7 +456,7 @@ export async function run({
         const accountChip = findActor(cardBadges, actor => buttonLabel(actor) === 'you@example.com');
         if (!accountChip?.reactive) throw new Error('Claude account chip is not actionable');
         const copiedAccount = await copiedTextAfter(() => {
-            accountChip.emit('clicked', 1);
+            clickButton(accountChip);
         });
         if (copiedAccount !== 'you@example.com')
             throw new Error('Claude account chip did not copy its displayed value');
@@ -530,12 +538,12 @@ export async function run({
             findActor(currentClaudeCard(), actor => buttonLabel(actor)?.includes('Model cost estimates'));
         if (!costDisclosure() || containsText(costSummary, 'Estimated from recorded tokens'))
             throw new Error('Claude model cost estimates did not start collapsed');
-        required(costDisclosure()).emit('clicked', 1);
+        clickButton(required(costDisclosure()));
         await waitOrFail(() => {
             const costs = findActor(currentClaudeCard(), actor => actor.has_style_class_name?.('tmb-cost-summary'));
             return containsText(costs, 'Estimated from recorded tokens') && containsText(costs, 'fable');
         }, 'Claude model cost estimates did not open');
-        required(costDisclosure()).emit('clicked', 1);
+        clickButton(required(costDisclosure()));
         if (
             containsText(
                 findActor(currentClaudeCard(), actor => actor.has_style_class_name?.('tmb-cost-summary')),
@@ -550,7 +558,7 @@ export async function run({
             findActor(currentClaudeCard(), actor => actor.has_style_class_name?.('tmb-local-summary'))
         )
             throw new Error('Demo local usage did not start collapsed');
-        required(localDisclosure()).emit('clicked', 1);
+        clickButton(required(localDisclosure()));
         const localSummary = findActor(currentClaudeCard(), actor => actor.has_style_class_name?.('tmb-local-summary'));
         const local = serviceState().claude_local_usage;
         const compact = (value: number) =>
@@ -573,7 +581,7 @@ export async function run({
             ].every(value => containsText(localSummary, value))
         )
             throw new Error('Demo local usage differs from the macOS reference');
-        required(localDisclosure()).emit('clicked', 1);
+        clickButton(required(localDisclosure()));
         if (findActor(currentClaudeCard(), actor => actor.has_style_class_name?.('tmb-local-summary')))
             throw new Error('Demo local usage did not close');
         await capture('usage');
@@ -606,9 +614,11 @@ export async function run({
             containsText(currentCodexCard(), 'Bonus reset')
         )
             throw new Error('Codex credits do not match the compact summary');
-        required(
-            findActor(currentCodexCard(), actor => buttonLabel(actor)?.includes('Credit estimates and totals')),
-        ).emit('clicked', 1);
+        clickButton(
+            required(
+                findActor(currentCodexCard(), actor => buttonLabel(actor)?.includes('Credit estimates and totals')),
+            ),
+        );
         if (
             !containsText(currentCodexCard(), 'Local messages') ||
             !containsText(currentCodexCard(), '~120–260') ||
@@ -618,9 +628,8 @@ export async function run({
             !containsText(currentCodexCard(), '3')
         )
             throw new Error('Codex credit estimates did not open');
-        required(findActor(currentCodexCard(), actor => buttonLabel(actor)?.includes('Reset credit details'))).emit(
-            'clicked',
-            1,
+        clickButton(
+            required(findActor(currentCodexCard(), actor => buttonLabel(actor)?.includes('Reset credit details'))),
         );
         if (
             !containsText(currentCodexCard(), 'Bonus reset') ||
@@ -661,7 +670,7 @@ export async function run({
         if (findActor(cards[0], actor => actor.has_style_class_name?.('tmb-local-summary')))
             throw new Error('Local usage details did not start collapsed');
         const disclosure = required(findActor(cards[0], actor => buttonLabel(actor)?.includes('Local usage details')));
-        disclosure.emit('clicked', 1);
+        clickButton(disclosure);
         const local = findActor(root, actor => actor.has_style_class_name?.('tmb-local-summary'));
         if (
             !local ||
@@ -670,7 +679,7 @@ export async function run({
             !containsText(local, '$1.20')
         )
             throw new Error('Claude local session totals were not rendered');
-        required(findActor(root, actor => buttonLabel(actor)?.includes('Local usage details'))).emit('clicked', 1);
+        clickButton(required(findActor(root, actor => buttonLabel(actor)?.includes('Local usage details'))));
         if (findActor(root, actor => actor.has_style_class_name?.('tmb-local-summary')))
             throw new Error('Local usage details did not close');
     }

@@ -5,6 +5,7 @@ import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import {
     buttonLabel,
+    clickButton,
     containsText,
     failure,
     findActor,
@@ -107,7 +108,7 @@ export async function run() {
             throw new Error('Provider refresh action has no recovery explanation');
         const disclosure = findActor(currentCodex(), actor => buttonLabel(actor)?.includes('Model cost estimates'));
         if (!disclosure) throw new Error('Codex model costs are missing');
-        disclosure.emit('clicked', 1);
+        clickButton(disclosure);
         await waitFor(() => containsText(currentCodex(), 'gpt-5'));
         indicator.menu.close(false);
     } finally {

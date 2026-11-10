@@ -3,7 +3,7 @@ import GLib from 'gi://GLib';
 import Shell from 'gi://Shell';
 import St from 'gi://St';
 import type {TestActor} from '../support/actors.js';
-import {failure, findActor, indicator as getIndicator, instance, required} from '../support/actors.js';
+import {clickButton, failure, findActor, indicator as getIndicator, instance, required} from '../support/actors.js';
 import {waitOrFail} from '../support/shell-events.js';
 
 export async function run() {
@@ -20,7 +20,7 @@ export async function run() {
             throw new Error(`Compact panel labels differ from provider names: ${labels().join(',')}`);
         indicator.menu.open(false);
         const root = findActor(indicator.menu.box, actor => actor.has_style_class_name?.('tmb-root'));
-        required(findActor(root, actor => actor.accessible_name === 'Settings')).emit('clicked', 1);
+        clickButton(required(findActor(root, actor => actor.accessible_name === 'Settings')));
         const editors = () => {
             const values: string[] = [];
             const visit = (actor: TestActor) => {

@@ -1,7 +1,7 @@
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
-import {buttonLabel, findActor, indicator as getIndicator, required} from '../support/actors.js';
+import {buttonLabel, clickButton, findActor, indicator as getIndicator, required} from '../support/actors.js';
 import {waitOrFail} from '../support/shell-events.js';
 
 function waitFor(check: () => unknown) {
@@ -15,7 +15,7 @@ export async function run() {
         if (!indicator) throw new Error('Quotaline indicator is missing');
         indicator.menu.open(false);
         await waitFor(() => findActor(indicator.menu.box, actor => actor.accessible_name === 'Settings'));
-        required(findActor(indicator.menu.box, actor => actor.accessible_name === 'Settings')).emit('clicked', 1);
+        clickButton(required(findActor(indicator.menu.box, actor => actor.accessible_name === 'Settings')));
         await waitFor(() => findActor(indicator.menu.box, actor => buttonLabel(actor) === 'Export all history CSV…'));
         await new Promise<void>((resolve, reject) => {
             const signal = Gio.DBus.session.signal_subscribe(
@@ -31,9 +31,8 @@ export async function run() {
                     else reject(new Error('Save dialog did not cancel'));
                 },
             );
-            required(findActor(indicator.menu.box, actor => buttonLabel(actor) === 'Export all history CSV…')).emit(
-                'clicked',
-                1,
+            clickButton(
+                required(findActor(indicator.menu.box, actor => buttonLabel(actor) === 'Export all history CSV…')),
             );
         });
         await new Promise<void>(resolve =>

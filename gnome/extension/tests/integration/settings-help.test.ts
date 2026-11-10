@@ -7,6 +7,7 @@ import type {TestActor} from '../support/actors.js';
 import {
     accessibleName,
     buttonLabel,
+    clickButton,
     failure,
     findActor,
     indicator as getIndicator,
@@ -26,7 +27,7 @@ export async function run() {
         if (!indicator) throw new Error('Quotaline indicator is missing');
         indicator.menu.open(false);
         await waitFor(() => findActor(indicator.menu.box, actor => actor.accessible_name === 'Settings'));
-        required(findActor(indicator.menu.box, actor => actor.accessible_name === 'Settings')).emit('clicked', 1);
+        clickButton(required(findActor(indicator.menu.box, actor => actor.accessible_name === 'Settings')));
         const mode = GLib.getenv('TMB_HELP_TARGET') ?? '';
         const footer = mode === 'footer';
         const lower = mode === 'notifications' || mode === 'log';
@@ -45,10 +46,7 @@ export async function run() {
         ].includes(mode);
         if (mode === 'template' || mode === 'save') {
             await waitFor(() => findActor(indicator.menu.box, actor => actor.accessible_name === 'format: custom'));
-            required(findActor(indicator.menu.box, actor => actor.accessible_name === 'format: custom')).emit(
-                'clicked',
-                1,
-            );
+            clickButton(required(findActor(indicator.menu.box, actor => actor.accessible_name === 'format: custom')));
         }
         if (footer) await waitFor(() => findActor(indicator.menu.box, actor => actor.text === 'ABOUT'));
         const name =

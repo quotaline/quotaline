@@ -3,7 +3,7 @@ import GLib from 'gi://GLib';
 import Shell from 'gi://Shell';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import type {TestActor} from '../support/actors.js';
-import {containsText, failure, findActor, indicator as getIndicator, required} from '../support/actors.js';
+import {clickButton, containsText, failure, findActor, indicator as getIndicator, required} from '../support/actors.js';
 import {afterPaint, waitOrFail} from '../support/shell-events.js';
 
 async function capture(root: TestActor) {
@@ -57,7 +57,7 @@ export async function run() {
             actor => actor.has_style_class_name?.('tmb-disclosure') && containsText(actor, 'Credit details'),
         );
         if (!disclosure) throw new Error('Claude credit details are missing');
-        disclosure.emit('clicked', 1);
+        clickButton(disclosure);
         await waitOrFail(
             () =>
                 findActor(

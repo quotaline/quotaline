@@ -17,7 +17,7 @@ export type ProxyCall = (
 export const proxyCalls: {
     call: ProxyCall;
     call_finish: Gio.DBusProxy['call_finish'];
-    connect: (this: Gio.DBusProxy, signal: string, callback: (...args: unknown[]) => unknown) => number;
+    connect: Gio.DBusProxy['connect'];
 } = Gio.DBusProxy.prototype;
 
 export const sessionCalls: {

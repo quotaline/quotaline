@@ -4,7 +4,15 @@ import GLib from 'gi://GLib';
 import Pango from 'gi://Pango';
 import St from 'gi://St';
 import type {TestActor} from '../../support/actors.js';
-import {accessibleName, buttonLabel, contentOf, instance, optionalInstance, required} from '../../support/actors.js';
+import {
+    accessibleName,
+    buttonLabel,
+    clickButton,
+    contentOf,
+    instance,
+    optionalInstance,
+    required,
+} from '../../support/actors.js';
 import type {SmokeContext} from './helpers.js';
 import {
     afterPaint,
@@ -29,7 +37,7 @@ export async function run({
     const menuIsOpen = () => indicator.menu.isOpen;
     const tabs = required(required(root.get_children()[0]).get_children()[1]).get_children();
     await afterPaint(() => {
-        required(tabs[1]).emit('clicked', 1);
+        clickButton(required(tabs[1]));
     });
     if (
         required(
@@ -84,7 +92,7 @@ export async function run({
             required(findActor(root, actor => buttonLabel(actor) === 'Now')),
             St.Widget,
         ).has_style_class_name('tmb-tab-selected');
-        required(findActor(root, actor => buttonLabel(actor) === '30d')).emit('clicked', 1);
+        clickButton(required(findActor(root, actor => buttonLabel(actor) === '30d')));
         await waitOrFail(
             () =>
                 findActor(
@@ -95,7 +103,7 @@ export async function run({
                 ) && findActor(root, actor => actor.has_style_class_name?.('tmb-chart')),
             'Thirty-day History capture did not load',
         );
-        required(findActor(root, actor => buttonLabel(actor) === 'Day')).emit('clicked', 1);
+        clickButton(required(findActor(root, actor => buttonLabel(actor) === 'Day')));
         await waitOrFail(
             () =>
                 findActor(
@@ -108,7 +116,7 @@ export async function run({
         );
         await capture('history');
         const originalPeriodLabel = followedNow ? 'Now' : originalDays === 1 ? 'Today' : `${originalDays}d`;
-        required(findActor(root, actor => buttonLabel(actor) === originalPeriodLabel)).emit('clicked', 1);
+        clickButton(required(findActor(root, actor => buttonLabel(actor) === originalPeriodLabel)));
         await waitOrFail(
             () =>
                 findActor(
@@ -121,7 +129,7 @@ export async function run({
         );
         if (followedNow) await setSetting('history_days', originalDays);
         const originalRollupLabel = originalRollup.charAt(0).toUpperCase() + originalRollup.slice(1);
-        required(findActor(root, actor => buttonLabel(actor) === originalRollupLabel)).emit('clicked', 1);
+        clickButton(required(findActor(root, actor => buttonLabel(actor) === originalRollupLabel)));
         await waitOrFail(() => serviceSettings().history_rollup === originalRollup, 'History rollup was not restored');
     } else {
         await capture('history');
@@ -206,7 +214,7 @@ export async function run({
         await capture('history-touch-selected');
         touch.run_dispose();
         const clearPointerSelection = required(findActor(page, actor => buttonLabel(actor) === 'Clear selection'));
-        clearPointerSelection.emit('clicked', 1);
+        clickButton(clearPointerSelection);
         const keyboardChart = required(findActor(page, actor => actor.has_style_class_name?.('tmb-chart')));
         keyboardChart.grab_key_focus();
         await press(Clutter.KEY_Right);
@@ -305,10 +313,7 @@ export async function run({
             .get_children()
             .find((actor: TestActor) => actor.get_children().some(child => buttonLabel(child) === 'Next reading'));
         if (!reading) throw new Error('History reading inspector is missing');
-        required(reading.get_children().find((actor: TestActor) => buttonLabel(actor) === 'Next reading')).emit(
-            'clicked',
-            1,
-        );
+        clickButton(required(reading.get_children().find((actor: TestActor) => buttonLabel(actor) === 'Next reading')));
         await waitOrFail(() => containsText(page, 'Selected '), 'History reading inspector did not select a reading');
         const selectedLegend = required(findActor(page, actor => actor.has_style_class_name?.('tmb-history-legend')));
         const selectedValues = findActors(selectedLegend, actor =>
@@ -343,11 +348,13 @@ export async function run({
         const previousReading = page
             .get_children()
             .find((actor: TestActor) => actor.text?.startsWith('Selected '))?.text;
-        required(
-            required(reading)
-                .get_children()
-                .find((actor: TestActor) => buttonLabel(actor) === 'Next reading'),
-        ).emit('clicked', 1);
+        clickButton(
+            required(
+                required(reading)
+                    .get_children()
+                    .find((actor: TestActor) => buttonLabel(actor) === 'Next reading'),
+            ),
+        );
         await waitOrFail(
             () =>
                 page.get_children().find((actor: TestActor) => actor.text?.startsWith('Selected '))?.text !==
@@ -367,11 +374,13 @@ export async function run({
         reading = page
             .get_children()
             .find((actor: TestActor) => actor.get_children().some(child => buttonLabel(child) === 'Next reading'));
-        required(
-            required(reading)
-                .get_children()
-                .find((actor: TestActor) => buttonLabel(actor) === 'Next reading'),
-        ).emit('clicked', 1);
+        clickButton(
+            required(
+                required(reading)
+                    .get_children()
+                    .find((actor: TestActor) => buttonLabel(actor) === 'Next reading'),
+            ),
+        );
         await waitOrFail(
             () =>
                 page.get_children().find((actor: TestActor) => actor.text?.startsWith('Selected '))?.text !==
@@ -381,11 +390,13 @@ export async function run({
         reading = page
             .get_children()
             .find((actor: TestActor) => actor.get_children().some(child => buttonLabel(child) === 'Clear selection'));
-        required(
-            required(reading)
-                .get_children()
-                .find((actor: TestActor) => buttonLabel(actor) === 'Clear selection'),
-        ).emit('clicked', 1);
+        clickButton(
+            required(
+                required(reading)
+                    .get_children()
+                    .find((actor: TestActor) => buttonLabel(actor) === 'Clear selection'),
+            ),
+        );
         if (
             page.get_children().some((actor: TestActor) => actor.text?.startsWith('Selected ')) ||
             !findActor(
@@ -398,7 +409,7 @@ export async function run({
         const details = required(findActor(page, actor => actor.accessible_name === 'Data details'));
         if (details.get_transformed_position()[0] > page.get_transformed_position()[0] + 30)
             throw new Error('History data details disclosure is not aligned with the chart');
-        details.emit('clicked', 1);
+        clickButton(details);
         if (!containsText(page, 'plotted points · 13 series'))
             throw new Error('History data details did not show chart sample counts');
         const historyScroll = instance(root.get_children()[1], St.ScrollView).get_vadjustment();
@@ -408,25 +419,25 @@ export async function run({
         historyScroll.set_value(0);
         const sevenDayRange = findActor(page, actor => actor.has_style_class_name?.('tmb-history-path'))?.text;
         await afterPaint(() => {
-            required(findActor(page, actor => buttonLabel(actor) === 'Today')).emit('clicked', 1);
+            clickButton(required(findActor(page, actor => buttonLabel(actor) === 'Today')));
         });
         await waitOrFail(
             () => findActor(page, actor => actor.has_style_class_name?.('tmb-history-path'))?.text !== sevenDayRange,
             'Today did not narrow the History chart range',
         );
-        required(findActor(page, actor => buttonLabel(actor) === 'Day')).emit('clicked', 1);
+        clickButton(required(findActor(page, actor => buttonLabel(actor) === 'Day')));
         await waitOrFail(
             () => serviceSettings().history_rollup === 'day' && serviceSettings().history_days === 7,
             'Daily rollup did not expand a one-day chart to seven days',
         );
         await afterPaint(() => {
-            required(findActor(page, actor => buttonLabel(actor) === 'Today')).emit('clicked', 1);
+            clickButton(required(findActor(page, actor => buttonLabel(actor) === 'Today')));
         });
         await waitOrFail(
             () => serviceSettings().history_rollup === 'hour' && serviceSettings().history_days === 1,
             'Today did not switch a daily rollup to hourly data',
         );
-        required(findActor(page, actor => actor.accessible_name === 'UTC')).emit('clicked', 1);
+        clickButton(required(findActor(page, actor => actor.accessible_name === 'UTC')));
         await waitOrFail(
             () =>
                 serviceSettings().history_utc &&
@@ -434,9 +445,9 @@ export async function run({
             'Today chart did not switch to UTC',
         );
         await afterPaint(() => {});
-        required(findActor(page, actor => actor.accessible_name === 'UTC')).emit('clicked', 1);
+        clickButton(required(findActor(page, actor => actor.accessible_name === 'UTC')));
         await waitOrFail(() => !serviceSettings().history_utc, 'Today chart did not return to local time');
-        required(findActor(page, actor => buttonLabel(actor) === '7d')).emit('clicked', 1);
+        clickButton(required(findActor(page, actor => buttonLabel(actor) === '7d')));
         await waitOrFail(
             () => findActor(page, actor => actor.has_style_class_name?.('tmb-history-path'))?.text === sevenDayRange,
             'History did not restore the seven-day chart range',
@@ -447,7 +458,7 @@ export async function run({
         if (!navigation) throw new Error('History navigation is missing');
         const originalRange = findActor(page, actor => actor.has_style_class_name?.('tmb-history-path'))?.text;
         if (!originalRange?.includes('–')) throw new Error('History date range is missing');
-        required(findActor(page, actor => actor.accessible_name === 'UTC')).emit('clicked', 1);
+        clickButton(required(findActor(page, actor => actor.accessible_name === 'UTC')));
         await waitOrFail(
             () =>
                 serviceSettings().history_utc &&
@@ -466,7 +477,7 @@ export async function run({
             )
         )
             throw new Error('Minute, Hour, and Day rollups are missing');
-        required(rollups.get_children().find((actor: TestActor) => buttonLabel(actor) === 'Hour')).emit('clicked', 1);
+        clickButton(required(rollups.get_children().find((actor: TestActor) => buttonLabel(actor) === 'Hour')));
         await waitOrFail(
             () =>
                 findActor(
@@ -491,22 +502,24 @@ export async function run({
             ).has_style_class_name('tmb-tab-selected')
         )
             throw new Error('Hourly rollup was not selected');
-        required(findActor(page, actor => buttonLabel(actor) === 'Previous reading')).emit('clicked', 1);
+        clickButton(required(findActor(page, actor => buttonLabel(actor) === 'Previous reading')));
         await waitOrFail(() => containsText(page, 'Selected '), 'History reading was not selected before paging');
-        required(findActor(page, actor => buttonLabel(actor) === '←')).emit('clicked', 1);
+        clickButton(required(findActor(page, actor => buttonLabel(actor) === '←')));
         await waitOrFail(() => {
             const range = findActor(page, actor => actor.has_style_class_name?.('tmb-history-path'))?.text;
             return range && range !== originalRange && !containsText(page, 'Selected ');
         }, 'Paging did not clear a selected reading outside the new History range');
-        required(
+        clickButton(
             required(
-                page
+                required(
+                    page
+                        .get_children()
+                        .find((actor: TestActor) => actor.get_children().some(child => buttonLabel(child) === 'Now')),
+                )
                     .get_children()
-                    .find((actor: TestActor) => actor.get_children().some(child => buttonLabel(child) === 'Now')),
-            )
-                .get_children()
-                .find((actor: TestActor) => buttonLabel(actor) === 'Now'),
-        ).emit('clicked', 1);
+                    .find((actor: TestActor) => buttonLabel(actor) === 'Now'),
+            ),
+        );
         await waitOrFail(
             () =>
                 findActor(
@@ -517,15 +530,19 @@ export async function run({
                 ),
             'Now did not resume after paging',
         );
-        required(
+        clickButton(
             required(
-                page
+                required(
+                    page
+                        .get_children()
+                        .find((actor: TestActor) =>
+                            actor.get_children().some(child => buttonLabel(child) === 'Custom'),
+                        ),
+                )
                     .get_children()
-                    .find((actor: TestActor) => actor.get_children().some(child => buttonLabel(child) === 'Custom')),
-            )
-                .get_children()
-                .find((actor: TestActor) => buttonLabel(actor) === 'Custom'),
-        ).emit('clicked', 1);
+                    .find((actor: TestActor) => buttonLabel(actor) === 'Custom'),
+            ),
+        );
         const custom = page
             .get_children()
             .find((actor: TestActor) => actor.get_children().some(child => buttonLabel(child) === 'Apply dates'));
@@ -533,23 +550,23 @@ export async function run({
         const originalDate = instance(required(custom.get_children()[0]), St.Entry).get_text();
         const originalEnd = instance(required(custom.get_children()[2]), St.Entry).get_text();
         const startPicker = custom.get_children()[1];
-        required(startPicker).emit('clicked', 1);
+        clickButton(required(startPicker));
         const calendar = findActor(page, actor => actor.has_style_class_name?.('tmb-date-calendar'));
         if (!calendar?.visible) throw new Error('Start date picker did not open the calendar');
-        required(startPicker).emit('clicked', 1);
+        clickButton(required(startPicker));
         if (calendar.is_visible()) throw new Error('Start date picker did not close on a second click');
         instance(required(custom.get_children()[0]), St.Entry).set_text('not-a-date');
-        required(startPicker).emit('clicked', 1);
+        clickButton(required(startPicker));
         if (
             !calendar.is_visible() ||
             instance(required(custom.get_children()[0]), St.Entry).get_text() !== 'not-a-date'
         )
             throw new Error('Opening the calendar changed an invalid typed date');
-        required(custom.get_children()[3]).emit('clicked', 1);
+        clickButton(required(custom.get_children()[3]));
         if (!calendar.is_visible() || instance(required(custom.get_children()[2]), St.Entry).get_text() !== originalEnd)
             throw new Error('Switching date pickers changed the end date');
         instance(required(custom.get_children()[0]), St.Entry).set_text('2026-11-04');
-        required(startPicker).emit('clicked', 1);
+        clickButton(required(startPicker));
         const chosenDay = findActor(
             calendar,
             actor =>
@@ -558,32 +575,31 @@ export async function run({
                 !actor.has_style_class_name('calendar-other-month'),
         );
         if (!chosenDay?.reactive) throw new Error('Calendar day cannot be clicked');
-        chosenDay.emit('clicked', 1);
+        clickButton(chosenDay);
         if (instance(required(custom.get_children()[0]), St.Entry).get_text() !== '2026-11-05' || calendar.is_visible())
             throw new Error('Calendar selection did not update the start date');
         instance(required(custom.get_children()[2]), St.Entry).set_text('2026-11-05');
-        required(custom.get_children()[3]).emit('clicked', 1);
-        required(findActor(calendar, actor => actor.has_style_class_name?.('calendar-change-month-forward'))).emit(
-            'clicked',
-            1,
+        clickButton(required(custom.get_children()[3]));
+        clickButton(
+            required(findActor(calendar, actor => actor.has_style_class_name?.('calendar-change-month-forward'))),
         );
         if (
             !calendar.is_visible() ||
             instance(required(custom.get_children()[2]), St.Entry).get_text() !== '2026-11-05'
         )
             throw new Error('Changing the calendar month committed a date');
-        required(findActor(page, actor => buttonLabel(actor) === 'Use selected day')).emit('clicked', 1);
+        clickButton(required(findActor(page, actor => buttonLabel(actor) === 'Use selected day')));
         if (instance(required(custom.get_children()[2]), St.Entry).get_text() !== '2026-12-05' || calendar.is_visible())
             throw new Error('Using the calendar month selection did not update the end date');
         instance(required(custom.get_children()[2]), St.Entry).set_text(originalEnd);
         instance(required(custom.get_children()[0]), St.Entry).set_text('not-a-date');
-        required(custom.get_children()[4]).emit('clicked', 1);
+        clickButton(required(custom.get_children()[4]));
         await waitOrFail(() => containsText(page, 'Enter dates as YYYY-MM-DD'), 'Malformed custom date was accepted');
         const malformed = page
             .get_children()
             .find((actor: TestActor) => actor.get_children().some(child => buttonLabel(child) === 'Apply dates'));
         instance(required(required(malformed).get_children()[0]), St.Entry).set_text('2026-02-30');
-        required(required(malformed).get_children()[4]).emit('clicked', 1);
+        clickButton(required(required(malformed).get_children()[4]));
         await waitOrFail(
             () => containsText(page, 'Choose a valid date range') && !containsText(page, 'Enter dates as YYYY-MM-DD'),
             'Impossible custom date was accepted',
@@ -592,7 +608,7 @@ export async function run({
             .get_children()
             .find((actor: TestActor) => actor.get_children().some(child => buttonLabel(child) === 'Apply dates'));
         instance(required(required(reversed).get_children()[0]), St.Entry).set_text('2999-01-01');
-        required(required(reversed).get_children()[4]).emit('clicked', 1);
+        clickButton(required(required(reversed).get_children()[4]));
         await waitOrFail(
             () =>
                 containsText(page, 'Choose a valid date range') &&
@@ -607,7 +623,7 @@ export async function run({
             .get_children()
             .find((actor: TestActor) => actor.get_children().some(child => buttonLabel(child) === 'Apply dates'));
         instance(required(required(corrected).get_children()[0]), St.Entry).set_text(originalDate);
-        required(required(corrected).get_children()[4]).emit('clicked', 1);
+        clickButton(required(required(corrected).get_children()[4]));
         await waitOrFail(
             () =>
                 findActor(page, actor => actor.has_style_class_name?.('tmb-chart')) &&
@@ -638,11 +654,13 @@ export async function run({
             ).has_style_class_name('tmb-tab-selected')
         )
             throw new Error('Custom history period was not selected');
-        required(
-            required(customPeriod)
-                .get_children()
-                .find((actor: TestActor) => buttonLabel(actor) === 'Now'),
-        ).emit('clicked', 1);
+        clickButton(
+            required(
+                required(customPeriod)
+                    .get_children()
+                    .find((actor: TestActor) => buttonLabel(actor) === 'Now'),
+            ),
+        );
         await waitOrFail(
             () =>
                 optionalInstance(
@@ -655,15 +673,19 @@ export async function run({
                 )?.has_style_class_name('tmb-tab-selected'),
             'Now did not resume the custom period',
         );
-        required(
+        clickButton(
             required(
-                page
+                required(
+                    page
+                        .get_children()
+                        .find((actor: TestActor) =>
+                            actor.get_children().some(child => buttonLabel(child) === 'Custom'),
+                        ),
+                )
                     .get_children()
-                    .find((actor: TestActor) => actor.get_children().some(child => buttonLabel(child) === 'Custom')),
-            )
-                .get_children()
-                .find((actor: TestActor) => buttonLabel(actor) === 'Custom'),
-        ).emit('clicked', 1);
+                    .find((actor: TestActor) => buttonLabel(actor) === 'Custom'),
+            ),
+        );
         await waitOrFail(
             () =>
                 page
@@ -673,15 +695,17 @@ export async function run({
                     ),
             'Custom date picker did not reopen',
         );
-        required(
+        clickButton(
             required(
-                page
-                    .get_children()
-                    .find((actor: TestActor) =>
-                        actor.get_children().some(child => buttonLabel(child) === 'Apply dates'),
-                    ),
-            ).get_children()[4],
-        ).emit('clicked', 1);
+                required(
+                    page
+                        .get_children()
+                        .find((actor: TestActor) =>
+                            actor.get_children().some(child => buttonLabel(child) === 'Apply dates'),
+                        ),
+                ).get_children()[4],
+            ),
+        );
         await waitOrFail(
             () =>
                 findActor(
@@ -697,7 +721,7 @@ export async function run({
             actor => actor.accessible_name === 'Metric' && buttonLabel(actor)?.startsWith('Usage %'),
         );
         if (!metric) throw new Error('History metric picker is missing');
-        metric.emit('clicked', 1);
+        clickButton(metric);
         const options = findActor(page, actor => actor.has_style_class_name?.('tmb-metric-options'));
         if (
             !options ||
@@ -722,9 +746,8 @@ export async function run({
             throw new Error('The final History metric is not visible after scrolling');
         await capture('history-metric-picker-bottom');
         metricScroll.set_value(0);
-        required(findActor(options, actor => actor.accessible_name === 'Choose metric: surfaceUsagePercent')).emit(
-            'clicked',
-            1,
+        clickButton(
+            required(findActor(options, actor => actor.accessible_name === 'Choose metric: surfaceUsagePercent')),
         );
         await waitOrFail(
             () =>
@@ -735,7 +758,7 @@ export async function run({
             'Daily analytics metric was not selected',
         );
         await capture('history-surface');
-        required(findActor(page, actor => buttonLabel(actor) === 'Today')).emit('clicked', 1);
+        clickButton(required(findActor(page, actor => buttonLabel(actor) === 'Today')));
         await waitOrFail(
             () =>
                 serviceSettings().history_days === 1 &&
@@ -748,7 +771,7 @@ export async function run({
                 ),
             'Today did not select the UTC day for a daily metric',
         );
-        required(findActor(page, actor => buttonLabel(actor) === '30d')).emit('clicked', 1);
+        clickButton(required(findActor(page, actor => buttonLabel(actor) === '30d')));
         await waitOrFail(
             () =>
                 findActor(
@@ -759,8 +782,8 @@ export async function run({
                 ) && findActor(page, actor => actor.has_style_class_name?.('tmb-chart')),
             'Thirty-day History period was not selected',
         );
-        required(findActor(page, actor => actor.accessible_name === 'Metric')).emit('clicked', 1);
-        required(findActor(page, actor => actor.accessible_name === 'Choose metric: creditBalance')).emit('clicked', 1);
+        clickButton(required(findActor(page, actor => actor.accessible_name === 'Metric')));
+        clickButton(required(findActor(page, actor => actor.accessible_name === 'Choose metric: creditBalance')));
         await waitOrFail(
             () =>
                 findActor(
@@ -773,8 +796,8 @@ export async function run({
             'Credit balance history is missing its latest-value line layout',
         );
         await capture('history-credit-balance');
-        required(findActor(page, actor => actor.accessible_name === 'Metric')).emit('clicked', 1);
-        required(findActor(page, actor => actor.accessible_name === 'Choose metric: modelCredits')).emit('clicked', 1);
+        clickButton(required(findActor(page, actor => actor.accessible_name === 'Metric')));
+        clickButton(required(findActor(page, actor => actor.accessible_name === 'Choose metric: modelCredits')));
         await waitOrFail(
             () =>
                 findActor(
@@ -793,7 +816,7 @@ export async function run({
             stack.get_accessible().ref_state_set().contains_state(Atk.StateType.CHECKED)
         )
             throw new Error('Additive model metric has no stack control');
-        stack.emit('clicked', 1);
+        clickButton(stack);
         if (
             !page
                 .get_children()
@@ -816,7 +839,7 @@ export async function run({
         }, 'History choices were not saved');
         const modelSeries = findActor(page, actor => accessibleName(actor)?.startsWith('☑ gpt-5.3-codex'));
         if (!modelSeries) throw new Error('Model series toggle is missing');
-        modelSeries.emit('clicked', 1);
+        clickButton(modelSeries);
         await waitOrFail(
             () => serviceSettings().history_hidden_keys.includes('codex:gpt-5.3-codex'),
             'Hidden chart series was not saved',
@@ -828,7 +851,7 @@ export async function run({
             const restore = findActor(page, actor => accessibleName(actor)?.startsWith('☐ gpt-5.3-codex ·'));
             if (!restore) return false;
             // The next service signal can replace this actor before an awaiting continuation runs.
-            restore.emit('clicked', 1);
+            clickButton(restore);
             return true;
         }, 'Model series restore toggle is missing');
         await waitOrFail(
@@ -869,10 +892,10 @@ export async function run({
         ] as const) {
             const picker = required(findActor(page, actor => actor.accessible_name === 'Metric'));
             const previous = buttonLabel(optionalInstance(picker, St.Button));
-            picker.emit('clicked', 1);
+            clickButton(picker);
             const choice = findActor(page, actor => actor.accessible_name === `Choose metric: ${id}`);
             if (!choice) throw new Error(`${id} is missing from the grouped metric picker`);
-            choice.emit('clicked', 1);
+            clickButton(choice);
             await waitOrFail(
                 () =>
                     serviceSettings().history_metric === id &&

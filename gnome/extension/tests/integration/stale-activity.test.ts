@@ -1,7 +1,7 @@
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
-import {failure, findActor, indicator as getIndicator, required} from '../support/actors.js';
+import {clickButton, failure, findActor, indicator as getIndicator, required} from '../support/actors.js';
 import {afterPaint, waitOrFail} from '../support/shell-events.js';
 
 function call(method: string, parameters: GLib.Variant | null = null) {
@@ -38,7 +38,7 @@ export async function run() {
             () => findActor(indicator.menu.box, actor => actor.accessible_name === 'Settings'),
             'Settings tab did not appear',
         );
-        required(findActor(indicator.menu.box, actor => actor.accessible_name === 'Settings')).emit('clicked', 1);
+        clickButton(required(findActor(indicator.menu.box, actor => actor.accessible_name === 'Settings')));
         await call('WaitForActivityCall');
         await call('SetRetentionDays', new GLib.Variant('(t)', [90]));
         indicator.menu.close(false);

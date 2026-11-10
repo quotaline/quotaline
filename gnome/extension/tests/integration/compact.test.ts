@@ -5,6 +5,7 @@ import St from 'gi://St';
 import type {TestActor} from '../support/actors.js';
 import {
     buttonLabel,
+    clickButton,
     contentOf,
     failure,
     findActor,
@@ -91,9 +92,11 @@ export async function run() {
         const root = findActor(indicator.menu.box, actor => actor.has_style_class_name?.('tmb-root'));
         if (!root || root.width >= 790 || root.width > global.stage.width - 20)
             throw new Error('Narrow monitor did not select the compact menu');
-        required(
-            findActor(root, actor => actor.accessible_name === 'Usage' && actor.has_style_class_name?.('tmb-tab')),
-        ).emit('clicked', 1);
+        clickButton(
+            required(
+                findActor(root, actor => actor.accessible_name === 'Usage' && actor.has_style_class_name?.('tmb-tab')),
+            ),
+        );
         await waitFor(
             () =>
                 contentOf(required(root.get_children()[1]))
@@ -233,7 +236,7 @@ export async function run() {
         await afterPaint();
         await capture('usage-compact-credits');
         adjustment.set_value(0);
-        required(required(required(root.get_children()[0]).get_children()[1]).get_children()[1]).emit('clicked', 1);
+        clickButton(required(required(required(root.get_children()[0]).get_children()[1]).get_children()[1]));
         await waitFor(
             () =>
                 findActor(contentOf(required(root.get_children()[1])), actor =>
@@ -275,7 +278,7 @@ export async function run() {
         adjustment.set_value(adjustment.upper - adjustment.page_size);
         await afterPaint();
         await capture('history-compact-bottom');
-        required(required(required(root.get_children()[0]).get_children()[1]).get_children()[2]).emit('clicked', 1);
+        clickButton(required(required(required(root.get_children()[0]).get_children()[1]).get_children()[2]));
         adjustment.set_value(0);
         await waitFor(
             () =>

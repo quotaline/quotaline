@@ -3,7 +3,15 @@ import GLib from 'gi://GLib';
 import Pango from 'gi://Pango';
 import Shell from 'gi://Shell';
 import St from 'gi://St';
-import {buttonLabel, failure, findActor, indicator as getIndicator, instance, required} from '../support/actors.js';
+import {
+    buttonLabel,
+    clickButton,
+    failure,
+    findActor,
+    indicator as getIndicator,
+    instance,
+    required,
+} from '../support/actors.js';
 import {waitOrFail} from '../support/shell-events.js';
 
 export async function run() {
@@ -17,10 +25,10 @@ export async function run() {
         const picker = findActor(root, actor => actor.accessible_name === 'Metric');
         if (!picker) throw new Error('History metric picker is missing');
         if (!instance(picker, St.Button).get_label().startsWith(title)) {
-            picker.emit('clicked', 1);
+            clickButton(picker);
             const choice = findActor(root, actor => actor.accessible_name === `Choose metric: ${metric}`);
             if (!choice) throw new Error(`History metric ${metric} is missing`);
-            choice.emit('clicked', 1);
+            clickButton(choice);
         }
         await waitOrFail(
             () =>

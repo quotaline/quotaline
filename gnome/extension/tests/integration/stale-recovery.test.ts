@@ -6,6 +6,7 @@ import * as BoxPointer from 'resource:///org/gnome/shell/ui/boxpointer.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import {QuickMenuToggle} from 'resource:///org/gnome/shell/ui/quickSettings.js';
 import {
+    clickButton,
     failure,
     findActor,
     indicator as getIndicator,
@@ -170,7 +171,7 @@ export async function run() {
             const setup = required(findActor(root, actor => actor.accessible_name === 'Set up Claude'));
             if (!optionalInstance(setup, St.Widget)?.has_style_class_name('tmb-icon-button'))
                 throw new Error('Stale Claude card lost its compact setup action');
-            setup.emit('clicked', 1);
+            clickButton(setup);
             await waitOrFail(
                 () =>
                     findActor(
@@ -180,15 +181,20 @@ export async function run() {
                     ) && findActor(root, actor => actor.accessible_name === 'Connection details for Claude'),
                 'Claude setup action did not open provider controls',
             );
-            required(
-                findActor(root, actor => actor.accessible_name === 'Usage' && actor.has_style_class_name?.('tmb-tab')),
-            ).emit('clicked', 1);
+            clickButton(
+                required(
+                    findActor(
+                        root,
+                        actor => actor.accessible_name === 'Usage' && actor.has_style_class_name?.('tmb-tab'),
+                    ),
+                ),
+            );
             await waitOrFail(
                 () => findActor(root, actor => actor.accessible_name === actionName),
                 'Claude setup action did not return to the Usage card',
             );
         }
-        required(findActor(root, actor => actor.accessible_name === actionName)).emit('clicked', 1);
+        clickButton(required(findActor(root, actor => actor.accessible_name === actionName)));
         await waitOrFail(
             () =>
                 findActor(
@@ -214,14 +220,19 @@ export async function run() {
         }, 'Claude recovery details or controls are missing from Settings');
         await capture(`stale-claude-${captureName}-settings`);
         if (actionName === 'Set up Claude') {
-            required(
-                findActor(root, actor => actor.accessible_name === 'Usage' && actor.has_style_class_name?.('tmb-tab')),
-            ).emit('clicked', 1);
+            clickButton(
+                required(
+                    findActor(
+                        root,
+                        actor => actor.accessible_name === 'Usage' && actor.has_style_class_name?.('tmb-tab'),
+                    ),
+                ),
+            );
             await waitOrFail(
                 () => findActor(root, actor => actor.accessible_name === actionName),
                 'Claude setup action did not return with the Usage card',
             );
-            required(findActor(root, actor => actor.accessible_name === actionName)).emit('clicked', 1);
+            clickButton(required(findActor(root, actor => actor.accessible_name === actionName)));
             if (!Main.extensionManager.disableExtension('quotaline@bernat.tech') || getIndicator())
                 throw new Error('Disabling during setup navigation left the panel item behind');
         } else {

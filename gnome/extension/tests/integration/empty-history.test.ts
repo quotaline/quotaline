@@ -2,7 +2,7 @@ import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import Shell from 'gi://Shell';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
-import {failure, findActor, indicator as getIndicator, required} from '../support/actors.js';
+import {clickButton, failure, findActor, indicator as getIndicator, required} from '../support/actors.js';
 import {waitOrFail} from '../support/shell-events.js';
 
 function waitFor(check: () => unknown) {
@@ -16,7 +16,7 @@ export async function run() {
         if (!indicator) throw new Error('Quotaline indicator is missing');
         indicator.menu.open(false);
         await waitFor(() => findActor(indicator.menu.box, actor => actor.accessible_name === 'History'));
-        required(findActor(indicator.menu.box, actor => actor.accessible_name === 'History')).emit('clicked', 1);
+        clickButton(required(findActor(indicator.menu.box, actor => actor.accessible_name === 'History')));
         await waitFor(() =>
             findActor(indicator.menu.box, actor => actor.text === 'No recorded data for this metric and period.'),
         );

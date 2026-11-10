@@ -1,6 +1,6 @@
 import GLib from 'gi://GLib';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
-import {buttonLabel, findActor, indicator as getIndicator, required} from '../support/actors.js';
+import {buttonLabel, clickButton, findActor, indicator as getIndicator, required} from '../support/actors.js';
 import {waitOrFail} from '../support/shell-events.js';
 
 function waitFor(check: () => unknown) {
@@ -14,14 +14,14 @@ export async function run() {
         if (!indicator) throw new Error('Quotaline indicator is missing');
         indicator.menu.open(false);
         await waitFor(() => findActor(indicator.menu.box, actor => actor.accessible_name === 'History'));
-        required(findActor(indicator.menu.box, actor => actor.accessible_name === 'History')).emit('clicked', 1);
+        clickButton(required(findActor(indicator.menu.box, actor => actor.accessible_name === 'History')));
         await waitFor(() =>
             findActor(indicator.menu.box, actor => buttonLabel(actor) === 'Export CSV' && actor.reactive),
         );
         const path = GLib.getenv('TMB_EXPORT_PATH');
         if (!path || GLib.file_test(path, GLib.FileTest.EXISTS))
             throw new Error('Selected period export path is not empty');
-        required(findActor(indicator.menu.box, actor => buttonLabel(actor) === 'Export CSV')).emit('clicked', 1);
+        clickButton(required(findActor(indicator.menu.box, actor => buttonLabel(actor) === 'Export CSV')));
         await waitFor(() => findActor(indicator.menu.box, actor => actor.text === `Exported ${path}`));
         const [loaded, bytes] = GLib.file_get_contents(path);
         if (

@@ -3,7 +3,7 @@ import GLib from 'gi://GLib';
 import Shell from 'gi://Shell';
 import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
-import {failure, findActor, indicator as getIndicator, instance, required} from '../support/actors.js';
+import {clickButton, failure, findActor, indicator as getIndicator, instance, required} from '../support/actors.js';
 import {waitOrFail} from '../support/shell-events.js';
 
 async function afterPaint(action = () => {}) {
@@ -110,9 +110,8 @@ export async function run() {
                     resolve(value);
                     return true;
                 };
-                required(findActor(indicator.menu.box, actor => actor.accessible_name === 'Sign in to Claude')).emit(
-                    'clicked',
-                    1,
+                clickButton(
+                    required(findActor(indicator.menu.box, actor => actor.accessible_name === 'Sign in to Claude')),
                 );
             });
             if (!uri.endsWith('/provider-setup.html#claude'))
@@ -143,12 +142,15 @@ export async function run() {
                     'Follow-up sign-in notification did not open Settings',
                 );
                 if (destination)
-                    required(
-                        findActor(
-                            indicator.menu.box,
-                            actor => actor.accessible_name === destination && actor.has_style_class_name?.('tmb-tab'),
+                    clickButton(
+                        required(
+                            findActor(
+                                indicator.menu.box,
+                                actor =>
+                                    actor.accessible_name === destination && actor.has_style_class_name?.('tmb-tab'),
+                            ),
                         ),
-                    ).emit('clicked', 1);
+                    );
                 else indicator.menu.close(false);
                 await afterPaint();
                 await afterPaint();

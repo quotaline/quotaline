@@ -1,7 +1,7 @@
 import GLib from 'gi://GLib';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import type {TestActor} from '../support/actors.js';
-import {findActor, indicator as getIndicator, required} from '../support/actors.js';
+import {clickButton, findActor, indicator as getIndicator, required} from '../support/actors.js';
 import {waitOrFail} from '../support/shell-events.js';
 
 function waitFor(check: () => unknown) {
@@ -15,9 +15,9 @@ export async function run() {
         if (!indicator) throw new Error('Quotaline indicator is missing');
         indicator.menu.open(false);
         await waitFor(() => findActor(indicator.menu.box, actor => actor.accessible_name === 'History'));
-        required(findActor(indicator.menu.box, actor => actor.accessible_name === 'History')).emit('clicked', 1);
+        clickButton(required(findActor(indicator.menu.box, actor => actor.accessible_name === 'History')));
         await waitFor(() => findActor(indicator.menu.box, actor => actor.accessible_name === 'Metric'));
-        required(findActor(indicator.menu.box, actor => actor.accessible_name === 'Metric')).emit('clicked', 1);
+        clickButton(required(findActor(indicator.menu.box, actor => actor.accessible_name === 'Metric')));
         await waitFor(() => findActor(indicator.menu.box, actor => actor.has_style_class_name?.('tmb-metric-options')));
         const picker = findActor(indicator.menu.box, actor => actor.has_style_class_name?.('tmb-metric-options'));
         const groups: (string | undefined)[] = [];
