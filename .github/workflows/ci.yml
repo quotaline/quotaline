@@ -136,11 +136,11 @@ jobs:
         with:
           persist-credentials: false
       - name: 🦀 Install Rust toolchain
-        uses: actions-rust-lang/setup-rust-toolchain@v2.0.0
+        uses: actions-rust-lang/setup-rust-toolchain@v2.0.1
         with:
           cache: false
       - name: 🧰 Install mise tools
-        uses: jdx/mise-action@v5.2.4
+        uses: jdx/mise-action@v5.2.6
         with:
           version: 2026.10.24
           install_args: --locked
@@ -168,11 +168,11 @@ jobs:
         with:
           persist-credentials: false
       - name: 🦀 Install Rust toolchain
-        uses: actions-rust-lang/setup-rust-toolchain@v2.0.0
+        uses: actions-rust-lang/setup-rust-toolchain@v2.0.1
         with:
           cache: false
       - name: 🧰 Install mise tools
-        uses: jdx/mise-action@v5.2.4
+        uses: jdx/mise-action@v5.2.6
         with:
           version: 2026.10.24
           install_args: --locked
@@ -202,7 +202,7 @@ jobs:
         with:
           persist-credentials: false
       - name: 🧰 Install mise tools
-        uses: jdx/mise-action@v5.2.4
+        uses: jdx/mise-action@v5.2.6
         with:
           version: 2026.10.24
           install_args: --locked
@@ -234,11 +234,11 @@ jobs:
         with:
           persist-credentials: false
       - name: 🦀 Install Rust toolchain
-        uses: actions-rust-lang/setup-rust-toolchain@v2.0.0
+        uses: actions-rust-lang/setup-rust-toolchain@v2.0.1
         with:
           cache: false
       - name: 🧰 Install mise tools
-        uses: jdx/mise-action@v5.2.4
+        uses: jdx/mise-action@v5.2.6
         with:
           version: 2026.10.24
           install_args: --locked
@@ -260,11 +260,11 @@ jobs:
           sudo apt-get update
           sudo apt-get install --yes --no-install-recommends gnome-shell unzip
       - name: 🦀 Install Rust toolchain
-        uses: actions-rust-lang/setup-rust-toolchain@v2.0.0
+        uses: actions-rust-lang/setup-rust-toolchain@v2.0.1
         with:
           cache: false
       - name: 🧰 Install mise tools
-        uses: jdx/mise-action@v5.2.4
+        uses: jdx/mise-action@v5.2.6
         with:
           version: 2026.10.24
           install_args: --locked
@@ -300,11 +300,11 @@ jobs:
         with:
           persist-credentials: false
       - name: 🦀 Install Rust toolchain
-        uses: actions-rust-lang/setup-rust-toolchain@v2.0.0
+        uses: actions-rust-lang/setup-rust-toolchain@v2.0.1
         with:
           cache: false
       - name: 🧰 Install mise tools
-        uses: jdx/mise-action@v5.2.4
+        uses: jdx/mise-action@v5.2.6
         with:
           version: 2026.10.24
           install_args: --locked
@@ -347,11 +347,11 @@ jobs:
         run: gnome-shell --version | grep '^GNOME Shell 50[.]'
         shell: bash
       - name: 🦀 Install Rust toolchain
-        uses: actions-rust-lang/setup-rust-toolchain@v2.0.0
+        uses: actions-rust-lang/setup-rust-toolchain@v2.0.1
         with:
           cache: false
       - name: 🧰 Install mise tools
-        uses: jdx/mise-action@v5.2.4
+        uses: jdx/mise-action@v5.2.6
         with:
           version: 2026.10.24
           install_args: --locked
@@ -398,7 +398,7 @@ jobs:
         with:
           persist-credentials: false
       - name: 🧰 Install mise tools
-        uses: jdx/mise-action@v5.2.4
+        uses: jdx/mise-action@v5.2.6
         with:
           version: 2026.10.24
           install_args: --locked
@@ -433,7 +433,7 @@ jobs:
         with:
           persist-credentials: false
       - name: 🧰 Install mise tools
-        uses: jdx/mise-action@v5.2.4
+        uses: jdx/mise-action@v5.2.6
         with:
           version: 2026.10.24
           install_args: --locked
@@ -464,11 +464,11 @@ jobs:
         with:
           persist-credentials: false
       - name: 🦀 Install Rust toolchain
-        uses: actions-rust-lang/setup-rust-toolchain@v2.0.0
+        uses: actions-rust-lang/setup-rust-toolchain@v2.0.1
         with:
           cache: false
       - name: 🧰 Install mise tools
-        uses: jdx/mise-action@v5.2.4
+        uses: jdx/mise-action@v5.2.6
         with:
           version: 2026.10.24
           install_args: --locked
@@ -503,7 +503,7 @@ jobs:
         with:
           persist-credentials: false
       - name: 🧰 Install mise tools
-        uses: jdx/mise-action@v5.2.4
+        uses: jdx/mise-action@v5.2.6
         with:
           version: 2026.10.24
           working_directory: macos
@@ -523,7 +523,7 @@ jobs:
           key: macos-bindings-v2-${{ runner.os }}-${{ runner.arch }}-${{ steps.xcode.outputs.cache }}-${{ hashFiles('crates/**', 'macos/adapter/**', 'macos/platform/**', 'macos/uniffi.toml', 'Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml', 'mise.toml', 'mise.lock', 'justfile') }}
       - name: 🧰 Install mise tools
         if: steps.bindings.outputs.cache-hit != 'true'
-        uses: jdx/mise-action@v5.2.4
+        uses: jdx/mise-action@v5.2.6
         with:
           version: 2026.10.24
           working_directory: macos
@@ -572,7 +572,7 @@ jobs:
         with:
           persist-credentials: false
       - name: 🧰 Install mise tools
-        uses: jdx/mise-action@v5.2.4
+        uses: jdx/mise-action@v5.2.6
         with:
           version: 2026.10.24
           working_directory: macos
@@ -602,7 +602,7 @@ jobs:
         with:
           persist-credentials: false
       - name: 🧰 Install mise tools
-        uses: jdx/mise-action@v5.2.4
+        uses: jdx/mise-action@v5.2.6
         with:
           version: 2026.10.24
           working_directory: macos
@@ -684,7 +684,7 @@ jobs:
         with:
           persist-credentials: false
       - name: 🧰 Install mise tools
-        uses: jdx/mise-action@v5.2.4
+        uses: jdx/mise-action@v5.2.6
         with:
           version: 2026.10.24
           working_directory: macos
@@ -804,7 +804,7 @@ jobs:
         with:
           persist-credentials: false
       - name: 🧰 Install mise tools
-        uses: jdx/mise-action@v5.2.4
+        uses: jdx/mise-action@v5.2.6
         with:
           version: 2026.10.24
           working_directory: macos
