@@ -69,7 +69,7 @@ jobs:
           name: macos-rust-bindings
           path: macos
       - name: 🧰 Install mise tools
-        uses: jdx/mise-action@v5.2.4
+        uses: jdx/mise-action@v5.2.6
         with:
           version: 2026.10.24
           working_directory: macos
@@ -189,7 +189,7 @@ jobs:
           persist-credentials: false
       - *verify_runtime
       - name: 🧰 Install mise tools
-        uses: jdx/mise-action@v5.2.4
+        uses: jdx/mise-action@v5.2.6
         with:
           version: 2026.10.24
           working_directory: macos

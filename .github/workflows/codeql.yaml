@@ -33,7 +33,7 @@ jobs:
         with:
           persist-credentials: false
       - name: 🧰 Install mise tools
-        uses: jdx/mise-action@v5.2.4
+        uses: jdx/mise-action@v5.2.6
         with:
           version: 2026.10.24
           working_directory: macos
@@ -60,7 +60,7 @@ jobs:
         working-directory: macos
         run: just macos-bindings
       - name: 🛡️ Initialize CodeQL
-        uses: github/codeql-action/init@v4.39.1
+        uses: github/codeql-action/init@v4.39.2
         with:
           languages: swift
           build-mode: manual
@@ -76,6 +76,6 @@ jobs:
         working-directory: macos
         run: swift build --jobs 2
       - name: 🛡️ Analyze
-        uses: github/codeql-action/analyze@v4.39.1
+        uses: github/codeql-action/analyze@v4.39.2
         with:
           category: "/language:swift"

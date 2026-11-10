@@ -52,12 +52,12 @@ jobs:
           python-version: "3.15"
           enable-cache: false
       - name: 🦀 Install Rust toolchain
-        uses: actions-rust-lang/setup-rust-toolchain@v2.0.0
+        uses: actions-rust-lang/setup-rust-toolchain@v2.0.1
         if: steps.existing.outputs.artifact-id == ''
         with:
           cache: false
       - name: 🧰 Install mise tools
-        uses: jdx/mise-action@v5.2.4
+        uses: jdx/mise-action@v5.2.6
         if: steps.existing.outputs.artifact-id == ''
         with:
           version: 2026.10.24

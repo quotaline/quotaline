@@ -134,11 +134,11 @@ jobs:
           sudo apt-get update
           sudo apt-get install --yes --no-install-recommends gnome-shell unzip
       - name: 🦀 Install Rust toolchain
-        uses: actions-rust-lang/setup-rust-toolchain@v2.0.0
+        uses: actions-rust-lang/setup-rust-toolchain@v2.0.1
         with:
           cache: false
       - name: 🧰 Install mise tools
-        uses: jdx/mise-action@v5.2.4
+        uses: jdx/mise-action@v5.2.6
         with:
           version: 2026.10.24
           install_args: --locked
@@ -175,11 +175,11 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
       - name: 🦀 Install Rust toolchain
-        uses: actions-rust-lang/setup-rust-toolchain@v2.0.0
+        uses: actions-rust-lang/setup-rust-toolchain@v2.0.1
         with:
           cache: false
       - name: 🧰 Install mise tools
-        uses: jdx/mise-action@v5.2.4
+        uses: jdx/mise-action@v5.2.6
         with:
           version: 2026.10.24
           install_args: --locked
@@ -436,11 +436,11 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
       - name: 🦀 Install Rust toolchain
-        uses: actions-rust-lang/setup-rust-toolchain@v2.0.0
+        uses: actions-rust-lang/setup-rust-toolchain@v2.0.1
         with:
           cache: false
       - name: 🧰 Install mise tools
-        uses: jdx/mise-action@v5.2.4
+        uses: jdx/mise-action@v5.2.6
         with:
           version: 2026.10.24
           install_args: --locked
