@@ -42,7 +42,7 @@ _BUILD_FAILURE: Final = 65
 _UNATTENDED: Final = "This device DOES NOT REQUIRE user authentication to enable Automation Mode."
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture(autouse=True)  # ruff: ignore[pytest-fixture-autouse] - blocks live commands in every test
 def commands(mocker: MockerFixture) -> MagicMock:
     """Keep project generation, signing and bundle export behind a subprocess boundary."""
     return mocker.patch("subprocess.run", autospec=True)

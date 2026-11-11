@@ -4,15 +4,19 @@ line-length = 120
 target-version = "py315"
 
 [lint]
+preview = true
 select = ["ALL"]
 ignore = [
-  "COM812", # the formatter owns trailing commas
-  "D203",   # incompatible with D211, which this repository follows
-  "D213",   # incompatible with D212, which this repository follows
-  "CPY001", # the licence lives in LICENSE, not atop every file
+  "missing-trailing-comma",             # the formatter owns trailing commas
+  "incorrect-blank-line-before-class",  # incompatible with blank-line-before-class
+  "multi-line-summary-second-line",     # incompatible with multi-line-summary-first-line
+  "missing-copyright-notice",           # the licence lives in LICENSE, not atop every file
+  "docstring-missing-returns",          # typed scripts use summary docstrings, not API contracts
+  "docstring-missing-exception",        # script errors terminate the command
+  "suspicious-subprocess-import",       # these scripts invoke local tools and test their wrappers
 ]
 
 [lint.per-file-ignores]
 "Scripts/tests/test_*.py" = [
-  "S101",
+  "assert",
 ] # pytest rewrites assertions; these are test expectations, not security checks.

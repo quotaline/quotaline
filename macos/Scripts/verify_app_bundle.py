@@ -132,7 +132,7 @@ def _signatures(app: Path, distribution: str) -> bool:
 
 
 def _command(*arguments: str, check: bool = True) -> str:
-    result: Final = subprocess.run(  # noqa: S603 - fixed tools receive bundle paths as argv, never shell code.
+    result: Final = subprocess.run(  # ruff: ignore[subprocess-without-shell-equals-true] - fixed tools receive bundle paths as argv, never shell code.
         arguments, check=check, capture_output=True, text=True, timeout=120
     )
     return result.stdout if "--entitlements" in arguments else result.stdout + result.stderr

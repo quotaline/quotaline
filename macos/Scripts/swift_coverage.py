@@ -77,7 +77,7 @@ def main(arguments: Sequence[str]) -> None:
     ]
     if missing:
         Path("../target").mkdir(exist_ok=True)
-        Path("../target/macos-swift-coverage.json").write_text(json.dumps(report))
+        Path("../target/macos-swift-coverage.json").write_text(json.dumps(report), encoding="utf-8")
         for entry in missing:
             counts: Final = entry["summary"]
             sys.stdout.write(
@@ -95,7 +95,7 @@ def main(arguments: Sequence[str]) -> None:
 
 
 def _tool(*arguments: str) -> str:
-    return subprocess.run(  # noqa: S603 - LLVM subcommands and paths are passed as argv, never shell code.
+    return subprocess.run(  # ruff: ignore[subprocess-without-shell-equals-true] - LLVM subcommands and paths are passed as argv, never shell code.
         ["/usr/bin/xcrun", *arguments], check=True, capture_output=True, text=True, timeout=120
     ).stdout
 
@@ -113,7 +113,7 @@ def _check_isolation(report: _Coverage) -> None:
             boundary.search(function["filenames"][0])
             or (
                 function["filenames"][0].endswith("/LibprocProcessScanner.swift")
-                and re.search("processes|listeningPorts|procargs", function["name"])
+                and re.search(r"processes|listeningPorts|procargs", function["name"])
             )
         )
     ]
@@ -145,7 +145,7 @@ def _glue_exclusions() -> str:
     )
     budget: Final = 40
     for name in glue:
-        lines: Final = len(re.findall(r"^\s*[a-zA-Z@#}]", Path(name).read_text(), flags=re.MULTILINE))
+        lines: Final = len(re.findall(r"^\s*[a-zA-Z@#}]", Path(name).read_text(encoding="utf-8"), flags=re.MULTILINE))
         if lines > budget:
             sys.exit(f"{name} has {lines} lines of code; unmeasured glue must stay under {budget}")
         sys.stdout.write(f"unmeasured glue: {name} ({lines} lines, capped at {budget})\n")

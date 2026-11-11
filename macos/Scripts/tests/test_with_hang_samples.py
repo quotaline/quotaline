@@ -77,7 +77,11 @@ def test_output_renews_deadline(tmp_path: Path, mocker: MockerFixture) -> None:
     readable: Final = [(selectors.SelectorKey(1, 1, selectors.EVENT_READ, None), selectors.EVENT_READ)]
     selector.select.side_effect = [readable, []] * 4 + [readable]
     mocker.patch("selectors.DefaultSelector", autospec=True, return_value=selector)
-    mocker.patch("time.monotonic", autospec=True, side_effect=count(step=10))
+    mocker.patch(
+        "time.monotonic",  # ruff: ignore[shared-clock-mock] - this test runs without concurrent work
+        autospec=True,
+        side_effect=count(step=10),
+    )
     mocker.patch("os.read", autospec=True, side_effect=[f"{index}\n".encode() for index in range(4)] + [b""])
     mocker.patch("os.killpg", autospec=True)
     mocker.patch("psutil.Process", autospec=True, side_effect=psutil.NoSuchProcess(process.pid))
