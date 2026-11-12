@@ -32,7 +32,7 @@ def main(arguments: Sequence[str]) -> int:
     directory.mkdir(parents=True, exist_ok=True)
     with (
         (directory / "output.log").open("wb") as output,
-        subprocess.Popen(  # noqa: S603 - the recipe supplies argv; no shell interpolation occurs.
+        subprocess.Popen(  # ruff: ignore[subprocess-without-shell-equals-true] - the recipe supplies argv; no shell interpolation occurs.
             command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, start_new_session=True
         ) as process,
         selectors.DefaultSelector() as selector,
@@ -67,7 +67,7 @@ def _sample(pid: int, directory: Path) -> None:
         parent: Final = psutil.Process(pid)
         for process in (parent, *parent.children(recursive=True)):
             if any(name in process.name() for name in ("xctest", "swiftpm-testing-helper", "PackageTests")):
-                subprocess.run(  # noqa: S603 - sample receives only a PID from this command's own process tree.
+                subprocess.run(  # ruff: ignore[subprocess-without-shell-equals-true] - sample receives only a PID from this command's own process tree.
                     ["/usr/bin/sample", str(process.pid), "5", "-file", str(directory / f"sample-{process.pid}.txt")],
                     check=False,
                     capture_output=True,

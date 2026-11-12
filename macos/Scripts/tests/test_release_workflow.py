@@ -32,7 +32,7 @@ def run_step(step: dict[str, str | bool], directory: Path, **environment: str) -
     :param environment: GitHub context values.
     :returns: Captured process result.
     """
-    return subprocess.run(  # noqa: S603 -- execute the checked-in workflow step, not external input.
+    return subprocess.run(  # ruff: ignore[subprocess-without-shell-equals-true] -- execute the checked-in workflow step, not external input.
         ["/bin/bash", "--noprofile", "--norc", "-eo", "pipefail", "-c", cast("str", step["run"])],
         cwd=directory,
         env={**os.environ, **environment},
@@ -51,7 +51,7 @@ def git(directory: Path, *arguments: str) -> str:
     """
     executable: Final = shutil.which("git")
     assert executable is not None
-    result = subprocess.run(  # noqa: S603 -- arguments are fixed by these tests.
+    result = subprocess.run(  # ruff: ignore[subprocess-without-shell-equals-true] -- arguments are fixed by these tests.
         [executable, "-C", str(directory), *arguments], check=True, capture_output=True, text=True
     )
     return result.stdout.strip()

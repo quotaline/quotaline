@@ -156,7 +156,7 @@ def test_uncovered_behavior_writes_diagnostics(
 
 def test_glue_cannot_hide_logic(workspace: Path, commands: MagicMock, report: str) -> None:
     """Excluded adapters remain capped even when the measured report is complete."""
-    Path("src/Quotaline/main.swift").write_text("statement\n" * 41)
+    Path("src/Quotaline/main.swift").write_text("statement\n" * 41, encoding="utf-8")
     commands.side_effect = [subprocess.CompletedProcess([], 0, stdout=value) for value in ("", report)]
     with pytest.raises(SystemExit, match="must stay under 40"):
         main([str(workspace)])

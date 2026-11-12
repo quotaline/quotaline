@@ -148,7 +148,7 @@ def _check_automation() -> None:
 
 def select_tests(inventory: Path, requested: list[str], *, suite: str = "functional") -> list[str]:
     """Require an exact subset of the CI inventory, preserving requested order."""
-    groups: Final = json.loads(inventory.read_text())
+    groups: Final = json.loads(inventory.read_text(encoding="utf-8"))
     declared: Final = [
         f"{_SUITES[suite].target}/{test}"
         for group, tests in groups.items()
@@ -223,10 +223,10 @@ def _validate_product_layout(products: Path, suite: UISuite) -> tuple[Path, Path
     info: Final = plistlib.loads((app / "Contents/Info.plist").read_bytes())
     if info.get("CFBundleIdentifier") != "tech.bernat.quotaline.verification" or info.get(
         "TMBVerificationOnly"
-    ) not in (
+    ) not in {
         True,
         "YES",
-    ):
+    }:
         msg = "Application must use the verification-only build, not Debug or a distribution build"
         raise ValueError(msg)
     runner: Final = products / f"Verification/{suite.target}-Runner.app"
@@ -366,7 +366,7 @@ def validate_results(result: Path, tests: list[str]) -> None:
             for item in value:
                 collect(item)
 
-    collect(json.loads(result.read_text()))
+    collect(json.loads(result.read_text(encoding="utf-8")))
     expected: Final = Counter((test.split("/", 1)[1] + "()", "Passed") for test in tests)
     if not expected or Counter(records) != expected:
         msg: Final = f"Tests must pass exactly once, without skips or retries: expected={expected}, actual={records}"
@@ -393,7 +393,7 @@ def run_bounded(
     peak_rss = 0
     sampler: subprocess.Popen[bytes] | None = None
     profile: Final = (environment or {}).get("TEST_RUNNER_TMB_PROFILE_DIRECTORY")
-    with subprocess.Popen(  # noqa: S603 - callers supply argv; selectors are inventory-validated, never shell code.
+    with subprocess.Popen(  # ruff: ignore[subprocess-without-shell-equals-true] - callers supply argv; selectors are inventory-validated, never shell code.
         _executable(command), env=environment, cwd=cwd, start_new_session=True
     ) as child:
         try:
@@ -447,7 +447,7 @@ def _sample(profile: Path, runtime: Path, sampler: subprocess.Popen[bytes] | Non
             msg: Final = "Refusing to sample a process outside this verification run"
             raise RuntimeError(msg)
         with (profile / "sampler.log").open("wb") as stream:
-            sampler = subprocess.Popen(  # noqa: S603 - PID must belong to this run's relocated verification executable.
+            sampler = subprocess.Popen(  # ruff: ignore[subprocess-without-shell-equals-true] - PID must belong to this run's relocated verification executable.
                 ["/usr/bin/sample", str(requested.pid), "3", "1", "-file", str(profile / "sample.pending")],
                 stdout=stream,
                 stderr=subprocess.STDOUT,
@@ -474,7 +474,7 @@ def check_resources(rss: int, swap_before: int) -> int:
     pressure: Final = int(
         subprocess.check_output(["/usr/sbin/sysctl", "-n", "kern.memorystatus_vm_pressure_level"], text=True, timeout=5)
     )
-    if pressure not in (1, 2) or rss > 4 * _GIB or psutil.swap_memory().used - swap_before > _GIB:
+    if pressure not in {1, 2} or rss > 4 * _GIB or psutil.swap_memory().used - swap_before > _GIB:
         msg = f"Stopping owned workload: pressure={pressure}, tree RSS={rss / _GIB:.2f} GiB"
         raise RuntimeError(msg)
     return pressure
@@ -524,7 +524,7 @@ def _signal_process(process: psutil.Process, action: signal.Signals) -> None:
 
 
 def _run(command: list[str], *, timeout: float, stdout: TextIO | None = None) -> None:
-    subprocess.run(  # noqa: S603 - fixed argv commands from this module; no shell interpolation.
+    subprocess.run(  # ruff: ignore[subprocess-without-shell-equals-true] - fixed argv commands from this module; no shell interpolation.
         _executable(command),
         stdout=stdout,
         check=True,
