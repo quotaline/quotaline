@@ -42,7 +42,7 @@ repos:
       - id: mdformat
         additional_dependencies:
           - mdformat-gfm==1.0.0
-          - mdformat-hugo==0.3.4
+          - mdformat-hugo==0.3.5
           - mdformat-ruff==0.1.3
         args: [--wrap, "120"]
         files: ^(README\.md|CONTRIBUTING\.md|macos/README\.md|website/content/.*\.md|changelog\.d/.*\.md)$
@@ -65,13 +65,13 @@ repos:
       - id: shfmt
         args: ["--indent", "2", "--case-indent", "--space-redirects", "--write"]
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: 25bcf95026b96e2dd3c0aec3090c3d6ef6ca2e6c # frozen: v0.17.3
+    rev: c0f278f1254ccc8fb09676bcdb8d847e7db493e5 # frozen: v0.17.4
     hooks:
       - id: ruff-format
       - id: ruff-check
         args: ["--fix"]
   - repo: https://github.com/crate-ci/typos
-    rev: 4c8b7f51ca60df14e3c5ca82770dfbbe6c3dae85 # frozen: v1.52.0
+    rev: 2611abd15acb0c2e317fb9e45855aabb8b35a414 # frozen: v1.52.1
     hooks:
       - id: typos
         entry: typos
