@@ -325,9 +325,9 @@ fn history_controls_run_in_reused_shell() {
 #[test]
 fn history_turns_counts_the_total_once_in_shell() {
     let _shell = shell_lock();
-    let today = chrono::Utc::now().format("%Y-%m-%d").to_string();
-    let yesterday = (chrono::Utc::now() - chrono::Duration::days(1))
-        .format("%Y-%m-%d")
+    let today = jiff::Timestamp::now().strftime("%Y-%m-%d").to_string();
+    let yesterday = (jiff::Timestamp::now() - jiff::SignedDuration::from_hours(24))
+        .strftime("%Y-%m-%d")
         .to_string();
     let providers = serde_json::json!({"claude":false,"codex":true,"gemini":false,"antigravity":false,"cursor":false,"copilot":false});
     let fixture = isolated_service_configured(

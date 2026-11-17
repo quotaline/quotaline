@@ -113,14 +113,14 @@ fn daily_balance_uses_padded_axis_and_latest_value() {
 
 #[test]
 fn chart_limits_the_total_number_of_points() {
-    let first = chrono::NaiveDate::from_ymd_opt(2024, 1, 1).unwrap();
+    let first = jiff::civil::date(2024, 1, 1);
     let rows = (0..4)
         .flat_map(|series| {
             (0..420).map(move |day| {
                 point(
                     "inputTokens",
                     "claude",
-                    &(first + chrono::Duration::days(day)).format("%Y-%m-%d").to_string(),
+                    &(first + jiff::ToSpan::days(day)).to_string(),
                     &format!("model-{series}"),
                     day as f64,
                 )

@@ -80,7 +80,7 @@ pub(super) async fn gemini(client: &Api, home: &Path, allow_token_refresh: bool)
         credential_document
             .as_ref()
             .and_then(|credential| credential.expires_at),
-        Utc::now().timestamp_millis() as f64 / 1000.0,
+        Timestamp::now().as_millisecond() as f64 / 1000.0,
     ) {
         if !allow_token_refresh {
             return Err(Failure::new(
@@ -173,7 +173,7 @@ pub(super) async fn refresh_gemini(
     .await?;
     let provider = quotaline_credentials::RefreshProvider::Gemini;
     let document =
-        quotaline_credentials::complete_refresh(provider, &document, &response, Utc::now().timestamp_millis(), "")
+        quotaline_credentials::complete_refresh(provider, &document, &response, Timestamp::now().as_millisecond(), "")
             .map_err(|error| Failure::new("unreadable", error.message(provider)))?;
     if let Some(original) = original {
         original

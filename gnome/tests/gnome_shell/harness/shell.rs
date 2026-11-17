@@ -139,7 +139,7 @@ pub(crate) fn cached_claude_snapshot(root: &Path) {
         serde_json::json!({"claude":{
             "id":"claude","name":"Claude","status":"connected","plan":"Pro","identity":"",
             "source":"Claude Code","windows":[{"id":"session","label":"Current session","used":42.0,
-                "reset":null,"group":"session"}],"notice":"","updated":chrono::Utc::now().timestamp()
+                "reset":null,"group":"session"}],"notice":"","updated":jiff::Timestamp::now().as_second()
         }})
         .to_string(),
     )

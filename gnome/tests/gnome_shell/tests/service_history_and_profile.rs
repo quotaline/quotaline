@@ -70,7 +70,7 @@ fn cached_provider_sources_render_in_settings() {
         |root| {
             let cache = root.join("cache/quotaline");
             fs::create_dir_all(&cache).unwrap();
-            let now = chrono::Utc::now().timestamp();
+            let now = jiff::Timestamp::now().as_second();
             let entries = [
                 ("claude", "Claude", "", "/fixture/auth.json"),
                 ("codex", "Codex", "Plus", "Keychain"),
@@ -138,8 +138,8 @@ fn cached_quota_without_pace_or_currency_remains_readable_in_shell() {
         |root| {
             let cache = root.join("cache/quotaline");
             fs::create_dir_all(&cache).unwrap();
-            let now = chrono::Utc::now().timestamp();
-            let reset = (chrono::Utc::now() + chrono::Duration::hours(1)).to_rfc3339();
+            let now = jiff::Timestamp::now().as_second();
+            let reset = (jiff::Timestamp::now() + jiff::SignedDuration::from_hours(1)).to_string();
             fs::write(
                 cache.join("snapshot.json"),
                 serde_json::json!({
@@ -368,7 +368,7 @@ fn claude_profile_organization_reaches_shell_and_privacy_chips() {
             .and(matchers::path("/api/oauth/usage"))
             .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
                 "five_hour":{"utilization":42,"resets_at":
-                    (chrono::Utc::now() + chrono::Duration::hours(1)).to_rfc3339()}
+                    (jiff::Timestamp::now() + jiff::SignedDuration::from_hours(1)).to_string()}
             })))
             .expect(1)
             .mount(&server)

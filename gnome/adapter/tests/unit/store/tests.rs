@@ -16,12 +16,7 @@ fn turns(day: &str, metric: &str, value: f64) -> analytics::Point {
 }
 
 fn day_start(day: &str) -> i64 {
-    chrono::NaiveDate::parse_from_str(day, "%Y-%m-%d")
-        .unwrap()
-        .and_hms_opt(0, 0, 0)
-        .unwrap()
-        .and_utc()
-        .timestamp()
+    analytics::utc_day::midnight(day).unwrap() as i64
 }
 
 #[test]
@@ -320,19 +315,19 @@ fn demo_settings_read_seeded_history() {
         demo: true,
         ..Settings::default()
     };
-    let now = Utc::now().timestamp();
+    let now = Timestamp::now().as_second();
     let history = rolled_history(&settings, now - 86_400, now, WindowRollup::Hour, true).unwrap();
     assert!(history.series.iter().any(|series| series.id == "claude:session"));
     let cost = history_analytics(&settings, "costUSD", now - 8 * 86_400, now).unwrap();
     assert!(!cost.series.is_empty());
-    assert!(spend_report(&settings, Utc::now()).unwrap().total.last_window > 0.0);
-    assert!(review_counts(&settings, Utc::now()).unwrap().is_some());
+    assert!(spend_report(&settings, Timestamp::now()).unwrap().total.last_window > 0.0);
+    assert!(review_counts(&settings, Timestamp::now()).unwrap().is_some());
     assert!(!model_activity(&settings, now).unwrap().is_empty());
 }
 
 #[test]
 fn demo_model_activity_follows_the_retention_period() {
-    let now = Utc::now().timestamp();
+    let now = Timestamp::now().as_second();
     let week = Settings {
         demo: true,
         retention_days: 7,
@@ -355,7 +350,7 @@ fn demo_history_provides_each_advertised_metric() {
         demo: true,
         ..Settings::default()
     };
-    let now = Utc::now().timestamp();
+    let now = Timestamp::now().as_second();
     for (metric, _, _, _) in analytics::METRICS {
         let history = history_analytics(&settings, metric, now - 8 * 86_400, now + 86_400).unwrap();
         assert!(!history.series.is_empty(), "{metric}");

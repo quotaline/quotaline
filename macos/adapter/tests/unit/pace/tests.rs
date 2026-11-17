@@ -1,7 +1,7 @@
 //! macOS pace bridge cases.
 
 use super::*;
-use chrono::TimeZone;
+use jiff::civil::date;
 
 #[test]
 fn bridge_exposes_shared_pace_configuration() {
@@ -61,9 +61,9 @@ fn bridge_exposes_all_statuses_and_projection() {
 
 #[test]
 fn bridge_uses_named_timezone_across_dst() {
-    let zone: Tz = "America/Los_Angeles".parse().unwrap();
-    let start = zone.with_ymd_and_hms(2026, 10, 31, 0, 0, 0).unwrap().timestamp();
-    let now = zone.with_ymd_and_hms(2026, 11, 2, 9, 0, 0).unwrap().timestamp();
+    let zone = TimeZone::get("America/Los_Angeles").unwrap();
+    let start = zone.to_timestamp(date(2026, 10, 31).into()).unwrap().as_second();
+    let now = zone.to_timestamp(date(2026, 11, 2).at(9, 0, 0, 0)).unwrap().as_second();
     let result = pace_estimate(
         window(30.0, start, 7 * 86_400),
         Vec::new(),

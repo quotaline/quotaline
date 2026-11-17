@@ -1,18 +1,16 @@
 //! Formats notification times in the session's time zone and clock preference.
 
-use chrono::{DateTime, TimeZone, Utc};
+use jiff::Timestamp;
+use jiff::tz::{Offset, TimeZone};
 use quotaline_text::time::ClockFormat;
 
-pub struct SessionClock<Zone> {
-    zone: Zone,
+pub struct SessionClock {
+    zone: TimeZone,
     time: &'static str,
 }
 
-impl<Zone: TimeZone> SessionClock<Zone>
-where
-    Zone::Offset: std::fmt::Display,
-{
-    pub fn new(zone: Zone, twelve_hour: bool) -> Self {
+impl SessionClock {
+    pub fn new(zone: TimeZone, twelve_hour: bool) -> Self {
         Self {
             zone,
             time: if twelve_hour { "%-I:%M %p" } else { "%H:%M" },
@@ -20,23 +18,17 @@ where
     }
 
     fn local(&self, at: i64, pattern: &str) -> String {
-        DateTime::<Utc>::from_timestamp(at, 0)
-            .unwrap_or_default()
-            .with_timezone(&self.zone)
-            .format(pattern)
-            .to_string()
+        self.zone.to_datetime(instant(at)).strftime(pattern).to_string()
     }
 }
 
-impl<Zone: TimeZone> ClockFormat for SessionClock<Zone>
-where
-    Zone::Offset: std::fmt::Display,
-{
+fn instant(at: i64) -> Timestamp {
+    Timestamp::from_second(at).unwrap_or(Timestamp::UNIX_EPOCH)
+}
+
+impl ClockFormat for SessionClock {
     fn utc_day(&self, at: i64) -> String {
-        DateTime::<Utc>::from_timestamp(at, 0)
-            .unwrap_or_default()
-            .format("%b %-d")
-            .to_string()
+        Offset::UTC.to_datetime(instant(at)).strftime("%b %-d").to_string()
     }
 
     fn time(&self, at: i64) -> String {

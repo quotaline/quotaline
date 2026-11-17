@@ -1,7 +1,9 @@
 //! Estimates quota pace and projected exhaustion.
 
 use crate::Window;
-use chrono::{DateTime, Datelike, Local, TimeZone};
+use jiff::Timestamp;
+use jiff::civil::Time;
+use jiff::tz::TimeZone;
 use serde::{Deserialize, Serialize};
 
 pub const SAMPLE_HORIZON_SECONDS: i64 = 3600;
@@ -28,15 +30,15 @@ pub struct PaceEstimate {
 
 impl PaceEstimate {
     pub fn estimate(window: &Window, samples: &[(i64, f64)], workdays: u8, now: i64) -> Self {
-        Self::estimate_in_timezone(window, samples, workdays, now, Local)
+        Self::estimate_in_timezone(window, samples, workdays, now, &TimeZone::system())
     }
 
-    pub fn estimate_in_timezone<T: TimeZone>(
+    pub fn estimate_in_timezone(
         window: &Window,
         samples: &[(i64, f64)],
         workdays: u8,
         now: i64,
-        timezone: T,
+        timezone: &TimeZone,
     ) -> Self {
         if window.used >= 100.0 {
             return Self::new(PaceStatus::Exhausted, None, None, Some(now));
@@ -44,8 +46,8 @@ impl PaceEstimate {
         let reset = window
             .reset
             .as_deref()
-            .and_then(|value| DateTime::parse_from_rfc3339(value).ok())
-            .map(|date| date.timestamp());
+            .and_then(|value| value.parse::<Timestamp>().ok())
+            .map(Timestamp::as_second);
         let Some((reset, duration)) = reset
             .zip(window.duration_seconds)
             .filter(|(reset, duration)| *reset > now && *duration > 0 && *duration <= 366 * 86_400)
@@ -55,8 +57,8 @@ impl PaceEstimate {
         let start = reset - duration as i64;
         let linear = ((now - start) as f64 / duration as f64).clamp(0.0, 1.0) * 100.0;
         let expected = if workdays < MAX_WORKDAYS && duration > 86_400 {
-            let total = workday_seconds(start, reset, workdays, &timezone);
-            let elapsed = workday_seconds(start, now.min(reset), workdays, &timezone);
+            let total = workday_seconds(start, reset, workdays, timezone);
+            let elapsed = workday_seconds(start, now.min(reset), workdays, timezone);
             total
                 .filter(|value| *value > 0.0)
                 .zip(elapsed)
@@ -113,15 +115,15 @@ impl PaceEstimate {
     }
 }
 
-fn workday_seconds<T: TimeZone>(start: i64, end: i64, workdays: u8, timezone: &T) -> Option<f64> {
+fn workday_seconds(start: i64, end: i64, workdays: u8, timezone: &TimeZone) -> Option<f64> {
     let mut cursor = start;
     let mut seconds = 0.0;
     while cursor < end {
-        let local = timezone.timestamp_opt(cursor, 0).single()?;
-        let next = local.date_naive().succ_opt()?.and_hms_opt(0, 0, 0)?;
-        let next = timezone.from_local_datetime(&next).earliest()?.timestamp();
+        let local = timezone.to_datetime(Timestamp::from_second(cursor).ok()?);
+        let midnight = local.date().tomorrow().ok()?.to_datetime(Time::midnight());
+        let next = timezone.to_timestamp(midnight).ok()?.as_second();
         let segment = next.min(end) - cursor;
-        if local.weekday().num_days_from_monday() < u32::from(workdays) {
+        if local.weekday().to_monday_zero_offset() < workdays as i8 {
             seconds += segment as f64;
         }
         cursor += segment;

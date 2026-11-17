@@ -1,6 +1,7 @@
 //! Normalizes daily provider analytics into chart metrics.
 
-use chrono::{DateTime, NaiveDate};
+use jiff::Timestamp;
+use jiff::civil::Date;
 use quotaline_text::json::number;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -325,7 +326,7 @@ fn codex_points(endpoint: Endpoint, rows: &[Value]) -> Vec<Point> {
     for row in rows {
         let Some(day) = row["date"]
             .as_str()
-            .filter(|day| NaiveDate::parse_from_str(day, "%Y-%m-%d").is_ok())
+            .filter(|day| Date::strptime("%Y-%m-%d", day).is_ok())
         else {
             continue;
         };
@@ -415,9 +416,10 @@ pub fn codex_credit_events(payload: &Value) -> CreditEvents {
         else {
             continue;
         };
-        let Some(timestamp) = DateTime::parse_from_rfc3339(date_text)
+        let Some(timestamp) = date_text
+            .parse::<Timestamp>()
             .ok()
-            .map(|date| date.timestamp_millis() as f64 / 1000.0)
+            .map(|date| date.as_millisecond() as f64 / 1000.0)
             .or_else(|| utc_day::midnight(date_text))
         else {
             continue;

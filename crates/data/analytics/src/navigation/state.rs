@@ -1,6 +1,6 @@
 //! Owns history navigation values and applies shared actions.
 
-use chrono::{Days, NaiveDate};
+use jiff::civil::Date;
 
 use super::{
     HistoryNavigation, HistoryRange, HistoryViewport, Zone, history_page, history_pause, history_reset,
@@ -90,8 +90,8 @@ impl NavigationState {
         self.state = history_select_custom_end(&self.state, now, requested);
     }
 
-    pub fn select_calendar_dates(&mut self, from: NaiveDate, to: NaiveDate) -> bool {
-        let Some(next_day) = to.checked_add_days(Days::new(1)).filter(|_| from <= to) else {
+    pub fn select_calendar_dates(&mut self, from: Date, to: Date) -> bool {
+        let Some(next_day) = to.tomorrow().ok().filter(|_| from <= to) else {
             return false;
         };
         let zone = Zone::new(&self.state);

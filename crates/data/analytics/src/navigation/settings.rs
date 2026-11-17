@@ -1,7 +1,7 @@
 //! Maps history actions and the saved history preferences to navigation state.
 
 use super::{HistoryRange, HistorySession, HistorySessionConfig, WindowRollup};
-use chrono::NaiveDate;
+use jiff::civil::Date;
 use serde::Deserialize;
 
 #[derive(Deserialize)]
@@ -117,11 +117,11 @@ fn rollup(name: &str) -> Option<WindowRollup> {
     }
 }
 
-fn parse_date(value: &str) -> Result<NaiveDate, &'static str> {
+fn parse_date(value: &str) -> Result<Date, &'static str> {
     if value.len() != 10 || value.as_bytes()[4] != b'-' || value.as_bytes()[7] != b'-' {
         return Err("Enter dates as YYYY-MM-DD");
     }
-    NaiveDate::parse_from_str(value, "%Y-%m-%d").map_err(|_| "Choose a valid date range")
+    Date::strptime("%Y-%m-%d", value).map_err(|_| "Choose a valid date range")
 }
 
 #[cfg(test)]

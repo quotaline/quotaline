@@ -2,7 +2,8 @@
 
 use super::{LimitGroup, windows};
 use crate::codex_usage::{self, Usage};
-use chrono::DateTime;
+use jiff::Timestamp;
+use jiff::tz::Offset;
 use quotaline_quota::{
     CreditAllowance, CreditExpiry, Provider, ResetCreditDetail, ResetCredits, SpendControl, UsageCredits, Window,
     default_reset_credit_explanation,
@@ -19,8 +20,8 @@ fn provider_windows(groups: &[LimitGroup], now: f64) -> Vec<Window> {
                 window.used_percent,
                 window
                     .reset_at
-                    .and_then(|value| DateTime::from_timestamp(value as i64, 0))
-                    .map(|date| date.to_rfc3339()),
+                    .and_then(|value| Timestamp::from_second(value as i64).ok())
+                    .map(|date| date.display_with_offset(Offset::UTC).to_string()),
                 window.group,
             );
             row.duration_seconds = Some(window.duration_seconds.max(1.0) as u64);
@@ -71,8 +72,8 @@ impl Usage {
                 currency: None,
                 reset: spend
                     .resets_at
-                    .and_then(|value| DateTime::from_timestamp(value as i64, 0))
-                    .map(|date| date.to_rfc3339()),
+                    .and_then(|value| Timestamp::from_second(value as i64).ok())
+                    .map(|date| date.display_with_offset(Offset::UTC).to_string()),
                 limit_reached: spend.limit_reached,
                 balance: None,
                 balance_money: None,

@@ -29,9 +29,9 @@ quotaline-credential-sources = { version = "0.2.0", path = "../../crates/account
 quotaline-storage = { version = "0.2.0", path = "../../crates/data/storage" }
 quotaline-history = { version = "0.2.0", path = "../../crates/data/history" }
 base64 = "0.23"
-chrono = { version = "0.4", default-features = false, features = ["clock", "serde"] }
 hex = "0.4"
 iana-time-zone = "0.1.65"
+jiff = "1"
 reqwest = { version = "0.13", default-features = false, features = ["form", "json", "rustls"] }
 secret-service = { version = "6", default-features = false, features = ["rt-tokio-crypto-rust"] }
 serde = { version = "1", features = ["derive"] }

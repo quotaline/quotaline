@@ -13,9 +13,7 @@ fn bridge_reads_transcripts_and_reports_workload() {
     let config = claude_scanner_defaults();
     assert_eq!(config.maximum_indexed_files, 64);
     let scanner = ClaudeTranscriptScanner::new(directory.path().display().to_string(), None, config);
-    let now = chrono::DateTime::parse_from_rfc3339("2026-10-10T12:00:00Z")
-        .unwrap()
-        .timestamp() as f64;
+    let now = "2026-10-10T12:00:00Z".parse::<jiff::Timestamp>().unwrap().as_second() as f64;
     let snapshot = scanner.refresh(now, 60, false);
     assert_eq!(snapshot.view.message_count(), 1);
     let analytics = snapshot.view.analytics_snapshot(now).unwrap();
@@ -51,9 +49,7 @@ fn bridge_reports_unpriced_model_warnings() {
     });
     std::fs::write(directory.path().join("session.jsonl"), format!("{line}\n")).unwrap();
     let scanner = ClaudeTranscriptScanner::new(directory.path().display().to_string(), None, claude_scanner_defaults());
-    let now = chrono::DateTime::parse_from_rfc3339("2026-10-10T12:00:00Z")
-        .unwrap()
-        .timestamp() as f64;
+    let now = "2026-10-10T12:00:00Z".parse::<jiff::Timestamp>().unwrap().as_second() as f64;
     let snapshot = scanner.refresh(now, 60, false);
     assert_eq!(
         snapshot.pricing_warnings,
@@ -76,9 +72,7 @@ fn bridge_snapshots_remain_immutable_after_later_reads() {
     };
     std::fs::write(&path, line("one")).unwrap();
     let scanner = ClaudeTranscriptScanner::new(directory.path().display().to_string(), None, claude_scanner_defaults());
-    let now = chrono::DateTime::parse_from_rfc3339("2026-10-10T12:00:00Z")
-        .unwrap()
-        .timestamp() as f64;
+    let now = "2026-10-10T12:00:00Z".parse::<jiff::Timestamp>().unwrap().as_second() as f64;
     let before = scanner.refresh(now, 60, false);
     std::fs::OpenOptions::new()
         .append(true)

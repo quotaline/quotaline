@@ -54,7 +54,7 @@ impl Bus {
                 },
             },
             sign_in: Some("claude".into()),
-            fetched_at: Utc::now().timestamp(),
+            fetched_at: Timestamp::now().as_second(),
         }]);
         Self::notification_planned(&emitter).await.map_err(failed)
     }
@@ -83,12 +83,12 @@ impl Bus {
 
     async fn get_spend_summary(&self) -> fdo::Result<String> {
         let settings = self.0.inner.lock().await.settings.clone();
-        json(&blocking(|| store::spend_report(&settings, Utc::now())).map_err(failed)?)
+        json(&blocking(|| store::spend_report(&settings, Timestamp::now())).map_err(failed)?)
     }
 
     async fn get_review_summary(&self) -> fdo::Result<String> {
         let settings = self.0.inner.lock().await.settings.clone();
-        let counts = blocking(|| store::review_counts(&settings, Utc::now())).map_err(failed)?;
+        let counts = blocking(|| store::review_counts(&settings, Timestamp::now())).map_err(failed)?;
         counts.map_or(Ok(String::new()), |counts| json(&counts))
     }
 
@@ -105,7 +105,7 @@ impl Bus {
         let settings = inner.settings.clone();
         let providers = inner.providers.clone();
         drop(inner);
-        let activity = blocking(|| store::model_activity(&settings, Utc::now().timestamp())).map_err(failed)?;
+        let activity = blocking(|| store::model_activity(&settings, Timestamp::now().as_second())).map_err(failed)?;
         json(&quotaline_status_bar::settings_list_for_providers(
             &settings,
             &providers,
@@ -327,7 +327,7 @@ impl Bus {
                 &inner.settings,
                 "UTC".into(),
                 0,
-                Utc::now().timestamp() as f64,
+                Timestamp::now().as_second() as f64,
             );
             inner.history_visibility.clear();
             inner.providers.clear();

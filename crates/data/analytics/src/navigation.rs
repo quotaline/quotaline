@@ -1,7 +1,8 @@
 //! Calculates history chart windows and page boundaries.
 
-use chrono::{DateTime, Days, FixedOffset, NaiveDateTime, TimeZone, Utc};
-use chrono_tz::Tz;
+use jiff::civil::{Date, DateTime, Time};
+use jiff::tz::{Offset, TimeZone};
+use jiff::{SignedDuration, Timestamp, ToSpan};
 
 use super::WindowRollup;
 
@@ -265,64 +266,41 @@ pub fn history_query_rollup(start: f64, end: f64, selected: f64, sample_interval
     selected.max(sample_interval).max(budget)
 }
 
-enum Zone {
-    Named(Tz),
-    Offset(FixedOffset),
-}
+struct Zone(TimeZone);
 
 impl Zone {
     fn new(state: &HistoryNavigation) -> Self {
         if state.daily_utc {
-            return Self::Named(chrono_tz::UTC);
+            return Self(TimeZone::UTC);
         }
-        state.time_zone.parse().map(Self::Named).unwrap_or_else(|_| {
-            Self::Offset(FixedOffset::east_opt(state.fallback_offset).expect("time zone offset is valid"))
-        })
+        Self(TimeZone::get(&state.time_zone).unwrap_or_else(|_| {
+            TimeZone::fixed(Offset::from_seconds(state.fallback_offset).expect("time zone offset is valid"))
+        }))
     }
 
-    fn local(&self, timestamp: f64) -> NaiveDateTime {
-        let seconds = timestamp.floor() as i64;
-        let nanos = ((timestamp - seconds as f64) * 1_000_000_000.0).round() as u32;
-        let utc = DateTime::<Utc>::from_timestamp(seconds, nanos).expect("history timestamp is valid");
-        match self {
-            Self::Named(zone) => utc.with_timezone(zone).naive_local(),
-            Self::Offset(zone) => utc.with_timezone(zone).naive_local(),
-        }
+    fn local(&self, timestamp: f64) -> DateTime {
+        let instant = Timestamp::from_duration(SignedDuration::from_secs_f64(timestamp));
+        self.0.to_datetime(instant.expect("history timestamp is valid"))
     }
 
-    fn timestamp(&self, local: NaiveDateTime) -> f64 {
-        let utc = match self {
-            Self::Named(zone) => zone
-                .from_local_datetime(&local)
-                .earliest()
-                .or_else(|| {
-                    zone.from_local_datetime(&(local + chrono::Duration::hours(1)))
-                        .earliest()
-                })
-                .expect("calendar date resolves in time zone")
-                .with_timezone(&Utc),
-            Self::Offset(zone) => zone.from_local_datetime(&local).single().unwrap().with_timezone(&Utc),
-        };
-        utc.timestamp() as f64 + f64::from(utc.timestamp_subsec_nanos()) / 1_000_000_000.0
+    /// Resolves a repeated local time to its earlier instant and a skipped one to the time after the gap.
+    fn timestamp(&self, local: DateTime) -> f64 {
+        let instant = self.0.to_timestamp(local).expect("calendar date resolves in time zone");
+        instant.as_duration().as_secs_f64()
     }
 
     fn start_of_day(&self, timestamp: f64) -> f64 {
-        self.timestamp(self.local(timestamp).date().and_hms_opt(0, 0, 0).unwrap())
+        self.start_of_date(self.local(timestamp).date())
     }
 
-    fn start_of_date(&self, date: chrono::NaiveDate) -> f64 {
-        self.timestamp(date.and_hms_opt(0, 0, 0).unwrap())
+    fn start_of_date(&self, date: Date) -> f64 {
+        self.timestamp(date.to_datetime(Time::midnight()))
     }
 
     fn add_days(&self, timestamp: f64, days: i64) -> f64 {
         let local = self.local(timestamp);
-        let date = if days < 0 {
-            local.date().checked_sub_days(Days::new(days.unsigned_abs()))
-        } else {
-            local.date().checked_add_days(Days::new(days as u64))
-        }
-        .expect("history date is valid");
-        self.timestamp(date.and_time(local.time()))
+        let date = local.date().checked_add(days.days()).expect("history date is valid");
+        self.timestamp(date.to_datetime(local.time()))
     }
 }
 

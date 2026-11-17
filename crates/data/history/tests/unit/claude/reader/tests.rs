@@ -11,9 +11,7 @@ mod scan;
 mod tails;
 
 fn now() -> f64 {
-    chrono::DateTime::parse_from_rfc3339("2026-10-10T12:00:00Z")
-        .unwrap()
-        .timestamp() as f64
+    "2026-10-10T12:00:00Z".parse::<jiff::Timestamp>().unwrap().as_second() as f64
 }
 
 fn line(id: &str) -> String {

@@ -14,7 +14,7 @@ mod export;
 mod samples;
 
 fn at(value: &str) -> f64 {
-    chrono::DateTime::parse_from_rfc3339(value).unwrap().timestamp() as f64
+    value.parse::<jiff::Timestamp>().unwrap().as_second() as f64
 }
 
 fn sample(at: f64, used: f64) -> SampleWrite {

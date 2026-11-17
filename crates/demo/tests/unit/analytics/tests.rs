@@ -1,11 +1,10 @@
 //! Checks shared demo analytics through the public generator.
 
 use super::*;
-use chrono::TimeZone;
 
 #[test]
 fn demo_analytics_covers_claude_and_codex() {
-    let now = Utc.with_ymd_and_hms(2026, 10, 12, 14, 0, 0).unwrap();
+    let now = "2026-10-12T14:00:00Z".parse::<Timestamp>().unwrap();
     let claude = demo_analytics_at("claude", now, 3, false).unwrap();
     assert_eq!(claude.len(), 72);
     assert_eq!(claude[0].day, "2026-10-10");
@@ -22,7 +21,7 @@ fn demo_analytics_covers_claude_and_codex() {
 
 #[test]
 fn demo_analytics_days_keep_matching_calendar_values() {
-    let now = Utc.with_ymd_and_hms(2026, 10, 12, 14, 0, 0).unwrap();
+    let now = "2026-10-12T14:00:00Z".parse::<Timestamp>().unwrap();
     let short = demo_analytics_at("claude", now, 3, false).unwrap();
     let long = demo_analytics_at("claude", now, 60, false).unwrap();
     assert_eq!(short.as_slice(), &long[long.len() - short.len()..]);
@@ -30,7 +29,7 @@ fn demo_analytics_days_keep_matching_calendar_values() {
 
 #[test]
 fn long_text_fixture_changes_only_series_names() {
-    let now = Utc.with_ymd_and_hms(2026, 10, 12, 14, 0, 0).unwrap();
+    let now = "2026-10-12T14:00:00Z".parse::<Timestamp>().unwrap();
     let standard = demo_analytics_at("claude", now, 1, false).unwrap();
     let expanded = demo_analytics_at("claude", now, 1, true).unwrap();
     assert_eq!(standard[0].day, expanded[0].day);
@@ -41,7 +40,7 @@ fn long_text_fixture_changes_only_series_names() {
 
 #[test]
 fn unsupported_providers_have_no_demo_analytics() {
-    let now = Utc.with_ymd_and_hms(2026, 10, 12, 14, 0, 0).unwrap();
+    let now = "2026-10-12T14:00:00Z".parse::<Timestamp>().unwrap();
     for id in ["gemini", "antigravity", "cursor", "copilot", "unknown"] {
         assert!(demo_analytics_at(id, now, 1, false).is_none());
     }
@@ -49,7 +48,7 @@ fn unsupported_providers_have_no_demo_analytics() {
 
 #[test]
 fn demo_analytics_cover_every_history_metric() {
-    let now = Utc.with_ymd_and_hms(2026, 10, 12, 14, 0, 0).unwrap();
+    let now = "2026-10-12T14:00:00Z".parse::<Timestamp>().unwrap();
     let points = ["claude", "codex"]
         .into_iter()
         .flat_map(|id| demo_analytics_at(id, now, 1, false).unwrap())
@@ -61,7 +60,7 @@ fn demo_analytics_cover_every_history_metric() {
 
 #[test]
 fn demo_credit_history_mirrors_model_credits() {
-    let now = Utc.with_ymd_and_hms(2026, 10, 12, 14, 0, 0).unwrap();
+    let now = "2026-10-12T14:00:00Z".parse::<Timestamp>().unwrap();
     let codex = demo_analytics_at("codex", now, 1, false).unwrap();
     let values = |metric: &str| {
         codex

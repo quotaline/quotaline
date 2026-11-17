@@ -1,6 +1,6 @@
 //! Resolves GNOME data paths and adapts the shared SQLite history store.
 
-use chrono::Utc;
+use jiff::Timestamp;
 use quotaline_analytics::{self as analytics, WindowRollup};
 use quotaline_catalog::IDS;
 use quotaline_history::{CoverageScope, Result, Sample, SampleQuery, Store};
@@ -111,7 +111,7 @@ pub fn read_snapshot() -> BTreeMap<String, Provider> {
 pub use quotaline_storage::atomic_json;
 
 fn now() -> f64 {
-    Utc::now().timestamp_millis() as f64 / 1000.0
+    Timestamp::now().as_millisecond() as f64 / 1000.0
 }
 
 fn identity(path: &Path) -> Option<Identity> {
@@ -317,7 +317,7 @@ pub fn history_analytics(settings: &Settings, metric: &str, start: i64, end: i64
     history::history_analytics(&*store_for(settings)?, metric, start, end, &settings.providers)
 }
 
-pub fn review_counts(settings: &Settings, now: chrono::DateTime<Utc>) -> Result<Option<analytics::ReviewCounts>> {
+pub fn review_counts(settings: &Settings, now: Timestamp) -> Result<Option<analytics::ReviewCounts>> {
     history::review_counts(
         &*store_for(settings)?,
         &settings.providers,
@@ -326,7 +326,7 @@ pub fn review_counts(settings: &Settings, now: chrono::DateTime<Utc>) -> Result<
     )
 }
 
-pub fn spend_report(settings: &Settings, now: chrono::DateTime<Utc>) -> Result<analytics::SpendReport> {
+pub fn spend_report(settings: &Settings, now: Timestamp) -> Result<analytics::SpendReport> {
     history::spend_report(&*store_for(settings)?, &settings.providers, now)
 }
 

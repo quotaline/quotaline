@@ -1,7 +1,7 @@
 //! Exposes shared pace estimates to the macOS UI.
 
-use chrono::{DateTime, FixedOffset, Offset, Utc};
-use chrono_tz::Tz;
+use jiff::Timestamp;
+use jiff::tz::{Offset, TimeZone};
 use quotaline_quota::Window;
 use quotaline_quota::pace::PaceEstimate;
 use quotaline_quota::pace::PaceStatus;
@@ -63,24 +63,17 @@ pub fn pace_estimate(
 ) -> PaceEstimateRecord {
     let reset = window
         .reset_at
-        .and_then(|seconds| DateTime::<Utc>::from_timestamp(seconds as i64, 0))
-        .map(|date| date.to_rfc3339());
+        .and_then(|seconds| Timestamp::from_second(seconds as i64).ok())
+        .map(|date| date.display_with_offset(Offset::UTC).to_string());
     let mut core_window = Window::new("pace", "Pace", window.used, reset, "weekly");
     core_window.duration_seconds = window.duration.map(|seconds| seconds as u64);
     let samples = samples
         .into_iter()
         .map(|sample| (sample.at as i64, sample.used))
         .collect::<Vec<_>>();
-    let estimate = match timezone_name.parse::<Tz>() {
-        Ok(timezone) => PaceEstimate::estimate_in_timezone(&core_window, &samples, workdays, now as i64, timezone),
-        Err(_) => PaceEstimate::estimate_in_timezone(
-            &core_window,
-            &samples,
-            workdays,
-            now as i64,
-            FixedOffset::east_opt(timezone_offset_seconds).unwrap_or(Utc.fix()),
-        ),
-    };
+    let timezone = TimeZone::get(&timezone_name)
+        .unwrap_or_else(|_| TimeZone::fixed(Offset::from_seconds(timezone_offset_seconds).unwrap_or(Offset::UTC)));
+    let estimate = PaceEstimate::estimate_in_timezone(&core_window, &samples, workdays, now as i64, &timezone);
     PaceEstimateRecord {
         status: match estimate.status {
             PaceStatus::Unknown => PaceStatusRecord::Unknown,

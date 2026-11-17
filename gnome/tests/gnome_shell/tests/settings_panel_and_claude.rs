@@ -60,7 +60,8 @@ fn hidden_claude_limit_survives_adaptive_panel_formats() {
     let _shell = shell_lock();
     let runtime = tokio::runtime::Runtime::new().unwrap();
     let server = runtime.block_on(MockServer::start());
-    let reset = (chrono::Utc::now() + chrono::Duration::days(2) + chrono::Duration::minutes(90)).to_rfc3339();
+    let reset = (jiff::Timestamp::now() + jiff::SignedDuration::from_hours(48) + jiff::SignedDuration::from_mins(90))
+        .to_string();
     runtime.block_on(async {
         Mock::given(matchers::method("GET"))
             .and(matchers::path("/api/oauth/usage"))
@@ -166,7 +167,7 @@ fn claude_online_refresh_reaches_state_and_history() {
             .and(matchers::path("/api/oauth/usage"))
             .and(matchers::header("authorization", "Bearer service-fixture"))
             .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
-                "five_hour":{"utilization":42,"resets_at":(chrono::Utc::now() + chrono::Duration::hours(1)).to_rfc3339()}
+                "five_hour":{"utilization":42,"resets_at":(jiff::Timestamp::now() + jiff::SignedDuration::from_hours(1)).to_string()}
             })))
             .expect(1)
             .mount(&server)

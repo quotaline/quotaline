@@ -28,7 +28,7 @@ fn sample(at: f64, used: f64, reset_at: Option<f64>) -> SampleWrite {
 }
 
 fn at(value: &str) -> f64 {
-    chrono::DateTime::parse_from_rfc3339(value).unwrap().timestamp() as f64
+    value.parse::<jiff::Timestamp>().unwrap().as_second() as f64
 }
 
 fn query<'a>(start: f64, end: f64, keys: Option<&'a [String]>) -> SampleQuery<'a> {

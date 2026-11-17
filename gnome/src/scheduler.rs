@@ -210,7 +210,7 @@ impl App {
             }
             inner.last_claude_scan = Some(Instant::now());
             inner.claude_scanning = true;
-            let now = Utc::now().timestamp();
+            let now = Timestamp::now().as_second();
             let start = inner
                 .providers
                 .get("claude")
@@ -218,8 +218,8 @@ impl App {
                 .and_then(|row| {
                     row.reset
                         .as_deref()
-                        .and_then(|text| chrono::DateTime::parse_from_rfc3339(text).ok())
-                        .map(|reset| reset.timestamp() - row.duration_seconds.unwrap_or(18_000) as i64)
+                        .and_then(|text| text.parse::<Timestamp>().ok())
+                        .map(|reset| reset.as_second() - row.duration_seconds.unwrap_or(18_000) as i64)
                 })
                 .unwrap_or(now - 18_000);
             (

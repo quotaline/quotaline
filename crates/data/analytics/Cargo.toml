@@ -5,9 +5,8 @@ edition = "2024"
 license = "MIT"
 
 [dependencies]
-chrono = { version = "0.4", default-features = false, features = ["clock", "serde"] }
-chrono-tz = "0.10.4"
 hex = "0.4"
+jiff = "1"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 sha2 = "0.11"

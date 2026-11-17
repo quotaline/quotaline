@@ -5,7 +5,7 @@ use super::super::*;
 #[cfg(feature = "fixture-api")]
 fn codex_analytics_server(runtime: &tokio::runtime::Runtime) -> MockServer {
     let server = runtime.block_on(MockServer::start());
-    let today = chrono::Utc::now().format("%Y-%m-%d").to_string();
+    let today = jiff::Timestamp::now().strftime("%Y-%m-%d").to_string();
     runtime.block_on(async {
         Mock::given(matchers::method("GET"))
             .and(matchers::path("/backend-api/wham/usage"))

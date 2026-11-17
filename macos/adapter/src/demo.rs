@@ -1,6 +1,6 @@
 //! Hands the shared demo readings and analytics to macOS.
 
-use chrono::{DateTime, Utc};
+use jiff::Timestamp;
 
 use crate::CodexAnalyticsPoint;
 use crate::provider_record::{ProviderReadingRecord, ReadingSource};
@@ -46,8 +46,9 @@ pub fn demo_analytics_points(
     )
 }
 
-fn demo_time(now_seconds: f64) -> Result<DateTime<Utc>, DemoError> {
-    DateTime::<Utc>::from_timestamp_millis((now_seconds * 1000.0) as i64)
+fn demo_time(now_seconds: f64) -> Result<Timestamp, DemoError> {
+    Timestamp::from_millisecond((now_seconds * 1000.0) as i64)
+        .ok()
         .filter(|_| now_seconds.is_finite())
         .ok_or(DemoError::InvalidTime)
 }

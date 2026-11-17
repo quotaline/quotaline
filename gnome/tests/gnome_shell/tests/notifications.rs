@@ -112,8 +112,8 @@ fn reset_notifications_cover_a_large_set_of_distinct_limits() {
     tokio::runtime::Runtime::new().unwrap().block_on(async {
         let server = MockServer::start().await;
         let attempts = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
-        let old_reset = (chrono::Utc::now() + chrono::Duration::hours(1)).to_rfc3339();
-        let new_reset = (chrono::Utc::now() + chrono::Duration::hours(2)).to_rfc3339();
+        let old_reset = (jiff::Timestamp::now() + jiff::SignedDuration::from_hours(1)).to_string();
+        let new_reset = (jiff::Timestamp::now() + jiff::SignedDuration::from_hours(2)).to_string();
         Mock::given(matchers::method("GET"))
             .and(matchers::path("/api/oauth/usage"))
             .respond_with({
@@ -200,8 +200,8 @@ fn disabling_notifications_stops_an_undelivered_reset_batch() {
     tokio::runtime::Runtime::new().unwrap().block_on(async {
         let server = MockServer::start().await;
         let attempts = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
-        let old_reset = (chrono::Utc::now() + chrono::Duration::hours(1)).to_rfc3339();
-        let new_reset = (chrono::Utc::now() + chrono::Duration::hours(2)).to_rfc3339();
+        let old_reset = (jiff::Timestamp::now() + jiff::SignedDuration::from_hours(1)).to_string();
+        let new_reset = (jiff::Timestamp::now() + jiff::SignedDuration::from_hours(2)).to_string();
         Mock::given(matchers::method("GET"))
             .and(matchers::path("/api/oauth/usage"))
             .respond_with({

@@ -251,7 +251,7 @@ pub(crate) fn fault_service_shell_fixture(script: &'static str, options: FaultOp
                             utc: false,
                             local_time_zone: "UTC".into(),
                             local_offset: 0,
-                            now: chrono::Utc::now().timestamp() as f64,
+                            now: jiff::Timestamp::now().as_second() as f64,
                         },
                     )),
                     hold_state: options.hold_state,

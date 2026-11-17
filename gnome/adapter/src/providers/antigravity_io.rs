@@ -33,7 +33,7 @@ pub(super) fn antigravity_file(home: &Path) -> Result<(Value, String), Failure> 
 pub(super) fn antigravity_expires_soon(document: &Value) -> bool {
     quotaline_credentials::credential_expired(
         quotaline_credentials::antigravity_credential(document).and_then(|credential| credential.expires_at),
-        Utc::now().timestamp() as f64,
+        Timestamp::now().as_second() as f64,
     )
 }
 
@@ -91,7 +91,7 @@ pub(super) async fn refresh_antigravity(client: &Api, home: &Path, stored: &Valu
     )
     .await?;
     let provider = quotaline_credentials::RefreshProvider::Antigravity;
-    quotaline_credentials::complete_refresh(provider, stored, &response, Utc::now().timestamp_millis(), "")
+    quotaline_credentials::complete_refresh(provider, stored, &response, Timestamp::now().as_millisecond(), "")
         .map_err(|error| Failure::new("unreadable", error.message(provider)))
 }
 

@@ -162,7 +162,7 @@ fn power_saver_keeps_claude_transcript_scans_to_known_files() {
             let folder = root.join("home/.claude/projects/app");
             fs::create_dir_all(&folder).unwrap();
             let first = serde_json::json!({
-                "type":"assistant","timestamp":chrono::Utc::now().to_rfc3339(),
+                "type":"assistant","timestamp":jiff::Timestamp::now().to_string(),
                 "message":{"id":"first","model":"claude-sonnet-5-5","usage":{"input_tokens":1}}
             });
             fs::write(folder.join("known.jsonl"), format!("{first}\n{{\"type\":\"assistant\"")).unwrap();
@@ -206,7 +206,7 @@ fn power_saver_keeps_claude_transcript_scans_to_known_files() {
         let folder = fixture.scratch.path().join("home/.claude/projects/app");
         let next = |id: &str| {
             serde_json::json!({
-                "type":"assistant","timestamp":chrono::Utc::now().to_rfc3339(),
+                "type":"assistant","timestamp":jiff::Timestamp::now().to_string(),
                 "message":{"id":id,"model":"claude-sonnet-5-5","usage":{"input_tokens":1}}
             })
         };

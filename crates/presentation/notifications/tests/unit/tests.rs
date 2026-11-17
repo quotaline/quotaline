@@ -51,7 +51,8 @@ fn notification_routes_drop_old_entries_when_full() {
     assert_eq!(routes.take(512), None);
     assert_eq!(routes.take(513).as_deref(), Some("codex"));
 }
-use chrono::{TimeZone, Utc};
+use jiff::Timestamp;
+use jiff::tz::Offset;
 use quotaline_quota::CreditExpiry;
 
 fn provider(used: &[f64], reset: i64, now: i64) -> Provider {
@@ -63,7 +64,12 @@ fn provider(used: &[f64], reset: i64, now: i64) -> Provider {
                 format!("row{index}"),
                 format!("Window {index}"),
                 *value,
-                Some(Utc.timestamp_opt(reset, 0).unwrap().to_rfc3339()),
+                Some(
+                    Timestamp::from_second(reset)
+                        .unwrap()
+                        .display_with_offset(Offset::UTC)
+                        .to_string(),
+                ),
                 "session",
             );
             row.duration_seconds = Some(100_000);

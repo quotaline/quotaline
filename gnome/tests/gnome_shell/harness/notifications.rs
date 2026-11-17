@@ -30,7 +30,7 @@ pub(crate) fn threshold_notification(case: ThresholdCase) {
     tokio::runtime::Runtime::new().unwrap().block_on(async {
         let server = MockServer::start().await;
         let requests = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
-        let reset = (chrono::Utc::now() + chrono::Duration::hours(1)).to_rfc3339();
+        let reset = (jiff::Timestamp::now() + jiff::SignedDuration::from_hours(1)).to_string();
         Mock::given(matchers::method("GET"))
             .and(matchers::path("/api/oauth/usage"))
             .respond_with({
