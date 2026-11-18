@@ -113,7 +113,12 @@ pub(crate) fn parse(text: &str, history: Option<&History>) -> io::Result<Command
     let words = arguments.split_whitespace().collect::<Vec<_>>();
     let numbers = || arguments.parse::<i32>().map_err(io::Error::other);
     match (verb, words.as_slice()) {
-        ("period", [_]) => Ok(Command::History(json!({"kind":"period", "days":numbers()?}))),
+        ("period", [_]) => match numbers()? {
+            days @ (1 | 7 | 30 | 60) => Ok(Command::History(json!({"kind":"period", "days":days}))),
+            days => Err(io::Error::other(format!(
+                "Period takes 1, 7, 30 or 60 days, not {days}"
+            ))),
+        },
         ("range", [from, to]) => Ok(Command::History(json!({"kind":"custom", "from":from, "to":to}))),
         ("metric", [metric]) => Ok(Command::History(json!({"kind":"metric", "metric":metric}))),
         ("rollup", [rollup]) => Ok(Command::History(json!({"kind":"rollup", "rollup":rollup}))),

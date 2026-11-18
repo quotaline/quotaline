@@ -3,7 +3,10 @@ use super::*;
 #[test]
 fn translates_history_controls_to_backend_actions() {
     for (text, action) in [
+        ("period 1", json!({"kind":"period","days":1})),
         ("period 7", json!({"kind":"period","days":7})),
+        ("period 30", json!({"kind":"period","days":30})),
+        ("period 60", json!({"kind":"period","days":60})),
         (
             "range 2026-01-01 2026-01-07",
             json!({"kind":"custom","from":"2026-01-01","to":"2026-01-07"}),
@@ -24,6 +27,7 @@ fn rejects_incomplete_or_unsafe_commands() {
         ("set hide_identity", "Use set KEY JSON"),
         ("set hide_identity maybe", "expected value"),
         ("period week", "invalid digit"),
+        ("period 3", "Period takes 1, 7, 30 or 60 days, not 3"),
         ("interval codex up", "invalid digit"),
         ("threshold up", "invalid digit"),
         ("visibility invalid", "expected value"),

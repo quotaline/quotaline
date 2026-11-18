@@ -191,6 +191,19 @@ fn lone_escape_cancels_the_history_editor_and_restores_tracking() {
 }
 
 #[test]
+fn history_editor_names_the_periods_it_accepts() {
+    let mut cli = Interactive::start(command().arg("--demo"));
+    cli.read_until("Demo data");
+    cli.write(b"2");
+    cli.read_until("\x1b[?1006h\x1b[?1003h");
+    cli.write(b":period 3\r");
+    cli.read_until("Period takes 1, 7, 30 or 60 days, not 3");
+    cli.write(b":period 30\r");
+    cli.read_until("This action requires the desktop source");
+    cli.quit(b"q");
+}
+
+#[test]
 fn restores_terminal_after_termination_signal() {
     let mut cli = Interactive::start(command().arg("--demo"));
     cli.read_until("Demo data");
