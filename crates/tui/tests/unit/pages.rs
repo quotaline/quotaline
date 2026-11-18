@@ -257,7 +257,7 @@ fn history_falls_back_for_an_unknown_metric_and_formats_local_time() {
         .strftime("%Y-%m-%dT%H:%M:%S%:z")
         .to_string();
     assert!(rows.contains("History metric"));
-    assert!(rows.contains(&format!("{stamp} · 12.00")));
+    assert!(rows.contains(&format!("{stamp} · 12.00")), "{rows}");
     assert!(rows.contains("›● Codex · First"));
 }
 

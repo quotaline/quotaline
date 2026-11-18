@@ -219,10 +219,10 @@ pub(crate) fn draw_history(frame: &mut Frame<'_>, area: Rect, history: &History,
     let unit = definition
         .as_ref()
         .map_or("", |definition| definition.display_unit.as_str());
-    let zone = if history.utc || definition.as_ref().is_some_and(|definition| definition.daily_utc) {
-        TimeZone::UTC
+    let (zone, reading_format) = if history.utc || definition.as_ref().is_some_and(|definition| definition.daily_utc) {
+        (TimeZone::UTC, "%Y-%m-%dT%H:%M:%SZ")
     } else {
-        TimeZone::system()
+        (TimeZone::system(), "%Y-%m-%dT%H:%M:%S%:z")
     };
     let total = history
         .canonical_total
@@ -261,7 +261,14 @@ pub(crate) fn draw_history(frame: &mut Frame<'_>, area: Rect, history: &History,
         frame.render_widget(Line::from("Series hidden · v to show it").dim(), reading);
         None
     } else {
-        draw_history_reading(frame, reading, series, (reading_index, selected), unit, &zone)
+        draw_history_reading(
+            frame,
+            reading,
+            series,
+            (reading_index, selected),
+            unit,
+            (&zone, reading_format),
+        )
     };
     if visible.is_empty() {
         frame.render_widget(Line::from("No visible readings in this range").dim(), chart);
@@ -339,7 +346,7 @@ fn draw_history_reading(
     series: &Series,
     position: (Option<usize>, usize),
     unit: &str,
-    zone: &TimeZone,
+    time: (&TimeZone, &str),
 ) -> Option<(i64, f64)> {
     let (reading, index) = position;
     let mut readings = series.points.iter().filter(|point| !point.3);
@@ -353,11 +360,7 @@ fn draw_history_reading(
     };
     let value_label = history_value(value, unit);
     let summary = if reading.is_some() {
-        let when = if *zone == TimeZone::UTC {
-            history_date(timestamp, zone, "%Y-%m-%dT%H:%M:%SZ")
-        } else {
-            history_date(timestamp, zone, "%Y-%m-%dT%H:%M:%S%:z")
-        };
+        let when = history_date(timestamp, time.0, time.1);
         format!("{when} · {value_label}")
     } else {
         format!("Latest {value_label}")
