@@ -21,13 +21,16 @@ fn missing_service_reports_an_error_without_using_an_export() {
 #[test]
 fn displays_desktop_state_history_settings_and_logs_without_an_export() {
     let bus = Bus::start();
-    let _service = Fixture::serve(&bus.address, false);
+    let service = Fixture::serve(&bus.address, false);
     let mut cli = bus.cli();
     cli.read_until("108.5%");
-    cli.write(b"d");
+    cli.click(2, 2);
     cli.read_until("Example workspace");
-    cli.write(b"3");
+    cli.click(22, 23);
     cli.read_until("Write usage.json");
+    cli.click(2, 3);
+    service.wait_for("SetSetting");
+    cli.read_until("Settings saved");
     cli.write(b"j\x1b[D\x1b[C");
     cli.read_until("Settings saved");
     cli.write(b"2");
@@ -177,6 +180,20 @@ fn reads_the_real_service_with_the_usage_export_disabled() {
         serde_json::from_slice(&fs::read(root.join("config/quotaline/settings.json")).unwrap()).unwrap();
     assert_eq!(preferences["hide_identity"], true);
     assert_eq!(preferences["decimals"], 1);
+    cli.click(51, 23);
+    cli.write(b"set hide_identity false");
+    cli.read_until(":set hide_identity false");
+    cli.click(75, 23);
+    cli.read_until("\x1b[?1006h\x1b[?1003h");
+    cli.click(51, 23);
+    cli.write(b"set decimals 2");
+    cli.read_until(":set decimals 2");
+    cli.click(69, 23);
+    cli.read_until("Settings saved");
+    let preferences: Value =
+        serde_json::from_slice(&fs::read(root.join("config/quotaline/settings.json")).unwrap()).unwrap();
+    assert_eq!(preferences["hide_identity"], true);
+    assert_eq!(preferences["decimals"], 2);
     cli.write(b"v");
     cli.read_until("Series hidden");
     cli.write(b"i");

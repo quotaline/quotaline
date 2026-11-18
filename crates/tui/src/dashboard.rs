@@ -4,7 +4,7 @@ use ratatui::{
     Frame,
     layout::{Constraint, Layout, Position, Rect},
     style::Stylize,
-    text::Line,
+    text::{Line, Span},
     widgets::Paragraph,
 };
 
@@ -14,16 +14,24 @@ use crate::{
     desktop::{Command, Output, State},
     keys::Navigation,
     pages::{self, HistoryHit, HistoryView, Page},
-    preferences::{self, Control},
+    preferences::{self, Control, SettingsHit},
     snapshot::Provider,
     usage,
 };
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(crate) enum HistoryMouse {
+pub(crate) enum MouseEvent {
     Move(u16, u16),
     Click(u16, u16),
+    Scroll(u16, u16, Navigation),
     Leave,
+}
+
+#[cfg_attr(test, derive(Debug, PartialEq))]
+pub(crate) enum MouseAction {
+    Quit,
+    Show(Page),
+    Command(Command),
 }
 
 #[derive(Clone, Copy)]
@@ -205,31 +213,125 @@ impl Dashboard {
         None
     }
 
-    pub(crate) fn history_mouse(&mut self, action: HistoryMouse, area: Rect) -> Option<Command> {
-        let (HistoryMouse::Move(column, row) | HistoryMouse::Click(column, row)) = action else {
+    pub(crate) fn mouse(&mut self, event: MouseEvent, area: Rect) -> Option<MouseAction> {
+        let (MouseEvent::Move(column, row) | MouseEvent::Click(column, row) | MouseEvent::Scroll(column, row, _)) =
+            event
+        else {
             self.clear_history_hover();
             return None;
         };
-        if self.page != Page::History || self.command.is_some() || area.width < 34 || area.height < 14 {
+        if !usable(area) {
             return None;
         }
-        let history = self.history.as_ref()?;
-        let [_, content, _, _] = dashboard_sections(area);
-        let hit = pages::history_hit(content, history, self.scroll, Position::new(column, row));
-        match (action, hit) {
-            (HistoryMouse::Click(..), Some(HistoryHit::Series(index))) => {
+        let at = Position::new(column, row);
+        if !area.contains(at) {
+            self.clear_history_hover();
+            return None;
+        }
+        let [_, content, _, footer] = dashboard_sections(area);
+        if self.editing() {
+            return match event {
+                MouseEvent::Click(..) => self.click_editor(footer, at),
+                _ => None,
+            };
+        }
+        match event {
+            MouseEvent::Scroll(.., navigation) => {
+                self.scroll_mouse(navigation);
+                None
+            }
+            MouseEvent::Click(..) if footer.contains(at) => self.click_footer(footer, at),
+            MouseEvent::Click(..) => self.click_content(content, at),
+            MouseEvent::Move(..) | MouseEvent::Leave => self.inspect_history(content, at),
+        }
+    }
+
+    fn click_editor(&mut self, footer: Rect, at: Position) -> Option<MouseAction> {
+        let [_, run, cancel] = editor_sections(footer);
+        if run.contains(at) {
+            return self
+                .edit(b'\r')
+                .and_then(|text| self.parse(&text))
+                .map(MouseAction::Command);
+        }
+        if cancel.contains(at) {
+            self.edit(27);
+        }
+        None
+    }
+
+    fn scroll_mouse(&mut self, navigation: Navigation) {
+        match navigation {
+            Navigation::Up | Navigation::Down => self.move_vertical(navigation),
+            Navigation::Left | Navigation::Right
+                if matches!(self.page, Page::Logs | Page::Help | Page::Detail | Page::Result) =>
+            {
+                self.move_horizontal(navigation == Navigation::Right);
+            }
+            _ => {}
+        }
+    }
+
+    fn click_footer(&mut self, area: Rect, at: Position) -> Option<MouseAction> {
+        self.clear_history_hover();
+        let (_, _, target) = footer_links(area).find(|(hit, _, _)| hit.contains(at))?;
+        match target {
+            FooterTarget::Page(page) => Some(MouseAction::Show(page)),
+            FooterTarget::Command => {
+                self.start_command();
+                None
+            }
+            FooterTarget::Quit => Some(MouseAction::Quit),
+        }
+    }
+
+    fn click_content(&mut self, content: Rect, at: Position) -> Option<MouseAction> {
+        match self.page {
+            Page::Usage => {
+                (self.provider, self.window) = usage::hit(content, &self.providers, (self.provider, self.window), at)?;
+                Some(MouseAction::Show(Page::Detail))
+            }
+            Page::Settings if self.settings_editable => {
+                let (index, hit) = preferences::hit(content, &self.controls, self.scroll, at)?;
                 self.scroll = index;
-                self.reading = None;
-                self.visibility(false)
+                let command = match hit {
+                    SettingsHit::Edit => self.edit_setting(),
+                    SettingsHit::Adjust(direction) => self.controls[index].adjust(direction),
+                    SettingsHit::Focus => None,
+                };
+                command.map(MouseAction::Command)
             }
-            (_, Some(HistoryHit::Reading(timestamp))) => {
-                self.reading = Some(HistoryCursor::Mouse(timestamp));
-                None
+            Page::History => {
+                let history = self.history.as_ref()?;
+                match pages::history_hit(content, history, self.scroll, at) {
+                    Some(HistoryHit::Series(index)) => {
+                        self.scroll = index;
+                        self.reading = None;
+                        self.visibility(false).map(MouseAction::Command)
+                    }
+                    hit => {
+                        self.inspect_history_hit(hit);
+                        None
+                    }
+                }
             }
-            _ => {
-                self.clear_history_hover();
-                None
-            }
+            _ => None,
+        }
+    }
+
+    fn inspect_history(&mut self, content: Rect, at: Position) -> Option<MouseAction> {
+        if self.page == Page::History {
+            let history = self.history.as_ref()?;
+            self.inspect_history_hit(pages::history_hit(content, history, self.scroll, at));
+        }
+        None
+    }
+
+    fn inspect_history_hit(&mut self, hit: Option<HistoryHit>) {
+        if let Some(HistoryHit::Reading(timestamp)) = hit {
+            self.reading = Some(HistoryCursor::Mouse(timestamp));
+        } else {
+            self.clear_history_hover();
         }
     }
 
@@ -378,7 +480,13 @@ impl Dashboard {
             Page::Logs => self.logs.clone(),
             Page::Result => self.response.clone(),
             Page::Detail => self.providers.get(self.provider).map_or_else(Vec::new, |provider| {
+                let window = self.window.checked_sub(1).and_then(|index| provider.windows.get(index));
                 std::iter::once(format!("{} · {}", provider.name(), provider.status))
+                    .chain(
+                        window
+                            .into_iter()
+                            .flat_map(|window| usage::window_details(window, &self.settings)),
+                    )
                     .chain(provider.details.iter().cloned())
                     .chain(
                         provider
@@ -393,7 +501,7 @@ impl Dashboard {
 
     pub(crate) fn draw(&self, frame: &mut Frame<'_>, source: &str) {
         let area = frame.area();
-        if area.width < 34 || area.height < 14 {
+        if !usable(area) {
             frame.render_widget(Paragraph::new("Resize to at least 34 × 14").yellow(), area);
             return;
         }
@@ -442,17 +550,75 @@ impl Dashboard {
             frame.render_widget(Line::from(message.replace(char::is_control, "")).yellow(), status);
         }
 
-        let help_text = if area.width >= 62 {
-            " 1 Usage  2 History  3 Settings  4 Logs    ? Help  q Quit"
+        if let Some(input) = &self.command {
+            let [draft, run, cancel] = editor_sections(help);
+            let draft_text = Line::from(format!(":{}", String::from_utf8_lossy(input)));
+            let scroll = draft_text.width().saturating_sub(usize::from(draft.width)) as u16;
+            frame.render_widget(Paragraph::new(draft_text).scroll((0, scroll)).cyan(), draft);
+            frame.render_widget(Line::from(" Run ").cyan().bold(), run);
+            frame.render_widget(Line::from(" Cancel ").cyan().bold(), cancel);
         } else {
-            " 1 Usage  2 Hist  3 Set  4 Log  ?"
-        };
-        let line = self.command.as_ref().map_or_else(
-            || Line::from(help_text).dim(),
-            |input| Line::from(format!(":{}", String::from_utf8_lossy(input))).cyan(),
-        );
-        frame.render_widget(line, help);
+            let tabs = footer_links(help).map(|(_, text, target)| {
+                let label = Span::raw(text);
+                if matches!(target, FooterTarget::Page(page) if page == self.page) {
+                    label.cyan().bold()
+                } else {
+                    label.dim()
+                }
+            });
+            let line = Line::from(tabs.collect::<Vec<_>>());
+            frame.render_widget(line, help);
+        }
     }
+}
+
+fn usable(area: Rect) -> bool {
+    area.width >= 34 && area.height >= 14
+}
+
+#[derive(Clone, Copy)]
+enum FooterTarget {
+    Page(Page),
+    Command,
+    Quit,
+}
+
+fn footer_links(area: Rect) -> impl Iterator<Item = (Rect, &'static str, FooterTarget)> {
+    let labels = if area.width >= 66 {
+        [
+            " 1 Usage",
+            "  2 History",
+            "  3 Settings",
+            "  4 Logs",
+            "  ? Help",
+            "  : Cmd",
+            "  q Quit",
+        ]
+    } else {
+        [" 1 Use", " 2 Hist", " 3 Set", " 4 Log", " ?", " :", " q"]
+    };
+    let actions = [
+        FooterTarget::Page(Page::Usage),
+        FooterTarget::Page(Page::History),
+        FooterTarget::Page(Page::Settings),
+        FooterTarget::Page(Page::Logs),
+        FooterTarget::Page(Page::Help),
+        FooterTarget::Command,
+        FooterTarget::Quit,
+    ];
+    labels
+        .into_iter()
+        .zip(actions)
+        .scan(area.x, move |column, (label, action)| {
+            let width = label.len() as u16;
+            let hit = Rect::new(*column, area.y, width, area.height);
+            *column += width;
+            Some((hit, label, action))
+        })
+}
+
+fn editor_sections(area: Rect) -> [Rect; 3] {
+    Layout::horizontal([Constraint::Min(0), Constraint::Length(5), Constraint::Length(8)]).areas(area)
 }
 
 fn dashboard_sections(area: Rect) -> [Rect; 4] {

@@ -27,10 +27,14 @@ dashboard updates as the desktop backend updates and keeps the last readable quo
 
 ## Usage and History
 
+Click a footer link to change views, open the command editor, or quit. Scroll vertically to move through rows or
+horizontally to pan long text. Click **Run** or **Cancel** to finish editing. Use your terminal's mouse-selection
+shortcut to select text while mouse reporting is active.
+
 Usage groups the desktop's selected quota windows by provider. **Observed** shows how long ago the provider last
 reported a reading. Each window shows its quota meter, percentage, and time until the next reset. When a provider
-reports only a reset date, Usage counts calendar days. Press **d** for provider status, notices, credits, and account
-details as available. Identity visibility follows the desktop setting.
+reports only a reset date, Usage counts calendar days. Click a quota row or press **d** for provider status, notices,
+credits, and account details as available. Identity visibility follows the desktop setting.
 
 History charts the visible series together. The legend starts at each series' latest reading. Hover over the plot to
 inspect all series at the same time, and move the pointer out of the plot to return to their latest readings. Click a
@@ -42,9 +46,10 @@ filename.
 
 ## Settings and diagnostics
 
-Settings groups provider collection, display options, notifications, data, and diagnostics. On Linux, use the arrows to
-adjust an option or press **Enter** to toggle a switch or edit a text field. The terminal and desktop app share these
-settings. **Esc** cancels text entry. Use **?** for additional model and support commands.
+Settings groups provider collection, display options, notifications, data, and diagnostics. On Linux, click a control or
+press **Enter** to toggle a switch or edit a text field. Click **‹** or **›** or use the arrow keys to adjust a value.
+The terminal and desktop app share these settings. **Esc** cancels text entry. Use **?** for additional model and
+support commands.
 
 Press **4** for recent desktop logs. `:logs full` shows retained logs, `:diagnostics` displays the diagnostic report,
 and `:issue` displays the issue report link. Use the left and right arrows to pan long lines.

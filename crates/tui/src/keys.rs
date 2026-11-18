@@ -1,6 +1,6 @@
-//! Decodes keystrokes for terminal navigation.
+//! Decodes terminal keys and mouse reports.
 
-use crate::{dashboard::HistoryMouse, pages::Page};
+use crate::{dashboard::MouseEvent, pages::Page};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum Action {
@@ -15,7 +15,7 @@ pub(crate) enum Action {
     SignIn,
     History(Option<bool>),
     Edit(u8),
-    Mouse(HistoryMouse),
+    Mouse(MouseEvent),
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -140,7 +140,7 @@ impl Keys {
     }
 }
 
-fn mouse_report(report: &[u8]) -> Option<HistoryMouse> {
+fn mouse_report(report: &[u8]) -> Option<MouseEvent> {
     if !report.iter().all(|byte| byte.is_ascii_digit() || *byte == b';') {
         return None;
     }
@@ -151,8 +151,12 @@ fn mouse_report(report: &[u8]) -> Option<HistoryMouse> {
     let column = column.parse::<u16>().ok()?.checked_sub(1)?;
     let row = row.parse::<u16>().ok()?.checked_sub(1)?;
     match button.parse::<u8>().ok()? & 0b1110_0011 {
-        0 => Some(HistoryMouse::Click(column, row)),
-        32..=35 => Some(HistoryMouse::Move(column, row)),
+        0 => Some(MouseEvent::Click(column, row)),
+        32..=35 => Some(MouseEvent::Move(column, row)),
+        64 => Some(MouseEvent::Scroll(column, row, Navigation::Up)),
+        65 => Some(MouseEvent::Scroll(column, row, Navigation::Down)),
+        66 => Some(MouseEvent::Scroll(column, row, Navigation::Left)),
+        67 => Some(MouseEvent::Scroll(column, row, Navigation::Right)),
         _ => None,
     }
 }

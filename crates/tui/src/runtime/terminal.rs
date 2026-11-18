@@ -20,7 +20,7 @@ use termion::{raw::IntoRawMode, screen::IntoAlternateScreen};
 
 use super::Source;
 use crate::{
-    dashboard::{Dashboard, HistoryMouse},
+    dashboard::{Dashboard, MouseAction, MouseEvent},
     desktop::{Backend, Command, Output, State},
     keys::{Action, Keys},
     pages::{self, Page},
@@ -49,7 +49,7 @@ pub(crate) fn run(source: Source) -> io::Result<()> {
     let mut terminal = Terminal::new(TermionBackend::new(output))?;
     let mut mouse = MouseTracking {
         output: File::from(dup(io::stdout())?),
-        active: false,
+        mode: MouseMode::Disabled,
     };
     let source_label = match &source {
         Source::Desktop => String::new(),
@@ -87,13 +87,17 @@ pub(crate) fn run(source: Source) -> io::Result<()> {
 
         let size = terminal.size()?;
         let area = Rect::new(0, 0, size.width, size.height);
-        let track_mouse = dashboard.page() == Page::History && !dashboard.editing();
+        let mouse_mode = if dashboard.page() == Page::History && !dashboard.editing() {
+            MouseMode::Motion
+        } else {
+            MouseMode::Buttons
+        };
         let resized = last_size != Some(size);
-        if resized || (mouse.active && !track_mouse) {
-            dashboard.history_mouse(HistoryMouse::Leave, area);
+        if resized || (mouse.mode == MouseMode::Motion && mouse_mode != MouseMode::Motion) {
+            dashboard.mouse(MouseEvent::Leave, area);
         }
-        if track_mouse != mouse.active {
-            mouse.set(track_mouse)?;
+        if mouse_mode != mouse.mode {
+            mouse.set(mouse_mode)?;
         }
         if redraw || resized {
             terminal.draw(|frame| dashboard.draw(frame, &source_label))?;
@@ -126,14 +130,7 @@ pub(crate) fn run(source: Source) -> io::Result<()> {
         let Some(action) = action else {
             continue;
         };
-        if dashboard.editing() {
-            if let Action::Edit(byte) = action
-                && let Some(text) = dashboard.edit(byte)
-                && let Some(command) = dashboard.parse(&text)
-            {
-                send(&jobs, &mut dashboard, command)?;
-            }
-            redraw = true;
+        if dashboard.editing() && matches!(action, Action::Navigate(_)) {
             continue;
         }
         let command = match action {
@@ -143,10 +140,7 @@ pub(crate) fn run(source: Source) -> io::Result<()> {
                 dashboard.page().command()
             }
             Action::Navigate(navigation) => dashboard.navigate(navigation),
-            Action::Show(page) => {
-                dashboard.show(page);
-                page.command()
-            }
+            Action::Show(page) => show(&mut dashboard, page),
             Action::StartCommand => {
                 dashboard.start_command();
                 None
@@ -158,8 +152,13 @@ pub(crate) fn run(source: Source) -> io::Result<()> {
                 .selected_provider()
                 .map(|provider| Command::SignIn(provider.into())),
             Action::History(shift) => Some(dashboard.history_shift(shift)),
-            Action::Mouse(event) if mouse.active => dashboard.history_mouse(event, area),
-            Action::Mouse(_) | Action::Edit(_) => None,
+            Action::Mouse(event) => match dashboard.mouse(event, area) {
+                Some(MouseAction::Quit) => break,
+                Some(MouseAction::Show(page)) => show(&mut dashboard, page),
+                Some(MouseAction::Command(command)) => Some(command),
+                None => None,
+            },
+            Action::Edit(byte) => dashboard.edit(byte).and_then(|text| dashboard.parse(&text)),
         };
         if let Some(command) = command {
             send(&jobs, &mut dashboard, command)?;
@@ -171,28 +170,36 @@ pub(crate) fn run(source: Source) -> io::Result<()> {
 
 struct MouseTracking {
     output: File,
-    active: bool,
+    mode: MouseMode,
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum MouseMode {
+    Disabled,
+    Buttons,
+    Motion,
 }
 
 impl MouseTracking {
-    fn set(&mut self, active: bool) -> io::Result<()> {
-        if active {
-            self.active = true;
-            self.output.write_all(b"\x1b[?1006h\x1b[?1003h")
-        } else {
-            self.output.write_all(b"\x1b[?1003l\x1b[?1006l")?;
-            self.active = false;
-            Ok(())
-        }
+    fn set(&mut self, mode: MouseMode) -> io::Result<()> {
+        self.mode = mode;
+        self.output.write_all(match mode {
+            MouseMode::Disabled => b"\x1b[?1000l\x1b[?1003l\x1b[?1006l",
+            MouseMode::Buttons => b"\x1b[?1003l\x1b[?1006h\x1b[?1000h",
+            MouseMode::Motion => b"\x1b[?1000l\x1b[?1006h\x1b[?1003h",
+        })
     }
 }
 
 impl Drop for MouseTracking {
     fn drop(&mut self) {
-        if self.active {
-            let _ = self.set(false);
-        }
+        let _ = self.set(MouseMode::Disabled);
     }
+}
+
+fn show(dashboard: &mut Dashboard, page: Page) -> Option<Command> {
+    dashboard.show(page);
+    page.command()
 }
 
 fn send(jobs: &mpsc::Sender<Job>, dashboard: &mut Dashboard, command: Command) -> io::Result<()> {

@@ -2,7 +2,7 @@
 
 use ratatui::{
     Frame,
-    layout::{Constraint, Layout, Rect},
+    layout::{Constraint, Layout, Position, Rect},
     style::Stylize,
     text::Line,
     widgets::{Block, Paragraph, Wrap},
@@ -53,6 +53,13 @@ impl Control {
 
     pub(crate) fn answer(&self) -> Option<String> {
         matches!(self.editor, Editor::Text).then(|| format!("set {} {}", self.key, self.value))
+    }
+
+    fn stepped(&self) -> bool {
+        matches!(
+            self.editor,
+            Editor::Number { .. } | Editor::Choice(_) | Editor::Interval(_)
+        )
     }
 
     fn formatted(&self) -> String {
@@ -247,32 +254,12 @@ pub(crate) fn draw(frame: &mut Frame<'_>, area: Rect, controls: &[Control], sele
         return;
     }
 
-    let [rows, hints] = Layout::vertical([Constraint::Min(0), Constraint::Length(2)]).areas(inner);
-    let mut items = Vec::new();
-    let mut group = "";
-    let mut focused_row = 0;
-    for (index, control) in controls.iter().enumerate() {
-        if group != control.group {
-            group = control.group;
-            items.push((Line::from(format!("  {group}")).cyan().bold(), Line::default()));
+    let [rows, hints] = settings_sections(inner);
+    for (row, item) in visible_rows(rows, controls, selected) {
+        match item {
+            SettingsRow::Group(group) => frame.render_widget(Line::from(format!("  {group}")).cyan().bold(), row),
+            SettingsRow::Control(index) => draw_control(frame, row, &controls[index], index == selected, editable),
         }
-        let label = format!("{} {}", if index == selected { "›" } else { " " }, control.label);
-        let value = Line::from(control.formatted());
-        if index == selected {
-            focused_row = items.len();
-            items.push((Line::from(label).cyan().bold(), value.bold()));
-        } else {
-            items.push((Line::from(label), value));
-        }
-    }
-    let start = focused_row.saturating_sub(usize::from(rows.height).saturating_sub(2));
-    for (offset, (label, value)) in items.into_iter().skip(start).take(rows.height.into()).enumerate() {
-        let row = Rect::new(rows.x, rows.y + offset as u16, rows.width, 1);
-        let [label_area, value_area] = Layout::horizontal([Constraint::Percentage(62), Constraint::Fill(1)])
-            .spacing(2)
-            .areas(row);
-        frame.render_widget(label, label_area);
-        frame.render_widget(value, value_area);
     }
     let hint = if editable {
         "↑↓ Move   Tab Next group\n←→ Adjust   Enter Toggle or edit"
@@ -280,4 +267,91 @@ pub(crate) fn draw(frame: &mut Frame<'_>, area: Rect, controls: &[Control], sele
         "↑↓ Move   Tab Next group\nChange these settings in the desktop app"
     };
     frame.render_widget(Paragraph::new(hint).dim(), hints);
+}
+
+fn settings_sections(inner: Rect) -> [Rect; 2] {
+    Layout::vertical([Constraint::Min(0), Constraint::Length(2)]).areas(inner)
+}
+
+enum SettingsRow {
+    Group(&'static str),
+    Control(usize),
+}
+
+fn visible_rows(rows: Rect, controls: &[Control], selected: usize) -> impl Iterator<Item = (Rect, SettingsRow)> {
+    let mut items = Vec::new();
+    let mut group = "";
+    let mut focused_row = 0;
+    for (index, control) in controls.iter().enumerate() {
+        if group != control.group {
+            group = control.group;
+            items.push(SettingsRow::Group(group));
+        }
+        if index == selected {
+            focused_row = items.len();
+        }
+        items.push(SettingsRow::Control(index));
+    }
+    let start = focused_row.saturating_sub(usize::from(rows.height).saturating_sub(2));
+    items
+        .into_iter()
+        .skip(start)
+        .take(rows.height.into())
+        .enumerate()
+        .map(move |(offset, item)| (Rect::new(rows.x, rows.y + offset as u16, rows.width, 1), item))
+}
+
+fn draw_control(frame: &mut Frame<'_>, row: Rect, control: &Control, active: bool, editable: bool) {
+    let label = format!("{} {}", if active { "›" } else { " " }, control.label);
+    let label = Line::from(label);
+    let value = Line::from(control.formatted());
+    let [label_area, value_area, previous, next] = control_sections(row, editable && control.stepped());
+    frame.render_widget(if active { label.cyan().bold() } else { label }, label_area);
+    frame.render_widget(if active { value.bold() } else { value }, value_area);
+    frame.render_widget(Line::from("‹").cyan(), previous);
+    frame.render_widget(Line::from("›").cyan(), next);
+}
+
+fn control_sections(row: Rect, stepped: bool) -> [Rect; 4] {
+    let [label, value] = Layout::horizontal([Constraint::Percentage(62), Constraint::Fill(1)])
+        .spacing(2)
+        .areas(row);
+    if stepped {
+        let [previous, value, next] =
+            Layout::horizontal([Constraint::Length(1), Constraint::Fill(1), Constraint::Length(1)])
+                .spacing(1)
+                .areas(value);
+        [label, value, previous, next]
+    } else {
+        [label, value, Rect::ZERO, Rect::ZERO]
+    }
+}
+
+pub(crate) enum SettingsHit {
+    Edit,
+    Adjust(i32),
+    Focus,
+}
+
+pub(crate) fn hit(area: Rect, controls: &[Control], selected: usize, at: Position) -> Option<(usize, SettingsHit)> {
+    let [rows, _] = settings_sections(Block::bordered().inner(area));
+    let (row, SettingsRow::Control(index)) =
+        visible_rows(rows, controls, selected).find(|(row, _)| row.contains(at))?
+    else {
+        return None;
+    };
+    let control = &controls[index];
+    let action = if control.stepped() {
+        let [_, _, previous, next] = control_sections(row, true);
+        if previous.contains(at) {
+            SettingsHit::Adjust(-1)
+        } else if next.contains(at) {
+            SettingsHit::Adjust(1)
+        } else {
+            SettingsHit::Focus
+        }
+    } else {
+        SettingsHit::Edit
+    };
+    Some((index, action))
 }

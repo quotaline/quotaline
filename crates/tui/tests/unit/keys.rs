@@ -61,12 +61,28 @@ fn decodes_fragmented_sgr_mouse_coordinates_and_modifiers() {
     let mut keys = Keys::default();
     for (bytes, expected) in [
         (&b"\x1b[<35;8"[..], Vec::new()),
-        (&b";6M"[..], vec![Action::Mouse(HistoryMouse::Move(7, 5))]),
-        (&b"\x1b[<48;9;7M"[..], vec![Action::Mouse(HistoryMouse::Move(8, 6))]),
-        (&b"\x1b[<16;1;2M"[..], vec![Action::Mouse(HistoryMouse::Click(0, 1))]),
+        (&b";6M"[..], vec![Action::Mouse(MouseEvent::Move(7, 5))]),
+        (&b"\x1b[<48;9;7M"[..], vec![Action::Mouse(MouseEvent::Move(8, 6))]),
+        (&b"\x1b[<16;1;2M"[..], vec![Action::Mouse(MouseEvent::Click(0, 1))]),
+        (
+            &b"\x1b[<80;3;7M"[..],
+            vec![Action::Mouse(MouseEvent::Scroll(2, 6, Navigation::Up))],
+        ),
+        (
+            &b"\x1b[<65;4;8M"[..],
+            vec![Action::Mouse(MouseEvent::Scroll(3, 7, Navigation::Down))],
+        ),
+        (
+            &b"\x1b[<66;5;9M"[..],
+            vec![Action::Mouse(MouseEvent::Scroll(4, 8, Navigation::Left))],
+        ),
+        (
+            &b"\x1b[<75;6;10M"[..],
+            vec![Action::Mouse(MouseEvent::Scroll(5, 9, Navigation::Right))],
+        ),
         (
             &b"\x1b[<0;2;\x1b[<35;7;3M"[..],
-            vec![Action::Mouse(HistoryMouse::Move(6, 2))],
+            vec![Action::Mouse(MouseEvent::Move(6, 2))],
         ),
     ] {
         assert_eq!(
@@ -80,10 +96,10 @@ fn decodes_fragmented_sgr_mouse_coordinates_and_modifiers() {
 }
 
 #[test]
-fn ignores_releases_scroll_and_malformed_reports_before_keyboard_input() {
+fn ignores_releases_other_buttons_and_malformed_reports_before_keyboard_input() {
     for report in [
         &b"\x1b[<0;3;7m"[..],
-        &b"\x1b[<64;3;7M"[..],
+        &b"\x1b[<128;3;7M"[..],
         &b"\x1b[<1;3;7M"[..],
         &b"\x1b[<0;3M"[..],
         &b"\x1b[<0;3;7;5M"[..],
@@ -133,6 +149,6 @@ fn only_a_lone_escape_cancels_the_editor_at_a_poll_timeout() {
     assert_eq!(keys.push(b'1', true), (None, false));
     assert_eq!(
         keys.push(b'M', true),
-        (Some(Action::Mouse(HistoryMouse::Move(1, 0))), false)
+        (Some(Action::Mouse(MouseEvent::Move(1, 0))), false)
     );
 }

@@ -8,7 +8,7 @@ use jiff::{
 use quotaline_text::time::{countdown, relative_age};
 use ratatui::{
     Frame,
-    layout::{Constraint, Layout, Rect},
+    layout::{Constraint, Layout, Position, Rect},
     style::{Color, Stylize},
     text::{Line, Span},
     widgets::{Block, BorderType, Paragraph, Wrap},
@@ -50,22 +50,10 @@ pub(crate) fn draw(
         return;
     }
 
-    let line_height = if inner.width < 73 { 2 } else { 1 };
-    let visible = usize::from(inner.height / line_height);
-    let rows = positions(providers).collect::<Vec<_>>();
-    let selected = rows.iter().position(|&row| row == selected).unwrap_or(0);
-    let start = selected
-        .saturating_sub(visible / 2)
-        .min(rows.len().saturating_sub(visible));
     let decimals = settings["decimals"].as_u64().unwrap_or(1).min(2) as usize;
-    let now = Timestamp::now();
-    let clock = ReadingTime {
-        now,
-        today: TimeZone::system().to_datetime(now).date(),
-    };
-    for (offset, &(provider, window)) in rows.iter().skip(start).take(visible).enumerate() {
-        let row = Rect::new(inner.x, inner.y + offset as u16 * line_height, inner.width, line_height);
-        let active = start + offset == selected;
+    let clock = ReadingTime::at(Timestamp::now());
+    for (row, index @ (provider, window)) in visible_rows(inner, providers, selected) {
+        let active = index == selected;
         let data = &providers[provider];
         if let Some(window) = window.checked_sub(1).and_then(|index| data.windows.get(index)) {
             draw_window(frame, row, window, active, (remaining, decimals), clock);
@@ -73,6 +61,56 @@ pub(crate) fn draw(
             draw_provider(frame, row, data, active, clock);
         }
     }
+}
+
+pub(crate) fn hit(
+    area: Rect,
+    providers: &[Provider],
+    selected: (usize, usize),
+    at: Position,
+) -> Option<(usize, usize)> {
+    visible_rows(Block::bordered().inner(area), providers, selected)
+        .find_map(|(row, index)| row.contains(at).then_some(index))
+}
+
+fn visible_rows(
+    inner: Rect,
+    providers: &[Provider],
+    selected: (usize, usize),
+) -> impl Iterator<Item = (Rect, (usize, usize))> {
+    let line_height = if inner.width < 73 { 2 } else { 1 };
+    let visible = usize::from(inner.height / line_height);
+    let rows = positions(providers).collect::<Vec<_>>();
+    let selected = rows.iter().position(|&row| row == selected).unwrap_or(0);
+    let start = selected
+        .saturating_sub(visible / 2)
+        .min(rows.len().saturating_sub(visible));
+    rows.into_iter()
+        .skip(start)
+        .take(visible)
+        .enumerate()
+        .map(move |(offset, index)| {
+            (
+                Rect::new(inner.x, inner.y + offset as u16 * line_height, inner.width, line_height),
+                index,
+            )
+        })
+}
+
+pub(crate) fn window_details(window: &Window, settings: &Value) -> [String; 2] {
+    let remaining = settings["show_as"] == "remaining";
+    let decimals = settings["decimals"].as_u64().unwrap_or(1).min(2) as usize;
+    let reading = window.used_percent.map_or_else(
+        || "Usage unavailable".into(),
+        |used| {
+            let state = if remaining { "remaining" } else { "used" };
+            format!("{} {state}", percentage(used, remaining, decimals))
+        },
+    );
+    [
+        format!("{} · {reading}", window.label),
+        ReadingTime::at(Timestamp::now()).deadline(window),
+    ]
 }
 
 fn draw_provider(frame: &mut Frame<'_>, area: Rect, provider: &Provider, active: bool, clock: ReadingTime) {
@@ -122,10 +160,7 @@ fn draw_window(
     let title = Line::from(format!("{marker}{}", window.label));
     frame.render_widget(if active { title.cyan().bold() } else { title }, label);
 
-    let mut deadline = window.resets_at.map_or_else(
-        || "Reset unavailable".into(),
-        |stamp| clock.reset(stamp, window.reset_by_day),
-    );
+    let mut deadline = clock.deadline(window);
     if let Some(pace) = &window.pace
         && deadline.chars().count() + 3 + pace.chars().count() <= usize::from(reset.width)
     {
@@ -142,6 +177,20 @@ struct ReadingTime {
 }
 
 impl ReadingTime {
+    fn at(now: Timestamp) -> Self {
+        Self {
+            now,
+            today: TimeZone::system().to_datetime(now).date(),
+        }
+    }
+
+    fn deadline(self, window: &Window) -> String {
+        window.resets_at.map_or_else(
+            || "Reset unavailable".into(),
+            |stamp| self.reset(stamp, window.reset_by_day),
+        )
+    }
+
     fn observed(self, stamp: Timestamp) -> String {
         let age = stamp.duration_until(self.now).as_secs_f64();
         if age <= -5.0 {
@@ -179,8 +228,7 @@ fn draw_meter(frame: &mut Frame<'_>, area: Rect, used: Option<f64>, (remaining, 
         frame.render_widget(Line::from("Usage unavailable").dim(), area);
         return;
     };
-    let value = if remaining { 100.0 - used } else { used };
-    let label = format!("{value:.decimals$}%");
+    let label = percentage(used, remaining, decimals);
     let [track, value] = Layout::horizontal([Constraint::Fill(1), Constraint::Length(8)]).areas(area);
     let width = usize::from(track.width.saturating_sub(1));
     let filled = (used.clamp(0.0, 100.0) * width as f64 / 100.0).round() as usize;
@@ -197,6 +245,11 @@ fn draw_meter(frame: &mut Frame<'_>, area: Rect, used: Option<f64>, (remaining, 
         track,
     );
     frame.render_widget(Line::from(label).bold().right_aligned(), value);
+}
+
+fn percentage(used: f64, remaining: bool, decimals: usize) -> String {
+    let value = if remaining { 100.0 - used } else { used };
+    format!("{value:.decimals$}%")
 }
 
 #[cfg(test)]

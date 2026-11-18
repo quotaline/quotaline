@@ -290,16 +290,18 @@ fn render(dashboard: &Dashboard, width: u16, height: u16) -> String {
 }
 
 fn render_source(dashboard: &Dashboard, width: u16, height: u16, source: &str) -> String {
-    let mut terminal = Terminal::new(TestBackend::new(width, height)).unwrap();
-    terminal.draw(|frame| dashboard.draw(frame, source)).unwrap();
-    terminal
-        .backend()
-        .buffer()
+    render_buffer(dashboard, width, height, source)
         .content
         .chunks(usize::from(width))
         .map(|row| row.iter().map(ratatui::buffer::Cell::symbol).collect::<String>())
         .collect::<Vec<_>>()
         .join("\n")
+}
+
+fn render_buffer(dashboard: &Dashboard, width: u16, height: u16, source: &str) -> ratatui::buffer::Buffer {
+    let mut terminal = Terminal::new(TestBackend::new(width, height)).unwrap();
+    terminal.draw(|frame| dashboard.draw(frame, source)).unwrap();
+    terminal.backend().buffer().clone()
 }
 
 fn provider(id: &str, plan: &str, windows: Vec<Window>) -> Provider {
@@ -628,7 +630,7 @@ fn history_mouse_inspects_the_plot_and_restores_latest_on_exit() {
     dashboard.show(Page::History);
     dashboard.apply_output(Page::History, Ok(Output::History(history_fixture())));
     assert!(render(&dashboard, 100, 24).contains("Latest 78.00%"));
-    assert!(dashboard.history_mouse(HistoryMouse::Move(8, 7), area).is_none());
+    assert!(dashboard.mouse(MouseEvent::Move(8, 7), area).is_none());
     let screen = render(&dashboard, 100, 24);
     assert!(screen.contains("2026-05-28T20:26:40Z · 33.00%"));
     assert!(
@@ -639,13 +641,13 @@ fn history_mouse_inspects_the_plot_and_restores_latest_on_exit() {
             .contains("—")
     );
 
-    assert!(dashboard.history_mouse(HistoryMouse::Click(49, 7), area).is_none());
+    assert!(dashboard.mouse(MouseEvent::Click(49, 7), area).is_none());
     assert!(render(&dashboard, 100, 24).contains("2026-05-28T20:26:45Z · 78.00%"));
-    assert!(dashboard.history_mouse(HistoryMouse::Move(8, 21), area).is_none());
+    assert!(dashboard.mouse(MouseEvent::Move(8, 21), area).is_none());
     assert!(render(&dashboard, 100, 24).contains("Latest 78.00%"));
 
-    dashboard.history_mouse(HistoryMouse::Move(8, 7), area);
-    dashboard.history_mouse(HistoryMouse::Leave, Rect::new(0, 0, 20, 10));
+    dashboard.mouse(MouseEvent::Move(8, 7), area);
+    dashboard.mouse(MouseEvent::Leave, Rect::new(0, 0, 20, 10));
     assert!(render(&dashboard, 100, 24).contains("Latest 78.00%"));
 }
 
@@ -653,25 +655,25 @@ fn history_mouse_inspects_the_plot_and_restores_latest_on_exit() {
 fn history_mouse_only_toggles_legend_rows_on_click() {
     let mut dashboard = Dashboard::new(true);
     let area = Rect::new(0, 0, 100, 24);
-    let click = HistoryMouse::Click(79, 5);
-    assert!(dashboard.history_mouse(click, area).is_none());
+    let click = MouseEvent::Click(79, 5);
+    assert!(dashboard.mouse(click, area).is_none());
     dashboard.show(Page::History);
-    assert!(dashboard.history_mouse(click, area).is_none());
+    assert!(dashboard.mouse(click, area).is_none());
     dashboard.apply_output(Page::History, Ok(Output::History(history_fixture())));
-    assert!(dashboard.history_mouse(click, Rect::new(0, 0, 100, 12)).is_none());
-    assert!(dashboard.history_mouse(click, Rect::new(0, 0, 20, 24)).is_none());
+    assert!(dashboard.mouse(click, Rect::new(0, 0, 100, 12)).is_none());
+    assert!(dashboard.mouse(click, Rect::new(0, 0, 20, 24)).is_none());
     dashboard.start_command();
-    assert!(dashboard.history_mouse(click, area).is_none());
+    assert!(dashboard.mouse(click, area).is_none());
     dashboard.edit(27);
-    assert!(dashboard.history_mouse(HistoryMouse::Click(79, 7), area).is_none());
-    assert!(dashboard.history_mouse(HistoryMouse::Move(79, 5), area).is_none());
+    assert!(dashboard.mouse(MouseEvent::Click(79, 7), area).is_none());
+    assert!(dashboard.mouse(MouseEvent::Move(79, 5), area).is_none());
     assert_eq!(
         dashboard.visibility(false),
         Some(visibility_command("toggle", "weekly"))
     );
     assert_eq!(
-        dashboard.history_mouse(click, area),
-        Some(visibility_command("toggle", "daily"))
+        dashboard.mouse(click, area),
+        Some(MouseAction::Command(visibility_command("toggle", "daily")))
     );
     assert!(render(&dashboard, 100, 24).contains("›● Codex · Daily"));
 }
@@ -685,7 +687,7 @@ fn history_mouse_leave_preserves_keyboard_reading() {
     dashboard.apply_output(Page::History, Ok(Output::History(history)));
     dashboard.navigate(Navigation::Left);
     let area = Rect::new(0, 0, 100, 24);
-    assert!(dashboard.history_mouse(HistoryMouse::Leave, area).is_none());
+    assert!(dashboard.mouse(MouseEvent::Leave, area).is_none());
     let screen = render(&dashboard, 100, 24);
     assert!(screen.contains("2026-05-28T20:26:43Z · 33.00%"));
     assert!(
@@ -715,14 +717,14 @@ fn history_mouse_uses_the_scrolled_legend_after_resize() {
         dashboard.navigate(Navigation::Down);
     }
     for (width, column, row, expected) in [(34, 26, 7, "model-6"), (80, 77, 4, "model-3")] {
-        let command = dashboard.history_mouse(HistoryMouse::Click(column, row), Rect::new(0, 0, width, 14));
+        let command = dashboard.mouse(MouseEvent::Click(column, row), Rect::new(0, 0, width, 14));
         let action = command.unwrap();
         assert_eq!(
             action,
-            Command::Visibility(
+            MouseAction::Command(Command::Visibility(
                 json!({"kind":"toggle","metric":"usage","id":expected,"series":(0..9).map(|index| format!("model-{index}")).collect::<Vec<_>>()})
                     .to_string(),
-            )
+            ))
         );
     }
 }
@@ -795,4 +797,313 @@ fn old_exports_hide_only_copilots_epoch_reset() {
                 .contains("Reset was due")
         );
     }
+}
+
+#[test]
+fn mouse_footer_uses_visible_links_at_minimum_and_full_width() {
+    let mut dashboard = Dashboard::new(true);
+    for (width, quit) in [(34, "q"), (80, "Quit")] {
+        let size = (width, 14);
+        for (label, page) in [
+            ("1 Us", Page::Usage),
+            ("2 Hist", Page::History),
+            ("3 Set", Page::Settings),
+            ("4 Log", Page::Logs),
+            ("?", Page::Help),
+        ] {
+            assert_eq!(click_label(&mut dashboard, size, label), Some(MouseAction::Show(page)));
+        }
+        assert_eq!(click_label(&mut dashboard, size, quit), Some(MouseAction::Quit));
+        assert!(click_label(&mut dashboard, size, ":").is_none());
+        dashboard.edit(b'x');
+        assert!(render(&dashboard, width, 14).contains(":x"));
+        dashboard.edit(27);
+        assert!(
+            dashboard
+                .mouse(MouseEvent::Click(width - 1, 13), Rect::new(0, 0, width, 14))
+                .is_none()
+        );
+    }
+}
+
+#[test]
+fn mouse_footer_highlights_the_active_destination() {
+    let mut dashboard = Dashboard::new(true);
+    dashboard.show(Page::Logs);
+    let buffer = render_buffer(&dashboard, 80, 14, "Snapshot");
+    use ratatui::style::{Color, Modifier};
+    assert_eq!(buffer[(35, 13)].fg, Color::Cyan);
+    assert!(buffer[(35, 13)].modifier.contains(Modifier::BOLD));
+    assert!(buffer[(11, 13)].modifier.contains(Modifier::DIM));
+}
+
+#[test]
+fn mouse_usage_opens_the_detail_for_the_clicked_provider_or_window() {
+    let mut dashboard = Dashboard::new(true);
+    let size = (45, 16);
+    let untouched = render(&dashboard, size.0, size.1);
+    assert!(
+        dashboard
+            .mouse(MouseEvent::Move(3, 3), Rect::new(0, 0, 45, 16))
+            .is_none()
+    );
+    assert_eq!(render(&dashboard, size.0, size.1), untouched);
+    assert!(
+        dashboard
+            .mouse(MouseEvent::Click(2, 3), Rect::new(0, 0, 45, 16))
+            .is_none()
+    );
+    dashboard.apply_snapshot(Ok(State {
+        providers: vec![
+            crate::snapshot::Provider {
+                id: "codex".into(),
+                plan: None,
+                fetched_at: None,
+                status: "Cached".into(),
+                details: vec!["Codex account".into()],
+                windows: vec![
+                    crate::snapshot::Window {
+                        label: "Weekly".into(),
+                        used_percent: Some(31.0),
+                        resets_at: None,
+                        reset_by_day: false,
+                        pace: None,
+                    },
+                    crate::snapshot::Window {
+                        label: "Session".into(),
+                        used_percent: None,
+                        resets_at: None,
+                        reset_by_day: false,
+                        pace: None,
+                    },
+                ],
+            },
+            crate::snapshot::Provider {
+                id: "gemini".into(),
+                plan: None,
+                fetched_at: None,
+                status: "Ready".into(),
+                details: vec!["Gemini account".into()],
+                windows: vec![],
+            },
+        ],
+        settings: json!({"show_as":"remaining"}),
+    }));
+    let area = Rect::new(0, 0, 45, 16);
+    for (target, detail) in [
+        ("Weekly", "Weekly · 69.0% remaining"),
+        ("Session", "Session · Usage unavailable"),
+        ("Gemini", "Gemini account"),
+    ] {
+        let at = screen_position(&render(&dashboard, size.0, size.1), target);
+        assert_eq!(
+            dashboard.mouse(MouseEvent::Click(at.x, at.y + 1), area),
+            Some(MouseAction::Show(Page::Detail))
+        );
+        dashboard.show(Page::Detail);
+        assert!(render(&dashboard, size.0, size.1).contains(detail));
+        dashboard.show(Page::Usage);
+    }
+}
+
+#[test]
+fn mouse_settings_edits_switches_and_text_from_their_rows() {
+    let mut dashboard = Dashboard::new(true);
+    let size = (80, 24);
+    dashboard.apply_snapshot(Ok(State {
+        settings: json!({"hide_identity":false,"format":"custom","template":"example"}),
+        providers: vec![],
+    }));
+    dashboard.show(Page::Settings);
+    assert!(click_label(&mut dashboard, size, "Display").is_none());
+    assert_eq!(
+        click_label(&mut dashboard, size, "Account identity"),
+        Some(MouseAction::Command(Command::Set(
+            "hide_identity".into(),
+            "true".into()
+        )))
+    );
+    assert!(click_label(&mut dashboard, size, "Desktop menu-bar template").is_none());
+    assert!(render(&dashboard, size.0, size.1).contains(r#":set template "example""#));
+}
+
+#[test]
+fn mouse_settings_uses_visible_step_arrows_in_both_directions() {
+    let mut dashboard = Dashboard::new(true);
+    let size = (80, 24);
+    dashboard.apply_snapshot(Ok(State {
+        settings: json!({"decimals":1,"format":"inline"}),
+        providers: vec![],
+    }));
+    dashboard.show(Page::Settings);
+    for (label, key, previous, next) in [
+        ("Quota decimal places", "decimals", "0", "2"),
+        ("Desktop menu-bar layout", "format", r#""stacked""#, r#""mini-bars""#),
+    ] {
+        assert!(click_label(&mut dashboard, size, label).is_none());
+        let screen = render(&dashboard, size.0, size.1);
+        let at = screen_position(&screen, label);
+        let row = screen.lines().nth(usize::from(at.y)).unwrap();
+        for (arrow, value) in [('‹', previous), ('›', next)] {
+            let column = row[..row.rfind(arrow).unwrap()].chars().count() as u16;
+            assert_eq!(
+                dashboard.mouse(MouseEvent::Click(column, at.y), Rect::new(0, 0, size.0, size.1)),
+                Some(MouseAction::Command(Command::Set(key.into(), value.into())))
+            );
+        }
+    }
+}
+
+#[test]
+fn mouse_settings_read_only_controls_have_no_arrows_or_actions() {
+    let mut dashboard = Dashboard::new(false);
+    dashboard.apply_snapshot(Ok(State {
+        settings: json!({"hide_identity":false,"decimals":1}),
+        providers: vec![],
+    }));
+    dashboard.show(Page::Settings);
+    let screen = render(&dashboard, 80, 24);
+    assert!(!screen.contains('‹'));
+    assert!(click_label(&mut dashboard, (80, 24), "Account identity").is_none());
+    assert!(!dashboard.editing());
+}
+
+#[test]
+fn mouse_vertical_wheel_moves_through_every_page_and_horizontal_wheel_only_pans_text() {
+    let mut dashboard = Dashboard::new(true);
+    let area = Rect::new(0, 0, 80, 15);
+    dashboard.apply_snapshot(Ok(State {
+        settings: json!({"hide_identity":false,"decimals":1}),
+        providers: vec![crate::snapshot::Provider {
+            id: "codex".into(),
+            plan: None,
+            fetched_at: None,
+            status: "Ready".into(),
+            details: vec!["Account detail".into()],
+            windows: vec![crate::snapshot::Window {
+                label: "Session".into(),
+                used_percent: None,
+                resets_at: None,
+                reset_by_day: false,
+                pace: None,
+            }],
+        }],
+    }));
+    dashboard.apply_output(Page::History, Ok(Output::History(history_fixture())));
+    let lines = vec!["First entry".into(), "Second entry".into()];
+    dashboard.apply_output(Page::Logs, Ok(Output::Text(lines.clone())));
+    dashboard.apply_output(Page::Result, Ok(Output::Text(lines)));
+    for page in [
+        Page::Usage,
+        Page::History,
+        Page::Settings,
+        Page::Logs,
+        Page::Help,
+        Page::Result,
+        Page::Detail,
+    ] {
+        dashboard.show(page);
+        let before = render_buffer(&dashboard, 80, 15, "Snapshot");
+        assert!(
+            dashboard
+                .mouse(MouseEvent::Scroll(5, 5, Navigation::Down), area)
+                .is_none()
+        );
+        assert_ne!(render_buffer(&dashboard, 80, 15, "Snapshot"), before, "{page:?}");
+        assert!(
+            dashboard
+                .mouse(MouseEvent::Scroll(5, 5, Navigation::Up), area)
+                .is_none()
+        );
+        assert_eq!(render_buffer(&dashboard, 80, 15, "Snapshot"), before, "{page:?}");
+    }
+
+    dashboard.show(Page::Logs);
+    let before = render(&dashboard, 80, 15);
+    assert!(
+        dashboard
+            .mouse(MouseEvent::Scroll(5, 5, Navigation::Right), area)
+            .is_none()
+    );
+    assert!(!render(&dashboard, 80, 15).contains("First entry"));
+    assert!(
+        dashboard
+            .mouse(MouseEvent::Scroll(5, 5, Navigation::Left), area)
+            .is_none()
+    );
+    assert_eq!(render(&dashboard, 80, 15), before);
+    dashboard.show(Page::Settings);
+    let before = render(&dashboard, 80, 15);
+    assert!(
+        dashboard
+            .mouse(MouseEvent::Scroll(5, 5, Navigation::Right), area)
+            .is_none()
+    );
+    assert_eq!(render(&dashboard, 80, 15), before);
+    assert!(dashboard.mouse(MouseEvent::Move(5, 30), area).is_none());
+}
+
+#[test]
+fn mouse_usage_detail_shows_the_percentage_used_by_default() {
+    let mut dashboard = Dashboard::new(true);
+    dashboard.apply_snapshot(Ok(State {
+        providers: vec![
+            serde_json::from_value(json!({
+                "id":"codex",
+                "windows":[{"label":"Weekly","usedPercent":31.0,"resetsAt":null}]
+            }))
+            .unwrap(),
+        ],
+        settings: Value::Null,
+    }));
+    assert_eq!(
+        click_label(&mut dashboard, (80, 24), "Weekly"),
+        Some(MouseAction::Show(Page::Detail))
+    );
+    dashboard.show(Page::Detail);
+    assert!(render(&dashboard, 80, 24).contains("Weekly · 31.0% used"));
+}
+
+fn click_label(dashboard: &mut Dashboard, (width, height): (u16, u16), label: &str) -> Option<MouseAction> {
+    let at = screen_position(&render(dashboard, width, height), label);
+    dashboard.mouse(MouseEvent::Click(at.x, at.y), Rect::new(0, 0, width, height))
+}
+
+fn screen_position(screen: &str, label: &str) -> Position {
+    let (row, column) = screen
+        .lines()
+        .enumerate()
+        .find_map(|(row, line)| line.find(label).map(|start| (row, line[..start].chars().count())))
+        .expect(label);
+    Position::new(column as u16, row as u16)
+}
+
+#[test]
+fn mouse_command_editor_runs_and_cancels_drafts_at_minimum_width() {
+    let mut dashboard = Dashboard::new(true);
+    let size = (34, 14);
+    let area = Rect::new(0, 0, size.0, size.1);
+    assert!(click_label(&mut dashboard, size, ":").is_none());
+    for byte in b"logs full" {
+        dashboard.edit(*byte);
+    }
+    let draft = render(&dashboard, size.0, size.1);
+    for event in [
+        MouseEvent::Click(3, 13),
+        MouseEvent::Click(3, 5),
+        MouseEvent::Scroll(3, 5, Navigation::Down),
+    ] {
+        assert!(dashboard.mouse(event, area).is_none());
+        assert_eq!(render(&dashboard, size.0, size.1), draft);
+    }
+    assert_eq!(
+        click_label(&mut dashboard, size, "Run"),
+        Some(MouseAction::Command(Command::Logs(true)))
+    );
+    assert!(!dashboard.editing());
+
+    assert!(click_label(&mut dashboard, size, ":").is_none());
+    dashboard.edit(b'x');
+    assert!(click_label(&mut dashboard, size, "Cancel").is_none());
+    assert!(!render(&dashboard, size.0, size.1).contains(":x"));
 }

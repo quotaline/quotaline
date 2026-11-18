@@ -15,11 +15,11 @@ fn reads_mutates_session_and_recovers_using_the_native_mac_data() {
     fixture.cache(62.5);
     let mut cli = Interactive::start(&mut fixture.command());
     cli.read_until("62.5%");
-    cli.write(b"d");
+    cli.click(2, 2);
     cli.read_until("workspace");
     assert!(!cli.screen.screen().contents().contains("Example Org"));
 
-    cli.write(b"3");
+    cli.click(22, 23);
     cli.read_until("Settings · read only");
     cli.read_until("Codex collection");
     cli.write(b":set decimals 2\r");
@@ -41,7 +41,7 @@ fn reads_mutates_session_and_recovers_using_the_native_mac_data() {
     cli.read_until("Series hidden · v to show it");
     cli.read_until("● Codex · Native week");
     cli.read_until("44.00%");
-    cli.write(b"v");
+    cli.click(55, 4);
     cli.read_until("Latest 78.00%");
     cli.write(b":clear history confirm\r");
     cli.read_until("Clear history in the Quotaline menu bar app");
@@ -54,7 +54,7 @@ fn reads_mutates_session_and_recovers_using_the_native_mac_data() {
             .contains("codex:session,Native session,78.00")
     );
 
-    cli.write(b"4");
+    cli.click(34, 23);
     cli.read_until("Collector ready");
     cli.write(b":clear logs confirm\r");
     cli.read_until("Clear logs in the Quotaline menu bar app");

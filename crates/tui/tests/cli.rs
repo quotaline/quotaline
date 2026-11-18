@@ -131,22 +131,48 @@ fn redraws_and_reloads_an_explicit_snapshot_in_a_terminal() {
 }
 
 #[test]
-fn history_mouse_tracking_follows_the_page_and_editor() {
+fn mouse_footer_switches_pages_and_toggles_tracking_for_the_editor() {
     let mut cli = Interactive::start(command().arg("--demo"));
-    cli.read_until("Antigravity");
-    cli.write(b"2");
+    cli.read_until("\x1b[?1006h\x1b[?1000h");
+    cli.read_until("› Antigravity");
+    cli.write(b"\x1b[<65;5;3M");
+    cli.read_until("› Gemini 5-hour");
+    cli.write(b"\x1b[<64;5;3M");
+    cli.read_until("› Antigravity");
+    cli.click(2, 2);
+    cli.read_until("Provider details");
+    cli.click(11, 23);
     cli.read_until("\x1b[?1006h\x1b[?1003h");
-    cli.write(b"\x1b[<35;5;2M\x1b[<0;5;2M\x1b[<0;5;2m:");
-    cli.read_until("\x1b[?1003l\x1b[?1006l");
-    cli.write(b"\x1b[<35;5;2Mmetrics\r");
+    cli.write(b"\x1b[<35;5;2M\x1b[<0;5;2M\x1b[<0;5;2m");
+    cli.click(51, 23);
+    cli.read_until("\x1b[?1006h\x1b[?1000h");
+    cli.write(b"unknown");
+    cli.read_until(":unknown");
+    cli.click(75, 23);
+    cli.read_until("\x1b[?1006h\x1b[?1003h");
+    assert!(!cli.screen.screen().contents().contains("Unknown command"));
+    cli.click(51, 23);
+    cli.read_until("\x1b[?1006h\x1b[?1000h");
+    cli.write(b"\x1b[<35;5;2M\x1b[Dmetrics");
+    cli.click(69, 23);
     cli.read_until("Quota usage");
-    cli.write(b"2");
+    cli.click(11, 23);
     cli.read_until("\x1b[?1006h\x1b[?1003h");
-    cli.write(b"1");
-    cli.read_until("\x1b[?1003l\x1b[?1006l");
-    cli.write(b"\x1b[<0;5;2M?");
+    cli.click(2, 23);
+    cli.read_until("\x1b[?1006h\x1b[?1000h");
+    cli.click(22, 23);
+    cli.read_until("Settings · read only");
+    cli.click(34, 23);
+    cli.read_until("QUOTALINE  · Logs");
+    cli.click(42, 23);
     cli.read_until("Enter a command");
-    cli.quit(b"q");
+    cli.write(b"\x1b[<67;8;4M");
+    cli.read_until("│  2 History");
+    cli.write(b"\x1b[<66;8;4M");
+    cli.read_until("│1 Usage   2 History");
+    cli.click(59, 23);
+    cli.read_until("\x1b[?1000l\x1b[?1003l\x1b[?1006l");
+    cli.assert_restored();
 }
 
 #[test]
@@ -156,11 +182,11 @@ fn lone_escape_cancels_the_history_editor_and_restores_tracking() {
     cli.write(b"2");
     cli.read_until("\x1b[?1006h\x1b[?1003h");
     cli.write(b":");
-    cli.read_until("\x1b[?1003l\x1b[?1006l");
+    cli.read_until("\x1b[?1006h\x1b[?1000h");
     cli.write(b"\x1b");
     cli.read_until("\x1b[?1006h\x1b[?1003h");
     cli.write(b"q");
-    cli.read_until("\x1b[?1003l\x1b[?1006l");
+    cli.read_until("\x1b[?1000l\x1b[?1003l\x1b[?1006l");
     cli.assert_restored();
 }
 
@@ -171,7 +197,7 @@ fn restores_terminal_after_termination_signal() {
     cli.write(b"2");
     cli.read_until("\x1b[?1006h\x1b[?1003h");
     kill_process(Pid::from_raw(cli.child.id() as i32).unwrap(), Signal::TERM).unwrap();
-    cli.read_until("\x1b[?1003l\x1b[?1006l");
+    cli.read_until("\x1b[?1000l\x1b[?1003l\x1b[?1006l");
     cli.assert_restored();
 }
 
@@ -255,6 +281,10 @@ impl Interactive {
 
     fn write(&mut self, bytes: &[u8]) {
         self.master.write_all(bytes).unwrap();
+    }
+
+    fn click(&mut self, column: u16, row: u16) {
+        self.write(format!("\x1b[<0;{};{}M", column + 1, row + 1).as_bytes());
     }
 
     fn resize(&mut self, width: u16, height: u16) {

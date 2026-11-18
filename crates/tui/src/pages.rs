@@ -66,6 +66,7 @@ pub(crate) fn output_page(command: &Command, current: Page) -> Page {
 pub(crate) fn help() -> Vec<String> {
     [
         "1 Usage   2 History   3 Settings   4 Logs   ? Help",
+        "Click footer controls or rows. Scroll to move through lists.",
         "↑↓ / j k Move or scroll   Tab Next provider or setting group",
         "r Reload cached state   R Request provider refresh",
         "d Provider details   s Open provider sign-in   q Quit",
@@ -175,7 +176,9 @@ fn export_path(path: &str) -> io::Result<String> {
 }
 
 pub(crate) fn draw_text(frame: &mut Frame<'_>, area: Rect, page: Page, lines: &[String], position: (usize, u16)) {
-    let block = Block::bordered().title(format!(" {} ", page.title())).cyan();
+    let block = Block::bordered()
+        .title(format!(" {} ", page.title()))
+        .border_style(Color::Cyan);
     let inner = block.inner(area);
     frame.render_widget(block, area);
     if lines.is_empty() {
@@ -185,10 +188,9 @@ pub(crate) fn draw_text(frame: &mut Frame<'_>, area: Rect, page: Page, lines: &[
     let (selected, x) = position;
     let start = selected.saturating_sub(usize::from(inner.height) / 2);
     for (offset, text) in lines.iter().skip(start).take(inner.height.into()).enumerate() {
-        let line = Line::from(text.replace(char::is_control, ""));
-        let line = if start + offset == selected { line.cyan() } else { line };
+        let line = Paragraph::new(text.replace(char::is_control, "")).scroll((0, x));
         frame.render_widget(
-            Paragraph::new(line).scroll((0, x)),
+            if start + offset == selected { line.cyan() } else { line },
             Rect::new(inner.x, inner.y + offset as u16, inner.width, 1),
         );
     }
