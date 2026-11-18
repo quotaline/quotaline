@@ -13,6 +13,7 @@ quotaline-analytics = { version = "0.2.0", path = "../data/analytics" }
 quotaline-catalog = { version = "0.2.0", path = "../catalog" }
 quotaline-demo = { version = "0.2.0", path = "../demo" }
 quotaline-export = { version = "0.2.0", path = "../data/export" }
+quotaline-text = { version = "0.2.0", path = "../presentation/text" }
 ratatui = { version = "0.30", default-features = false, features = ["termion"] }
 rustix = { version = "1", features = ["event", "fs"] }
 termion = "4"

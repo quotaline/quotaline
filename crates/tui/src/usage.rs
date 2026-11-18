@@ -1,5 +1,11 @@
 //! Shows every visible provider and quota window in one scrolling table.
 
+use jiff::{
+    Timestamp,
+    civil::Date,
+    tz::{Offset, TimeZone},
+};
+use quotaline_text::time::{countdown, relative_age};
 use ratatui::{
     Frame,
     layout::{Constraint, Layout, Rect},
@@ -52,22 +58,27 @@ pub(crate) fn draw(
         .saturating_sub(visible / 2)
         .min(rows.len().saturating_sub(visible));
     let decimals = settings["decimals"].as_u64().unwrap_or(1).min(2) as usize;
+    let now = Timestamp::now();
+    let clock = ReadingTime {
+        now,
+        today: TimeZone::system().to_datetime(now).date(),
+    };
     for (offset, &(provider, window)) in rows.iter().skip(start).take(visible).enumerate() {
         let row = Rect::new(inner.x, inner.y + offset as u16 * line_height, inner.width, line_height);
         let active = start + offset == selected;
         let data = &providers[provider];
         if let Some(window) = window.checked_sub(1).and_then(|index| data.windows.get(index)) {
-            draw_window(frame, row, window, active, (remaining, decimals));
+            draw_window(frame, row, window, active, (remaining, decimals), clock);
         } else {
-            draw_provider(frame, row, data, active);
+            draw_provider(frame, row, data, active, clock);
         }
     }
 }
 
-fn draw_provider(frame: &mut Frame<'_>, area: Rect, provider: &Provider, active: bool) {
+fn draw_provider(frame: &mut Frame<'_>, area: Rect, provider: &Provider, active: bool, clock: ReadingTime) {
     let source = provider
         .fetched_at
-        .map_or_else(|| provider.status.clone(), |stamp| format!("Observed {stamp}"));
+        .map_or_else(|| provider.status.clone(), |stamp| clock.observed(stamp));
     let secondary = if provider.windows.is_empty() && provider.status.is_empty() {
         "No quota windows reported".into()
     } else {
@@ -86,7 +97,14 @@ fn draw_provider(frame: &mut Frame<'_>, area: Rect, provider: &Provider, active:
     frame.render_widget(Line::from(secondary).dim(), status);
 }
 
-fn draw_window(frame: &mut Frame<'_>, area: Rect, window: &Window, active: bool, percent: (bool, usize)) {
+fn draw_window(
+    frame: &mut Frame<'_>,
+    area: Rect,
+    window: &Window,
+    active: bool,
+    percent: (bool, usize),
+    clock: ReadingTime,
+) {
     let [label, meter, reset] = if area.height == 1 {
         Layout::horizontal([
             Constraint::Percentage(35),
@@ -106,13 +124,7 @@ fn draw_window(frame: &mut Frame<'_>, area: Rect, window: &Window, active: bool,
 
     let mut deadline = window.resets_at.map_or_else(
         || "Reset unavailable".into(),
-        |stamp| {
-            if window.reset_by_day {
-                format!("Reset {}", stamp.strftime("%Y-%m-%d"))
-            } else {
-                format!("Reset {stamp}")
-            }
-        },
+        |stamp| clock.reset(stamp, window.reset_by_day),
     );
     if let Some(pace) = &window.pace
         && deadline.chars().count() + 3 + pace.chars().count() <= usize::from(reset.width)
@@ -121,6 +133,45 @@ fn draw_window(frame: &mut Frame<'_>, area: Rect, window: &Window, active: bool,
     }
     frame.render_widget(Line::from(deadline).dim(), reset);
     draw_meter(frame, meter, window.used_percent, percent);
+}
+
+#[derive(Clone, Copy)]
+struct ReadingTime {
+    now: Timestamp,
+    today: Date,
+}
+
+impl ReadingTime {
+    fn observed(self, stamp: Timestamp) -> String {
+        let age = stamp.duration_until(self.now).as_secs_f64();
+        if age <= -5.0 {
+            format!("Observed {} ahead", countdown(-age))
+        } else {
+            format!("Observed {}", relative_age(age))
+        }
+    }
+
+    fn reset(self, stamp: Timestamp, by_day: bool) -> String {
+        if by_day {
+            // The timestamp's UTC date is the date reported by the provider.
+            let day = Offset::UTC.to_datetime(stamp).date();
+            return match day.duration_since(self.today).as_secs() / 86_400 {
+                -1 => "Reset was due yesterday".into(),
+                0 => "Reset due today".into(),
+                1 => "Resets tomorrow".into(),
+                days if days < 0 => format!("Reset was due {} days ago", -days),
+                days => format!("Resets in {days} days"),
+            };
+        }
+        let until = self.now.duration_until(stamp).as_secs_f64();
+        if until == 0.0 {
+            "Reset due now".into()
+        } else if until < 0.0 {
+            format!("Reset was due {}", relative_age(-until))
+        } else {
+            format!("Resets in {}", countdown(until))
+        }
+    }
 }
 
 fn draw_meter(frame: &mut Frame<'_>, area: Rect, used: Option<f64>, (remaining, decimals): (bool, usize)) {
@@ -147,3 +198,7 @@ fn draw_meter(frame: &mut Frame<'_>, area: Rect, used: Option<f64>, (remaining, 
     );
     frame.render_widget(Line::from(label).bold().right_aligned(), value);
 }
+
+#[cfg(test)]
+#[path = "../tests/unit/usage.rs"]
+mod tests;

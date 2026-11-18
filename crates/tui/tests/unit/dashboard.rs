@@ -1,5 +1,6 @@
 use super::*;
 use crate::snapshot::LocalSnapshot as Source;
+use jiff::{SignedDuration, Timestamp};
 use quotaline_export::UsageExport;
 use quotaline_quota::{Provider, Window};
 use ratatui::{Terminal, backend::TestBackend};
@@ -15,25 +16,20 @@ fn renders_demo_from_the_export() {
     assert!(screen.contains("› Antigravity"));
     assert!(screen.contains("Gemini weekly"));
     assert!(screen.contains("Observed "));
-    assert!(screen.contains("Reset "));
+    assert!(screen.contains("Resets in "));
 }
 
 #[test]
 fn renders_observation_and_meter_from_a_real_export() {
     let directory = tempdir().unwrap();
     let path = directory.path().join("usage.json");
+    let reset = Timestamp::now() - SignedDuration::from_mins(2);
     write_export(
         &path,
         [provider(
             "codex",
             "Pro",
-            vec![Window::new(
-                "weekly",
-                "Weekly",
-                78.5,
-                Some("2026-05-29T20:26:40Z".into()),
-                "weekly",
-            )],
+            vec![Window::new("weekly", "Weekly", 78.5, Some(reset.to_string()), "weekly")],
         )],
     );
     let mut dashboard = Dashboard::new(true);
@@ -43,8 +39,8 @@ fn renders_observation_and_meter_from_a_real_export() {
         "Codex · Pro",
         "Weekly",
         "78.5%",
-        "Observed 2026-05-28T20:26:40Z",
-        "Reset 2026-05-29T20:26:40Z",
+        "Observed 5 min ago",
+        "Reset was due 2 min ago",
     ] {
         assert!(screen.contains(text), "{screen}");
     }
@@ -121,7 +117,7 @@ fn overview_keeps_window_values_at_narrow_and_wide_sizes() {
         assert!(screen.contains("Quota used"));
         assert!(screen.contains("Gemini 5-hour"));
         assert!(screen.contains("Observed "));
-        assert!(screen.contains("Reset "));
+        assert!(screen.contains("Resets in "));
     }
 }
 
@@ -307,7 +303,7 @@ fn render_source(dashboard: &Dashboard, width: u16, height: u16, source: &str) -
 
 fn provider(id: &str, plan: &str, windows: Vec<Window>) -> Provider {
     let mut provider = Provider::connected(id, plan.into(), String::new(), String::new(), windows);
-    provider.updated = Some(1_780_000_000);
+    provider.updated = Some(Timestamp::now().as_second() - 330);
     provider
 }
 
@@ -322,6 +318,7 @@ fn write_export(path: &Path, providers: impl IntoIterator<Item = Provider>) {
 #[test]
 fn uses_desktop_meter_preferences_and_provider_precision() {
     let mut dashboard = Dashboard::new(true);
+    let reset = Timestamp::now() - SignedDuration::from_hours(72);
     dashboard.apply_snapshot(Ok(State {
         settings: json!({"show_as":"remaining","decimals":2}),
         providers: vec![crate::snapshot::Provider {
@@ -333,18 +330,18 @@ fn uses_desktop_meter_preferences_and_provider_precision() {
             windows: vec![crate::snapshot::Window {
                 label: "Weekly".into(),
                 used_percent: Some(28.75),
-                resets_at: Some("2026-05-29T20:26:40Z".parse().unwrap()),
+                resets_at: Some(reset),
                 reset_by_day: true,
                 pace: Some("Expected 35% · on pace".into()),
             }],
         }],
     }));
     let screen = render(&dashboard, 100, 24);
-    for label in ["Quota remaining", "71.25%", "Reset 2026-05-29", "Cached"] {
+    for label in ["Quota remaining", "71.25%", "Reset was due", "Cached"] {
         assert!(screen.contains(label), "{screen}");
     }
-    assert!(!screen.contains("Reset 2026-05-29 ·"));
-    assert!(render(&dashboard, 140, 24).contains("Reset 2026-05-29 · Expected 35% · on pace"));
+    assert!(!screen.contains("days ago ·"));
+    assert!(render(&dashboard, 140, 24).contains("days ago · Expected 35% · on pace"));
     dashboard.show(Page::Detail);
     let screen = render(&dashboard, 100, 24);
     assert!(screen.contains("Credit balance  25.00"));

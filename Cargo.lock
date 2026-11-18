@@ -2497,6 +2497,7 @@ dependencies = [
  "quotaline-quota",
  "quotaline-settings",
  "quotaline-status-bar",
+ "quotaline-text",
  "ratatui",
  "rustix",
  "serde",
