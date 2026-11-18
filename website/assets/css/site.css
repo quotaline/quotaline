@@ -521,7 +521,7 @@ td {
 }
 
 .hero-preview-tui .shot,
-#hero-panel-tui > .shot {
+.hero-panel:where(#hero-panel-tui) > .shot {
   width: 100%;
   height: auto;
 }
