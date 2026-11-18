@@ -7,7 +7,7 @@ license = "MIT"
 [dependencies]
 csv = "1.4.0"
 jiff = "1"
-rusqlite = { version = "0.41", features = ["array", "bundled"] }
+rusqlite = { version = "0.43", features = ["array", "bundled"] }
 serde = { version = "1", features = ["derive"] }
 thiserror = "2"
 quotaline-analytics = { version = "0.2.0", path = "../analytics" }
