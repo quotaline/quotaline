@@ -1,6 +1,7 @@
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+import {closeInstantly, openInstantly} from '../menu-animation.js';
 import type {TokenPanel} from '../panel.js';
 import {quotaPresentation} from '../quota-presentation.js';
 import type {LogEntry, ModelGroup, PanelState, ReviewCounts, SpendReport} from '../service-state.js';
@@ -113,7 +114,7 @@ export const serviceMethods = {
     },
 
     _requestQuit(this: TokenPanel): void {
-        this._indicator.menu.close(false);
+        closeInstantly(this._indicator.menu);
         if (this._quitPending) return;
         this._quitPending = true;
         global.stage.connectObject(
@@ -313,12 +314,12 @@ export const serviceMethods = {
                         () => {
                             Main.layoutManager.disconnectObject(this._indicator);
                             this._render();
-                            this._indicator.menu.open(false);
+                            openInstantly(this._indicator.menu);
                         },
                         this._indicator,
                     );
                 } else {
-                    this._indicator.menu.open(false);
+                    openInstantly(this._indicator.menu);
                 }
             }
             if (historyScopeChanged && this._tab === 'History') this._loadHistory();

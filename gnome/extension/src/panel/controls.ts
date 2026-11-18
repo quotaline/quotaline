@@ -4,6 +4,7 @@ import GLib from 'gi://GLib';
 import Pango from 'gi://Pango';
 import St from 'gi://St';
 import * as DND from 'resource:///org/gnome/shell/ui/dnd.js';
+import {openInstantly} from '../menu-animation.js';
 import type {TokenPanel} from '../panel.js';
 import type {PanelState} from '../service-state.js';
 import {COPY} from '../shared-copy.js';
@@ -268,7 +269,7 @@ export const controlMethods = {
         this._fullLog = false;
         this._providerDetails.add(id);
         this._tab = 'Settings';
-        this._indicator.menu.open(false);
+        openInstantly(this._indicator.menu);
         this._render();
         this._scrollToSettingsTarget(() => this._providerRows.get(id));
         return true;

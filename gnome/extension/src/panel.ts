@@ -7,6 +7,7 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import type * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import type {PresentedHistory} from './history-presentation.js';
+import {openInstantly} from './menu-animation.js';
 import {controlMethods} from './panel/controls.js';
 import {displayMethods} from './panel/display.js';
 import {historyMethods} from './panel/history.js';
@@ -597,7 +598,7 @@ export class TokenPanel {
         this._widget = new SnapshotWidget(
             () => {
                 Main.panel.statusArea.quickSettings?.menu.close();
-                this._indicator.menu.open(false);
+                openInstantly(this._indicator.menu);
             },
             appIcon,
             () => {
