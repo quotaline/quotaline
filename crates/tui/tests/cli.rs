@@ -1,3 +1,5 @@
+//! Exercises terminal behavior through a real pseudoterminal on Linux and macOS.
+
 #![cfg(any(target_os = "linux", target_os = "macos"))]
 
 use rustix::{
