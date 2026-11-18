@@ -11,8 +11,8 @@ pub(crate) fn window(id: &str, used: f64, reset_at: Option<f64>) -> ProviderWind
         used,
         active: true,
         reset: reset_at
-            .and_then(|at| chrono::DateTime::from_timestamp(at as i64, 0))
-            .map(|at| at.to_rfc3339()),
+            .and_then(|at| jiff::Timestamp::from_second(at as i64).ok())
+            .map(|at| at.display_with_offset(jiff::tz::Offset::UTC).to_string()),
         reset_by_day: false,
         group: id.into(),
         scope: None,

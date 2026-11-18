@@ -2,7 +2,7 @@
 
 use std::collections::HashMap;
 
-use chrono_tz::Tz;
+use jiff::tz::TimeZone;
 use quotaline_analytics::{bucket_key, offset_at, utc_day::midnight};
 use rusqlite::{Connection, Row, named_params};
 
@@ -17,7 +17,7 @@ fn sample(row: &rusqlite::Row<'_>) -> rusqlite::Result<Sample> {
     })
 }
 
-fn segments(start: f64, end: f64, zone: Option<Tz>, fallback: i32) -> Vec<(f64, f64, i32)> {
+fn segments(start: f64, end: f64, zone: Option<&TimeZone>, fallback: i32) -> Vec<(f64, f64, i32)> {
     let mut segments = Vec::new();
     let mut segment_start = start;
     let mut cursor = start;
@@ -113,10 +113,12 @@ impl Store {
         let (Some(first), Some(last)) = bounds else {
             return Ok(Vec::new());
         };
-        let zone = time_zone.parse::<Tz>().ok();
+        let zone = TimeZone::get(time_zone).ok();
         let end_limit = last.min(end) + 1.0;
         let mut latest = HashMap::<(String, (i64, i32)), Sample>::new();
-        for (segment_start, segment_end, offset) in segments(first.max(start), end_limit, zone, fallback_offset) {
+        for (segment_start, segment_end, offset) in
+            segments(first.max(start), end_limit, zone.as_ref(), fallback_offset)
+        {
             let sql = format!(
                 "SELECT ts,key,used,resets_at FROM (SELECT ts,key,used,resets_at,ROW_NUMBER() OVER \
                  (PARTITION BY key,CAST((ts + :offset) / :rollup AS INTEGER) ORDER BY ts DESC) AS rank \
@@ -134,7 +136,10 @@ impl Store {
             for row in state.db.prepare(&sql)?.query_map(parameters, sample)? {
                 let row = row?;
                 latest.insert(
-                    (row.key.clone(), bucket_key(row.at, rollup, zone, fallback_offset)),
+                    (
+                        row.key.clone(),
+                        bucket_key(row.at, rollup, zone.as_ref(), fallback_offset),
+                    ),
                     row,
                 );
             }

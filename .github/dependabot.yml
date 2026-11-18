@@ -28,20 +28,6 @@ updates:
           - "*"
     cooldown:
       default-days: 7
-  - package-ecosystem: swift
-    directory: "/macos"
-    schedule:
-      interval: weekly
-      day: tuesday
-    labels:
-      - dependencies
-      - skip news
-    groups:
-      swift:
-        patterns:
-          - "*"
-    cooldown:
-      default-days: 7
   - package-ecosystem: github-actions
     directory: "/"
     schedule:

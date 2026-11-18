@@ -1,6 +1,6 @@
 //! Converts the ISO timestamps used by provider credentials and history, and words times for display.
 
-use chrono::{DateTime, SecondsFormat, Utc};
+use jiff::Timestamp;
 use serde::{Deserialize, Serialize};
 
 mod text;
@@ -16,17 +16,19 @@ pub enum ResetPrecision {
 }
 
 pub fn parse_iso_epoch(value: &str) -> Option<f64> {
-    DateTime::parse_from_rfc3339(value)
+    value
+        .parse::<Timestamp>()
         .ok()
-        .map(|value| value.timestamp_millis() as f64 / 1000.0)
+        .map(|value| value.as_millisecond() as f64 / 1000.0)
 }
 
 pub fn format_iso_epoch(epoch: f64) -> Option<String> {
     if !epoch.is_finite() {
         return None;
     }
-    DateTime::<Utc>::from_timestamp_millis((epoch * 1000.0).round() as i64)
-        .map(|value| value.to_rfc3339_opts(SecondsFormat::Millis, true))
+    Timestamp::from_millisecond((epoch * 1000.0).round() as i64)
+        .ok()
+        .map(|value| value.strftime("%Y-%m-%dT%H:%M:%S%.3fZ").to_string())
 }
 
 #[cfg(test)]

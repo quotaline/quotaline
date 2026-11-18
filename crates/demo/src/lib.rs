@@ -1,6 +1,7 @@
 //! Creates representative provider snapshots and analytics for previews and screenshots.
 
-use chrono::{DateTime, Utc};
+use jiff::tz::Offset;
+use jiff::{SignedDuration, Timestamp};
 use quotaline_quota::*;
 use std::collections::BTreeMap;
 
@@ -8,14 +9,14 @@ mod analytics;
 pub use analytics::demo_analytics_at;
 
 pub fn demo() -> BTreeMap<String, Provider> {
-    demo_at(Utc::now())
+    demo_at(Timestamp::now())
 }
 
-pub fn demo_at(now: DateTime<Utc>) -> BTreeMap<String, Provider> {
+pub fn demo_at(now: Timestamp) -> BTreeMap<String, Provider> {
     demo_at_filtered(now, None)
 }
 
-pub fn demo_provider_at(id: &str, now: DateTime<Utc>, long_text: bool) -> Option<Provider> {
+pub fn demo_provider_at(id: &str, now: Timestamp, long_text: bool) -> Option<Provider> {
     let mut provider = demo_at_filtered(now, Some(id)).remove(id)?;
     if long_text {
         expand_long_text(&mut provider);
@@ -23,7 +24,7 @@ pub fn demo_provider_at(id: &str, now: DateTime<Utc>, long_text: bool) -> Option
     Some(provider)
 }
 
-fn demo_at_filtered(now: DateTime<Utc>, selected: Option<&str>) -> BTreeMap<String, Provider> {
+fn demo_at_filtered(now: Timestamp, selected: Option<&str>) -> BTreeMap<String, Provider> {
     let rows = [
         (
             "claude",
@@ -136,7 +137,7 @@ fn demo_at_filtered(now: DateTime<Utc>, selected: Option<&str>) -> BTreeMap<Stri
                 if id == "copilot" { "octocat" } else { "you@example.com" }.into(),
                 mapped,
             );
-            provider.updated = Some(now.timestamp());
+            provider.updated = Some(now.as_second());
             provider.tier = match id {
                 "claude" => Some("default_claude_max_20x".into()),
                 "antigravity" => Some("google_ai_ultra".into()),
@@ -154,11 +155,12 @@ fn demo_at_filtered(now: DateTime<Utc>, selected: Option<&str>) -> BTreeMap<Stri
                     limit_money: None,
                     percent: Some(24.8),
                     currency: Some("USD".into()),
-                    reset: Some(
-                        DateTime::from_timestamp(demo_boundary(now.timestamp(), 2_592_000, 1_036_800), 0)
-                            .unwrap()
-                            .to_rfc3339(),
-                    ),
+                    reset: Some(iso(Timestamp::from_second(demo_boundary(
+                        now.as_second(),
+                        2_592_000,
+                        1_036_800,
+                    ))
+                    .unwrap())),
                     limit_reached: false,
                     balance: Some(37.6),
                     balance_money: None,
@@ -220,7 +222,7 @@ fn demo_at_filtered(now: DateTime<Utc>, selected: Option<&str>) -> BTreeMap<Stri
                 provider.cloud_credits = Some(CloudCredits {
                     limit: 250.0,
                     remaining: 83.0,
-                    expires_at: Some((now + chrono::Duration::days(24)).to_rfc3339()),
+                    expires_at: Some(iso(now + days(24))),
                     locked_reason: None,
                 });
             }
@@ -240,7 +242,7 @@ fn demo_at_filtered(now: DateTime<Utc>, selected: Option<&str>) -> BTreeMap<Stri
                 _ => Vec::new(),
             };
             if id == "codex" {
-                provider.subscription_active_until = Some((now + chrono::Duration::days(40)).to_rfc3339());
+                provider.subscription_active_until = Some(iso(now + days(40)));
                 provider.credit_balance = Some(42.5);
                 provider.usage_credits = Some(UsageCredits {
                     unlimited: false,
@@ -260,14 +262,14 @@ fn demo_at_filtered(now: DateTime<Utc>, selected: Option<&str>) -> BTreeMap<Stri
                         status: Some("Available".into()),
                         credit_type: Some("Session".into()),
                         description: Some("One extra session reset".into()),
-                        granted_at: Some((now - chrono::Duration::days(1)).to_rfc3339()),
-                        expires_at: Some((now + chrono::Duration::days(3)).to_rfc3339()),
+                        granted_at: Some(iso(now - days(1))),
+                        expires_at: Some(iso(now + days(3))),
                         explanation: default_reset_credit_explanation(),
                     }],
                 });
                 provider.reset_credit_expiries.push(CreditExpiry {
                     id: "bonus-reset".into(),
-                    at: (now + chrono::Duration::days(3)).timestamp(),
+                    at: (now + days(3)).as_second(),
                 });
             }
             if id == "gemini" {
@@ -300,15 +302,15 @@ fn expand_long_text(provider: &mut Provider) {
 
 type DemoWindowSpec<'a> = (&'a str, &'a str, &'a str, i64, i64, f64, Option<&'a str>);
 
-fn demo_window((id, label, group, duration, offset, pace, scope): DemoWindowSpec<'_>, now: DateTime<Utc>) -> Window {
-    let reset = demo_boundary(now.timestamp(), duration, offset);
+fn demo_window((id, label, group, duration, offset, pace, scope): DemoWindowSpec<'_>, now: Timestamp) -> Window {
+    let reset = demo_boundary(now.as_second(), duration, offset);
     let mut spent = 0.0;
     let mut total = 0.0;
     let step = (duration / 48).max(900);
     for at in (reset - duration..reset).step_by(step as usize) {
         let weight = demo_intensity(at);
         total += weight;
-        if at <= now.timestamp() {
+        if at <= now.as_second() {
             spent += weight;
         }
     }
@@ -316,12 +318,20 @@ fn demo_window((id, label, group, duration, offset, pace, scope): DemoWindowSpec
         id,
         label,
         spent / total * pace * 100.0,
-        Some(DateTime::from_timestamp(reset, 0).unwrap().to_rfc3339()),
+        Some(iso(Timestamp::from_second(reset).unwrap())),
         group,
     );
     row.duration_seconds = Some(duration as u64);
     row.scope = scope.map(str::to_owned);
     row
+}
+
+fn days(count: i64) -> SignedDuration {
+    SignedDuration::from_hours(count * 24)
+}
+
+fn iso(at: Timestamp) -> String {
+    at.display_with_offset(Offset::UTC).to_string()
 }
 
 fn demo_boundary(now: i64, duration: i64, offset: i64) -> i64 {

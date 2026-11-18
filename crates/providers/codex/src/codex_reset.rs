@@ -1,6 +1,6 @@
 //! Parses Codex reset-credit offers and balances.
 
-use chrono::DateTime;
+use jiff::Timestamp;
 use quotaline_quota::Window;
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -76,8 +76,8 @@ impl ResetWindow for Window {
     fn reset_at(&self) -> Option<f64> {
         self.reset
             .as_deref()
-            .and_then(|text| DateTime::parse_from_rfc3339(text).ok())
-            .map(|date| date.timestamp_millis() as f64 / 1000.0)
+            .and_then(|text| text.parse::<Timestamp>().ok())
+            .map(|date| date.as_millisecond() as f64 / 1000.0)
     }
 
     fn confirming(&self) -> Self {

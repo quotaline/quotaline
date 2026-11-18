@@ -1,6 +1,6 @@
 //! Formats diagnostic records and preserves identity across retained and live entries.
 
-use chrono::{DateTime, Utc};
+use jiff::Timestamp;
 
 use super::{buffer::Record, message, parse::ParsedLine};
 
@@ -57,9 +57,9 @@ pub fn align(retained: &mut [Record], live: &[Record]) {
 
 fn format_line(timestamp: f64, level: &str, category: &str, message: &str) -> String {
     let milliseconds = (timestamp * 1_000.0).round() as i64;
-    let stamp = DateTime::<Utc>::from_timestamp_millis(milliseconds)
+    let stamp = Timestamp::from_millisecond(milliseconds)
         .expect("diagnostic timestamp is valid")
-        .format("%Y-%m-%d %H:%M:%S%.3f");
+        .strftime("%Y-%m-%d %H:%M:%S%.3f");
     let prefix = format!("[{stamp}] [{level}]");
     if category == "app" {
         format!("{prefix} {message}")

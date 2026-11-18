@@ -165,7 +165,7 @@ pub(super) async fn codex_remote(
     }
     if quotaline_credentials::credential_expired(
         text(&doc["tokens"]["access_token"]).and_then(quotaline_credentials::jwt_expiry),
-        Utc::now().timestamp() as f64,
+        Timestamp::now().as_second() as f64,
     ) {
         if !allow_token_refresh {
             return Err(Failure::new(
@@ -193,7 +193,7 @@ pub(super) async fn codex_remote(
         .map(str::to_owned)
         .or_else(|| credentials::jwt_claims(token).and_then(|claims| text(&claims["sub"]).map(str::to_owned)))
         .unwrap_or_else(|| token.into());
-    let now = Utc::now().timestamp() as f64;
+    let now = Timestamp::now().as_second() as f64;
     let usage = codex::codex_usage::usage(&data, now);
     let reported = usage.reset_credits.clone();
     let (reset_credits, warning) = codex_reset_credits(client, &fetch_account, &account, reported).await;
@@ -217,9 +217,10 @@ pub(super) async fn confirm_codex_resets(client: &Api, root: &Path, account: &st
             ..CodexResetState::default()
         };
     }
-    provider.windows = state
-        .guard
-        .confirm(std::mem::take(&mut provider.windows), Utc::now().timestamp() as f64);
+    provider.windows = state.guard.confirm(
+        std::mem::take(&mut provider.windows),
+        Timestamp::now().as_second() as f64,
+    );
 }
 
 pub(super) async fn refresh_codex(
@@ -256,8 +257,8 @@ pub(super) async fn refresh_codex(
         provider,
         &document,
         &response,
-        Utc::now().timestamp_millis(),
-        &Utc::now().to_rfc3339(),
+        Timestamp::now().as_millisecond(),
+        &Timestamp::now().display_with_offset(jiff::tz::Offset::UTC).to_string(),
     )
     .map_err(|error| Failure::new("unreadable", error.message(provider)))?;
     if let Some(original) = original {

@@ -41,7 +41,7 @@ async fn expiring_gemini_file_token_uses_installed_cli_oauth_client() {
         home.path(),
         ".gemini/oauth_creds.json",
         &json!({
-            "token":{"accessToken":"old","refreshToken":"old-refresh","expiresAt":Utc::now().timestamp_millis() + 60_000},"keep":true
+            "token":{"accessToken":"old","refreshToken":"old-refresh","expiresAt":Timestamp::now().as_millisecond() + 60_000},"keep":true
         }),
     );
     let provider = collect(&fixture_api(&server), "gemini", home.path(), true)
@@ -54,7 +54,7 @@ async fn expiring_gemini_file_token_uses_installed_cli_oauth_client() {
     assert_eq!(saved["token"]["idToken"], "new-id");
     assert_eq!(saved["token"]["refreshToken"], "new-refresh");
     assert_eq!(saved["keep"], true);
-    assert!(saved["token"]["expiresAt"].as_i64().unwrap() > Utc::now().timestamp_millis());
+    assert!(saved["token"]["expiresAt"].as_i64().unwrap() > Timestamp::now().as_millisecond());
     assert_eq!(fs::metadata(path).unwrap().permissions().mode() & 0o777, 0o600);
 }
 
@@ -137,7 +137,7 @@ async fn expiring_gemini_flat_token_persists_rotated_credentials() {
     assert_eq!(saved["access_token"], "new-access");
     assert_eq!(saved["refresh_token"], "new-refresh");
     assert_eq!(saved["id_token"], "new-id");
-    assert!(saved["expiry_date"].as_i64().unwrap() > Utc::now().timestamp_millis());
+    assert!(saved["expiry_date"].as_i64().unwrap() > Timestamp::now().as_millisecond());
 }
 
 #[tokio::test]

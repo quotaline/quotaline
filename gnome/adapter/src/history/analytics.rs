@@ -2,6 +2,7 @@
 
 use std::collections::BTreeMap;
 
+use jiff::Timestamp;
 use quotaline_analytics as analytics;
 use quotaline_analytics::utc_day::{day, midnight, retained_utc_days};
 use quotaline_catalog::IDS;
@@ -53,8 +54,8 @@ pub fn history_analytics(
 }
 
 /// The `[start, end)` timestamps covering the last `days` UTC days through today.
-pub(super) fn retained_range(now: chrono::DateTime<chrono::Utc>, days: u32) -> (i64, i64) {
-    let (start, end) = retained_utc_days(now.timestamp() as f64, days);
+pub(super) fn retained_range(now: Timestamp, days: u32) -> (i64, i64) {
+    let (start, end) = retained_utc_days(now.as_second() as f64, days);
     let midnight = |day: &str| midnight(day).expect("generated day is valid") as i64;
     (midnight(&start), midnight(&end) + 86_400)
 }

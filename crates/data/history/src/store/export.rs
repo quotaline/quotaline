@@ -8,8 +8,8 @@ use std::{
     path::Path,
 };
 
-use chrono::{DateTime, SecondsFormat, Utc};
 use csv::{QuoteStyle, Writer, WriterBuilder};
+use jiff::Timestamp;
 use quotaline_analytics::project;
 
 use super::query::visit_samples;
@@ -17,9 +17,10 @@ use super::{HistoryError, Result, Store, array};
 use quotaline_analytics::utc_day::day;
 
 fn stamp(at: f64) -> String {
-    DateTime::<Utc>::from_timestamp_millis((at * 1000.0) as i64)
-        .unwrap_or_default()
-        .to_rfc3339_opts(SecondsFormat::Millis, true)
+    Timestamp::from_millisecond((at * 1000.0) as i64)
+        .unwrap_or(Timestamp::UNIX_EPOCH)
+        .strftime("%Y-%m-%dT%H:%M:%S%.3fZ")
+        .to_string()
 }
 
 struct Csv(Writer<BufWriter<File>>);

@@ -4,7 +4,7 @@ use super::super::*;
 
 #[test]
 fn selected_model_filters_retained_quota_csv() {
-    let now = chrono::Utc::now().timestamp();
+    let now = jiff::Timestamp::now().as_second();
     let fixture = isolated_service_with(&serde_json::json!({"selected_windows":["codex:session"]}), |root| {
         let path = root.join("data/quotaline/history.sqlite3");
         fs::create_dir_all(path.parent().unwrap()).unwrap();
@@ -49,7 +49,7 @@ fn selected_model_filters_retained_quota_csv() {
 
 #[test]
 fn csv_exports_protect_spreadsheet_formula_prefixes() {
-    let now = chrono::Utc::now();
+    let now = jiff::Timestamp::now();
     let fixture = isolated_service_with(
         &serde_json::json!({"providers":{"claude":false,"codex":true,"gemini":false,
             "antigravity":false,"cursor":false,"copilot":false}}),
@@ -64,12 +64,12 @@ fn csv_exports_protect_spreadsheet_formula_prefixes() {
             {
                 db.execute(
                     "INSERT INTO samples VALUES(?1,'codex',?2,?3,50,NULL)",
-                    rusqlite::params![now.timestamp(), format!("window-{index}"), value],
+                    rusqlite::params![now.as_second(), format!("window-{index}"), value],
                 )
                 .unwrap();
                 db.execute(
                     "INSERT INTO daily_analytics VALUES(?1,'codex','turns',?2,1)",
-                    rusqlite::params![now.format("%Y-%m-%d").to_string(), value],
+                    rusqlite::params![now.strftime("%Y-%m-%d").to_string(), value],
                 )
                 .unwrap();
             }
@@ -89,8 +89,8 @@ fn csv_exports_protect_spreadsheet_formula_prefixes() {
         )
         .await
         .unwrap();
-        let start = now.timestamp() - 86_400;
-        let end = now.timestamp() + 86_400;
+        let start = now.as_second() - 86_400;
+        let end = now.as_second() + 86_400;
         let path = fixture.scratch.path().join("quotas.csv");
         let exported: bool = proxy
             .call("ExportMetricHistory", &("usage", start, end, path.to_str().unwrap()))
@@ -115,8 +115,8 @@ fn csv_exports_protect_spreadsheet_formula_prefixes() {
 
 #[test]
 fn metric_history_ignores_invalid_dates_and_excludes_boundary_days() {
-    let today = chrono::Utc::now().date_naive();
-    let tomorrow = today.succ_opt().unwrap();
+    let today = jiff::tz::Offset::UTC.to_datetime(jiff::Timestamp::now()).date();
+    let tomorrow = today.tomorrow().unwrap();
     let fixture = isolated_service_with(
         &serde_json::json!({"providers":{"claude":false,"codex":true,"gemini":false,
             "antigravity":false,"cursor":false,"copilot":false}}),
@@ -166,8 +166,8 @@ fn metric_history_ignores_invalid_dates_and_excludes_boundary_days() {
 
 #[test]
 fn reducing_retention_prunes_old_quota_and_analytics_history() {
-    let now = chrono::Utc::now();
-    let old = now - chrono::Duration::days(10);
+    let now = jiff::Timestamp::now();
+    let old = now - jiff::SignedDuration::from_hours(240);
     let fixture = isolated_service_with(
         &serde_json::json!({"providers":{"claude":false,"codex":true,"gemini":false,
             "antigravity":false,"cursor":false,"copilot":false}}),
@@ -179,12 +179,12 @@ fn reducing_retention_prunes_old_quota_and_analytics_history() {
             for (stamp, used) in [(old, 25.0), (now, 50.0)] {
                 db.execute(
                     "INSERT INTO samples VALUES(?1,'codex','session','Session',?2,NULL)",
-                    rusqlite::params![stamp.timestamp(), used],
+                    rusqlite::params![stamp.as_second(), used],
                 )
                 .unwrap();
                 db.execute(
                     "INSERT INTO daily_analytics VALUES(?1,'codex','turns','total',?2)",
-                    rusqlite::params![stamp.format("%Y-%m-%d").to_string(), used],
+                    rusqlite::params![stamp.strftime("%Y-%m-%d").to_string(), used],
                 )
                 .unwrap();
             }
@@ -267,7 +267,7 @@ fn metric_export_reports_a_missing_destination_directory() {
 fn pace_uses_recent_samples_after_service_restart() {
     let _shell = shell_lock();
     let scratch = tempfile::tempdir().unwrap();
-    let now = chrono::Utc::now().timestamp();
+    let now = jiff::Timestamp::now().as_second();
     let data = scratch.path().join("data/quotaline");
     let cache = scratch.path().join("cache/quotaline");
     let config = scratch.path().join("config/quotaline");
@@ -280,7 +280,7 @@ fn pace_uses_recent_samples_after_service_restart() {
         b"{\"providers\":{\"claude\":false,\"codex\":false,\"gemini\":false,\"antigravity\":false,\"cursor\":false,\"copilot\":false}}",
     )
     .unwrap();
-    let reset = chrono::DateTime::from_timestamp(now + 43_200, 0).unwrap().to_rfc3339();
+    let reset = jiff::Timestamp::from_second(now + 43_200).unwrap().to_string();
     let provider = serde_json::json!({
         "claude": {
             "id": "claude", "name": "Claude", "status": "connected", "plan": "Pro",

@@ -5,12 +5,10 @@ use crate::history::{Point, Series};
 
 #[test]
 fn demo_spend_report_uses_shared_daily_totals() {
-    let now = chrono::DateTime::parse_from_rfc3339("2026-10-13T12:00:00Z")
-        .unwrap()
-        .to_utc();
+    let now = "2026-10-13T12:00:00Z".parse::<Timestamp>().unwrap();
     let store = Store::open(None, 60).unwrap();
     store
-        .seed_demo(&["claude".into()], now.timestamp() as f64, false)
+        .seed_demo(&["claude".into()], now.as_second() as f64, false)
         .unwrap();
     let report = spend_report(&store, &BTreeMap::new(), now).unwrap();
     assert!(report.total.last_window > 0.0);
@@ -19,9 +17,7 @@ fn demo_spend_report_uses_shared_daily_totals() {
 
 #[test]
 fn history_spend_report_groups_series_by_provider() {
-    let now = chrono::DateTime::parse_from_rfc3339("2026-10-13T12:00:00Z")
-        .unwrap()
-        .to_utc();
+    let now = "2026-10-13T12:00:00Z".parse::<Timestamp>().unwrap();
     let history = History {
         metric: "costUSD".into(),
         start: 0,
@@ -33,7 +29,7 @@ fn history_spend_report_groups_series_by_provider() {
             label: "opus".into(),
             points: vec![
                 Point(
-                    now.date_naive().and_hms_opt(0, 0, 0).unwrap().and_utc().timestamp(),
+                    "2026-10-13T00:00:00Z".parse::<Timestamp>().unwrap().as_second(),
                     4.0,
                     None,
                     false,
