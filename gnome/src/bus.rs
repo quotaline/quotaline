@@ -1,7 +1,7 @@
 //! Serves GNOME Shell state, settings, history, and actions over D-Bus.
 
 use super::*;
-use quotaline_gnome_adapter::history_view::history_view;
+use quotaline_engine::history_view::history_view;
 use serde::Serialize;
 
 mod history_selection;

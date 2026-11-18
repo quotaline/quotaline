@@ -10,8 +10,8 @@ extension_build := root + "/target/extension"
 export TMPDIR := tmp
 nextest_profile := env_var_or_default("TMB_NEXTEST_PROFILE", "ci")
 rust_scope := env_var_or_default("TMB_RUST_SCOPE", "workspace")
-rust_packages := if rust_scope == "gnome" { "-p quotaline-gnome -p quotaline-gnome-adapter" } else { "--workspace" }
-rust_coverage_ignore := "/rustc/|/target/|/[.]cargo/|/[.]rustup/|/macos/adapter/src/(credentials/(keychain|source_chain)|http/native|providers/antigravity/local|time/clock)_callback[.]rs|/macos/(adapter|platform)/tests/support/keychain[.]rs|/support/(http_transport|server_scanner)[.]rs" + if rust_scope == "gnome" { "|/crates/|/macos/" } else { "" }
+rust_packages := if rust_scope == "gnome" { "-p quotaline-gnome -p quotaline-engine" } else { "--workspace" }
+rust_coverage_ignore := "/rustc/|/target/|/[.]cargo/|/[.]rustup/|/macos/adapter/src/(credentials/(keychain|source_chain)|http/native|providers/antigravity/local|time/clock)_callback[.]rs|/macos/(adapter|platform)/tests/support/keychain[.]rs|/support/(http_transport|server_scanner)[.]rs" + if rust_scope == "gnome" { "|/crates/(accounts|catalog|data|demo|http|logging|presentation|providers|refresh|settings|tui)/|/macos/" } else { "" }
 
 # List available commands
 default:
@@ -30,11 +30,11 @@ lines:
     }
     printf '%-25s %10s %10s\n' 'Component' 'Source' 'Tests'
     printf '%-25s %10s %10s\n' 'Shared Rust' \
-        "$(count '^crates/([^/]+/)?[^/]+/src/' crates -g '*.rs')" \
-        "$(count '^crates/([^/]+/)?[^/]+/tests/' crates -g '*.rs')"
+        "$(count '^crates/([^/]+/)?[^/]+/src/' crates -g '*.rs' -g '!crates/engine/**')" \
+        "$(count '^crates/([^/]+/)?[^/]+/tests/' crates -g '*.rs' -g '!crates/engine/**')"
     printf '%-25s %10s %10s\n' 'GNOME Rust' \
-        "$(count '^gnome/(src|adapter/src)/' gnome -g '*.rs')" \
-        "$(count '^gnome/(tests|adapter/tests)/' gnome -g '*.rs')"
+        "$(count '^(gnome/src|crates/engine/src)/' gnome crates/engine -g '*.rs')" \
+        "$(count '^(gnome/tests|crates/engine/tests)/' gnome crates/engine -g '*.rs')"
     printf '%-25s %10s %10s\n' 'GNOME TypeScript' \
         "$(count '^gnome/extension/(src/|extension[.]ts$)' gnome/extension -g '*.ts')" \
         "$(count '^gnome/extension/tests/' gnome/extension/tests -g '*.ts')"
@@ -182,7 +182,7 @@ coverage-crates:
     set -eu
     cargo llvm-cov clean --workspace
     mkdir -p {{ tmp }}
-    TMPDIR={{ tmp }} NEXTEST_STATUS_LEVEL=fail NEXTEST_SHOW_PROGRESS=none RUSTC_BOOTSTRAP=1 cargo llvm-cov nextest --locked $(for manifest in crates/*/Cargo.toml crates/*/*/Cargo.toml; do crate=$(dirname "$manifest"); case "$(basename "$crate")" in credential-sources|history|storage) ;; *) printf -- '-p quotaline-%s ' "$(basename "$crate")" ;; esac; done) --branch --json --no-default-ignore-filename-regex --ignore-filename-regex '{{ rust_coverage_ignore }}' --profile {{ nextest_profile }} --output-path target/crates-coverage-detailed.json
+    TMPDIR={{ tmp }} NEXTEST_STATUS_LEVEL=fail NEXTEST_SHOW_PROGRESS=none RUSTC_BOOTSTRAP=1 cargo llvm-cov nextest --locked $(for manifest in crates/*/Cargo.toml crates/*/*/Cargo.toml; do crate=$(dirname "$manifest"); case "$(basename "$crate")" in credential-sources|engine|history|storage) ;; *) printf -- '-p quotaline-%s ' "$(basename "$crate")" ;; esac; done) --branch --json --no-default-ignore-filename-regex --ignore-filename-regex '{{ rust_coverage_ignore }}' --profile {{ nextest_profile }} --output-path target/crates-coverage-detailed.json
     jq -er '
       [.data[0].files[] | select(.filename | test("/crates/([^/]+/)?[^/]+/src/") and (test("/crates/[^/]+/(credential-sources|history|storage)/") | not))] as $files |
       [$files[] | select(.summary | .lines.count == 0 or .lines.covered != .lines.count or .branches.covered != .branches.count)] as $uncovered |

@@ -157,7 +157,7 @@ async fn copilot_legacy_hosts_prefers_github_and_keeps_its_user() {
     let home = tempfile::tempdir().unwrap();
     let path = home.path().join(".config/github-copilot/hosts.json");
     fs::create_dir_all(path.parent().unwrap()).unwrap();
-    fs::write(&path, include_str!("../../../../../tests/fixtures/copilot_hosts.json")).unwrap();
+    fs::write(&path, include_str!("../../../fixtures/copilot_hosts.json")).unwrap();
     let provider = collect(&fixture_api(&server), "copilot", home.path(), false)
         .await
         .unwrap();
@@ -312,7 +312,7 @@ async fn copilot_ignores_incomplete_free_quota_pairs() {
 
 #[tokio::test]
 async fn copilot_paid_fixture_orders_windows_and_preserves_day_resets() {
-    let data = serde_json::from_str(include_str!("../../../../../tests/fixtures/copilot_user.json")).unwrap();
+    let data = serde_json::from_str(include_str!("../../../fixtures/copilot_user.json")).unwrap();
     let provider = copilot_summary(data).await;
     assert_eq!(
         provider
@@ -334,7 +334,7 @@ async fn copilot_paid_fixture_orders_windows_and_preserves_day_resets() {
 
 #[tokio::test]
 async fn copilot_paid_fixture_keeps_account_identity() {
-    let data = serde_json::from_str(include_str!("../../../../../tests/fixtures/copilot_user.json")).unwrap();
+    let data = serde_json::from_str(include_str!("../../../fixtures/copilot_user.json")).unwrap();
     let provider = copilot_summary(data).await;
     assert_eq!(provider.plan, "Pro Plus");
     assert_eq!(provider.identity, "octocat");
@@ -342,7 +342,7 @@ async fn copilot_paid_fixture_keeps_account_identity() {
 
 #[tokio::test]
 async fn copilot_paid_fixture_keeps_only_supported_overage_notices() {
-    let data = serde_json::from_str(include_str!("../../../../../tests/fixtures/copilot_user.json")).unwrap();
+    let data = serde_json::from_str(include_str!("../../../fixtures/copilot_user.json")).unwrap();
     let provider = copilot_summary(data).await;
     assert_eq!(provider.notices.len(), 1);
     assert_eq!(provider.notices[0].kind, NoticeKind::Info);
@@ -380,7 +380,7 @@ async fn copilot_ignores_custom_category_overage_notices() {
 
 #[tokio::test]
 async fn copilot_paid_fixture_sorts_budget_details() {
-    let data = serde_json::from_str(include_str!("../../../../../tests/fixtures/copilot_user.json")).unwrap();
+    let data = serde_json::from_str(include_str!("../../../fixtures/copilot_user.json")).unwrap();
     let provider = copilot_summary(data).await;
     assert_eq!(
         provider
@@ -408,7 +408,7 @@ async fn copilot_request_details_round_provider_quantities() {
 
 #[tokio::test]
 async fn copilot_free_fixture_places_legacy_windows_after_snapshots() {
-    let data = serde_json::from_str(include_str!("../../../../../tests/fixtures/copilot_user_free.json")).unwrap();
+    let data = serde_json::from_str(include_str!("../../../fixtures/copilot_user_free.json")).unwrap();
     let provider = copilot_summary(data).await;
     assert_eq!(
         provider

@@ -28,7 +28,7 @@ network requests, persistence, and native bindings.
 | `crates/accounts/credential-sources` | Shared credential discovery rules.                                   |
 | `crates/data/history`                | SQLite history and export behavior for both desktops.                |
 | `crates/data/storage`                | Private file access and atomic writes.                               |
-| `gnome/adapter`                      | GNOME credential and file access, HTTP requests, and transcript I/O. |
+| `crates/engine`                      | Credential and file access, HTTP requests, and transcript I/O.       |
 | `gnome/src`                          | The D-Bus service, refresh scheduling, and state sent to the Shell.  |
 | `gnome/extension`                    | GNOME Shell controls, charts, accessibility, and panel placement.    |
 | `macos/platform`                     | macOS credential, persistence, and native access policies.           |

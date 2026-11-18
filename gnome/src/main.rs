@@ -7,8 +7,8 @@ use quotaline_analytics::project;
 use quotaline_catalog::IDS;
 use quotaline_catalog::REFRESH_POLICY;
 use quotaline_demo::demo;
+use quotaline_engine::{claude_transcripts, logging, providers, store};
 use quotaline_export as export;
-use quotaline_gnome_adapter::{claude_transcripts, logging, providers, store};
 use quotaline_http::ProviderFailureKind;
 use quotaline_notifications as notifications;
 use quotaline_quota::Provider;
@@ -237,7 +237,7 @@ impl App {
         let Some(connection) = connection.filter(|_| !planned.is_empty()) else {
             return;
         };
-        let clock = quotaline_gnome_adapter::clock::SessionClock::new(
+        let clock = quotaline_engine::clock::SessionClock::new(
             jiff::tz::TimeZone::system(),
             self.twelve_hour_clock(&connection).await,
         );

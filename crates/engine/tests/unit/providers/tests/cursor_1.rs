@@ -439,7 +439,7 @@ async fn cursor_keeps_team_and_individual_budgets_separate() {
 
 #[tokio::test]
 async fn cursor_matches_macos_window_order_and_components() {
-    let data = serde_json::from_str(include_str!("../../../../../tests/fixtures/cursor_usage_summary.json")).unwrap();
+    let data = serde_json::from_str(include_str!("../../../fixtures/cursor_usage_summary.json")).unwrap();
     let provider = cursor_summary(data, json!({"accessToken":"cursor-fixture"})).await;
     assert_eq!(
         provider
@@ -456,7 +456,7 @@ async fn cursor_matches_macos_window_order_and_components() {
 
 #[tokio::test]
 async fn cursor_summary_humanizes_the_plan_and_uses_cached_identity() {
-    let data = serde_json::from_str(include_str!("../../../../../tests/fixtures/cursor_usage_summary.json")).unwrap();
+    let data = serde_json::from_str(include_str!("../../../fixtures/cursor_usage_summary.json")).unwrap();
     let provider = cursor_summary(
         data,
         json!({"accessToken":"cursor-fixture","email":"cached@example.com","membershipType":"pro"}),

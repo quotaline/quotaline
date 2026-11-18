@@ -5,7 +5,7 @@ edition = "2024"
 license = "MIT"
 
 [features]
-fixture-api = ["quotaline-gnome-adapter/fixture-api"]
+fixture-api = ["quotaline-engine/fixture-api"]
 
 [[bin]]
 name = "antigravity_fixture"
@@ -50,7 +50,7 @@ quotaline-setup = { version = "0.2.0", path = "../crates/accounts/setup" }
 quotaline-status-bar = { version = "0.2.0", path = "../crates/presentation/status-bar" }
 quotaline-storage = { version = "0.2.0", path = "../crates/data/storage" }
 quotaline-text = { version = "0.2.0", path = "../crates/presentation/text" }
-quotaline-gnome-adapter = { version = "0.2.0", path = "adapter" }
+quotaline-engine = { version = "0.2.0", path = "../crates/engine" }
 futures-util = "0.3"
 jiff = "1"
 serde = { version = "1", features = ["derive"] }

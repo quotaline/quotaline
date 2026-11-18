@@ -33,7 +33,7 @@ repos:
         name: cargo clippy
         language: system
         # The GNOME crates read /proc and the session bus, so a Mac checks every crate but those.
-        entry: bash -c 'cargo clippy --locked --workspace --all-targets $([ "$(uname)" = Darwin ] && echo --exclude quotaline-gnome --exclude quotaline-gnome-adapter) -- -D warnings'
+        entry: bash -c 'cargo clippy --locked --workspace --all-targets $([ "$(uname)" = Darwin ] && echo --exclude quotaline-gnome --exclude quotaline-engine) -- -D warnings'
         types: [rust]
         pass_filenames: false
   - repo: https://github.com/hukkin/mdformat

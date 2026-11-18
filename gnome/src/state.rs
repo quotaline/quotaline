@@ -1,7 +1,7 @@
 //! Reads the current service snapshot for the GNOME adapter.
 
 use super::*;
-use quotaline_gnome_adapter::state::{StateInput, project};
+use quotaline_engine::state::{StateInput, project};
 
 impl App {
     pub(super) async fn state(&self) -> String {

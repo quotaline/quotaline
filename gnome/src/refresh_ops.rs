@@ -115,7 +115,7 @@ impl App {
             }
             _ => false,
         };
-        let clock = quotaline_gnome_adapter::clock::SessionClock::new(jiff::tz::TimeZone::system(), twelve_hour);
+        let clock = quotaline_engine::clock::SessionClock::new(jiff::tz::TimeZone::system(), twelve_hour);
         let (detailed, planned) = {
             let mut inner = self.inner.lock().await;
             inner.running.remove(id);

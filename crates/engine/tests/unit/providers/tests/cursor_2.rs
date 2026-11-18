@@ -4,7 +4,7 @@ use super::*;
 
 #[tokio::test]
 async fn cursor_summary_preserves_budget_details() {
-    let data = serde_json::from_str(include_str!("../../../../../tests/fixtures/cursor_usage_summary.json")).unwrap();
+    let data = serde_json::from_str(include_str!("../../../fixtures/cursor_usage_summary.json")).unwrap();
     let provider = cursor_summary(data, json!({"accessToken":"cursor-fixture"})).await;
     let details = provider
         .details
@@ -51,7 +51,7 @@ async fn cursor_team_details_put_on_demand_before_pool() {
 
 #[tokio::test]
 async fn cursor_summary_exposes_spend_control() {
-    let data = serde_json::from_str(include_str!("../../../../../tests/fixtures/cursor_usage_summary.json")).unwrap();
+    let data = serde_json::from_str(include_str!("../../../fixtures/cursor_usage_summary.json")).unwrap();
     let provider = cursor_summary(data, json!({"accessToken":"cursor-fixture"})).await;
     assert_eq!(provider.spend.as_ref().unwrap().used, Some(5.0));
     assert_eq!(provider.spend.as_ref().unwrap().limit, Some(100.0));
@@ -61,10 +61,7 @@ async fn cursor_summary_exposes_spend_control() {
 
 #[tokio::test]
 async fn cursor_pro_omits_disabled_on_demand_window() {
-    let data = serde_json::from_str(include_str!(
-        "../../../../../tests/fixtures/cursor_usage_summary_pro.json"
-    ))
-    .unwrap();
+    let data = serde_json::from_str(include_str!("../../../fixtures/cursor_usage_summary_pro.json")).unwrap();
     let provider = cursor_summary(data, json!({"accessToken":"cursor-fixture"})).await;
     assert_eq!(
         provider

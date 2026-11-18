@@ -2161,6 +2161,48 @@ dependencies = [
 ]
 
 [[package]]
+name = "quotaline-engine"
+version = "0.2.0"
+dependencies = [
+ "base64 0.23.1",
+ "hex",
+ "iana-time-zone",
+ "jiff",
+ "libc",
+ "procfs",
+ "quotaline-analytics",
+ "quotaline-antigravity",
+ "quotaline-catalog",
+ "quotaline-claude",
+ "quotaline-codex",
+ "quotaline-copilot",
+ "quotaline-credential-sources",
+ "quotaline-credentials",
+ "quotaline-cursor",
+ "quotaline-gemini",
+ "quotaline-history",
+ "quotaline-http",
+ "quotaline-logging",
+ "quotaline-notifications",
+ "quotaline-quota",
+ "quotaline-settings",
+ "quotaline-setup",
+ "quotaline-status-bar",
+ "quotaline-storage",
+ "quotaline-text",
+ "reqwest",
+ "rusqlite",
+ "secret-service",
+ "serde",
+ "serde_json",
+ "sha2",
+ "tempfile",
+ "tokio",
+ "wiremock",
+ "zbus",
+]
+
+[[package]]
 name = "quotaline-export"
 version = "0.2.0"
 dependencies = [
@@ -2203,9 +2245,9 @@ dependencies = [
  "quotaline-credentials",
  "quotaline-cursor",
  "quotaline-demo",
+ "quotaline-engine",
  "quotaline-export",
  "quotaline-gemini",
- "quotaline-gnome-adapter",
  "quotaline-history",
  "quotaline-http",
  "quotaline-logging",
@@ -2217,48 +2259,6 @@ dependencies = [
  "quotaline-status-bar",
  "quotaline-storage",
  "quotaline-text",
- "rusqlite",
- "secret-service",
- "serde",
- "serde_json",
- "sha2",
- "tempfile",
- "tokio",
- "wiremock",
- "zbus",
-]
-
-[[package]]
-name = "quotaline-gnome-adapter"
-version = "0.2.0"
-dependencies = [
- "base64 0.23.1",
- "hex",
- "iana-time-zone",
- "jiff",
- "libc",
- "procfs",
- "quotaline-analytics",
- "quotaline-antigravity",
- "quotaline-catalog",
- "quotaline-claude",
- "quotaline-codex",
- "quotaline-copilot",
- "quotaline-credential-sources",
- "quotaline-credentials",
- "quotaline-cursor",
- "quotaline-gemini",
- "quotaline-history",
- "quotaline-http",
- "quotaline-logging",
- "quotaline-notifications",
- "quotaline-quota",
- "quotaline-settings",
- "quotaline-setup",
- "quotaline-status-bar",
- "quotaline-storage",
- "quotaline-text",
- "reqwest",
  "rusqlite",
  "secret-service",
  "serde",

@@ -1,0 +1,49 @@
+[package]
+name = "quotaline-engine"
+version = "0.2.0"
+edition = "2024"
+license = "MIT"
+
+[features]
+fixture-api = []
+
+[dependencies]
+quotaline-analytics = { version = "0.2.0", path = "../data/analytics" }
+quotaline-antigravity = { version = "0.2.0", path = "../providers/antigravity" }
+quotaline-catalog = { version = "0.2.0", path = "../catalog" }
+quotaline-claude = { version = "0.2.0", path = "../providers/claude" }
+quotaline-codex = { version = "0.2.0", path = "../providers/codex" }
+quotaline-copilot = { version = "0.2.0", path = "../providers/copilot" }
+quotaline-credentials = { version = "0.2.0", path = "../accounts/credentials" }
+quotaline-cursor = { version = "0.2.0", path = "../providers/cursor" }
+quotaline-gemini = { version = "0.2.0", path = "../providers/gemini" }
+quotaline-http = { version = "0.2.0", path = "../http" }
+quotaline-logging = { version = "0.2.0", path = "../logging" }
+quotaline-notifications = { version = "0.2.0", path = "../presentation/notifications" }
+quotaline-quota = { version = "0.2.0", path = "../presentation/quota" }
+quotaline-settings = { version = "0.2.0", path = "../settings" }
+quotaline-setup = { version = "0.2.0", path = "../accounts/setup" }
+quotaline-status-bar = { version = "0.2.0", path = "../presentation/status-bar" }
+quotaline-text = { version = "0.2.0", path = "../presentation/text" }
+quotaline-credential-sources = { version = "0.2.0", path = "../accounts/credential-sources" }
+quotaline-storage = { version = "0.2.0", path = "../data/storage" }
+quotaline-history = { version = "0.2.0", path = "../data/history" }
+base64 = "0.23"
+hex = "0.4"
+iana-time-zone = "0.1.65"
+jiff = "1"
+reqwest = { version = "0.13", default-features = false, features = ["form", "json", "rustls"] }
+secret-service = { version = "6", default-features = false, features = ["rt-tokio-crypto-rust"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha2 = "0.11"
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "signal", "sync", "time"] }
+zbus = { version = "6", default-features = false, features = ["tokio", "proxy"] }
+procfs = { version = "0.18", default-features = false }
+
+[dev-dependencies]
+libc = "0.2"
+rusqlite = { version = "0.43", features = ["bundled"] }
+tempfile = "3"
+tokio = { version = "1", features = ["test-util"] }
+wiremock = "0.6"

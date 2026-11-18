@@ -29,11 +29,8 @@ pub(super) async fn gemini_summary(quota: Value, assist: Value) -> Provider {
 
 pub(super) async fn gemini_reference() -> Provider {
     gemini_summary(
-        serde_json::from_str(include_str!("../../../../../tests/fixtures/gemini_quota.json")).unwrap(),
-        serde_json::from_str(include_str!(
-            "../../../../../tests/fixtures/gemini_load_code_assist.json"
-        ))
-        .unwrap(),
+        serde_json::from_str(include_str!("../../../fixtures/gemini_quota.json")).unwrap(),
+        serde_json::from_str(include_str!("../../../fixtures/gemini_load_code_assist.json")).unwrap(),
     )
     .await
 }
