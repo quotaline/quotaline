@@ -233,6 +233,20 @@ impl Interactive {
     fn assert_restored(&mut self) {
         self.read_until("\x1b[?1049l");
         assert!(self.child.wait().unwrap().success());
+        // macOS schedules pending input for reprocessing when canonical mode resumes.
+        self.write(b"restored\n");
+        self.read_until("restored");
+        assert_eq!(
+            poll(
+                &mut [PollFd::new(&self.slave, PollFlags::IN)],
+                Some(&Timespec { tv_sec: 1, tv_nsec: 0 }),
+            )
+            .unwrap(),
+            1
+        );
+        let mut restored = [0; 64];
+        assert_eq!(self.slave.read(&mut restored).unwrap(), b"restored\n".len());
+        assert_eq!(&restored[..b"restored\n".len()], b"restored\n");
         assert_eq!(tcgetattr(&self.slave).unwrap().local_modes, self.original_modes);
     }
 }

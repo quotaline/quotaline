@@ -1,6 +1,6 @@
 use super::*;
 use jiff::Timestamp;
-use quotaline_history::{Sample, SampleWrite, Store};
+use quotaline_history::{AnalyticsPoint, Sample, SampleWrite, Store};
 use quotaline_macos_ffi::{
     logging::log_make_entry,
     provider_record::{ProviderReadingRecord, ReadingSource},
@@ -27,10 +27,22 @@ fn reads_mutates_session_and_recovers_using_the_native_mac_data() {
 
     cli.write(b"2");
     cli.read_until("Latest 78.00");
-    cli.write(b"v");
+    cli.write(b"[");
+    cli.read_until("No history in this range");
+    cli.write(b"n");
+    cli.read_until("Latest 78.00");
+    cli.write(
+        concat!(
+            ":visibility {\"kind\":\"toggle\",\"metric\":\"usage\",",
+            "\"id\":\"codex:session\",\"series\":[\"codex:session\",\"codex:weekly\"]}\r"
+        )
+        .as_bytes(),
+    );
     cli.read_until("○ Codex · Native session");
     cli.write(b"v");
     cli.read_until("● Codex · Native session");
+    cli.write(b":clear history confirm\r");
+    cli.read_until("Clear history in the Quotaline menu bar app");
     let csv = fixture.home.path().join("usage history.csv");
     cli.write(format!(":export {}\r", csv.display()).as_bytes());
     cli.read_until("History exported");
@@ -72,6 +84,46 @@ fn reports_missing_home_at_default_startup() {
     cli.quit(b"q");
 }
 
+#[test]
+fn reads_native_support_data_and_leaves_configuration_with_the_app() {
+    let fixture = MacFixture::new();
+    fixture.cache(62.5);
+    let mut cli = Interactive::start(&mut fixture.command());
+    cli.read_until("62.5%");
+    cli.write(b"s");
+    cli.read_until("Set up codex in the Quotaline menu bar app");
+    for (input, text) in [
+        (":set decimals\r", "Use set KEY JSON"),
+        (":export /history.csv\r", "Open History before exporting a metric"),
+        (":models Native\r", "Selected · codex:session · Native session"),
+        (":spend\r", "Last 30 days $6.25"),
+        (":reviews\r", "No review history yet"),
+        (":diagnostics\r", "Quotaline macOS diagnostics"),
+        (":issue\r", "github.com/quotaline/quotaline/issues/new"),
+        (":toggle-model codex:session\r", "Change selection for codex:session"),
+        (":toggle-provider codex\r", "Change model selection for codex"),
+        (":interval codex 1\r", "Change the refresh interval for codex"),
+        (":threshold 75\r", "Change the 75% threshold"),
+        (
+            ":reorder provider codex cursor before\r",
+            "Move codex in the Quotaline menu bar app",
+        ),
+        (
+            ":reset settings confirm\r",
+            "Reset settings in the Quotaline menu bar app",
+        ),
+        (":period 30\r", "Latest 78.00"),
+        (":export history.csv\r", "Use an absolute export path"),
+        (":metric costUSD\r", "API-equivalent cost · Total $6.25"),
+    ] {
+        cli.write(input.as_bytes());
+        cli.read_until(text);
+    }
+    cli.write(b"\x1b[D");
+    cli.read_until("T00:00:00Z · $6.25");
+    cli.quit(b"q");
+}
+
 struct MacFixture {
     home: tempfile::TempDir,
     support: std::path::PathBuf,
@@ -101,8 +153,8 @@ impl MacFixture {
             .unwrap();
 
         let now = Timestamp::now().as_second();
-        Store::open(Some(&support.join("usage.sqlite")), 60)
-            .unwrap()
+        let history = Store::open(Some(&support.join("usage.sqlite")), 60).unwrap();
+        history
             .seed(
                 &[("session", "Native session", 78.0), ("weekly", "Native week", 44.0)].map(|(id, label, used)| {
                     SampleWrite {
@@ -115,6 +167,21 @@ impl MacFixture {
                         label: label.into(),
                     }
                 }),
+            )
+            .unwrap();
+        history
+            .record_analytics(
+                "codex",
+                None,
+                now as f64,
+                &[AnalyticsPoint {
+                    provider: "codex".into(),
+                    day: quotaline_analytics::utc_day::day((now - 86_400) as f64),
+                    metric: "costUSD".into(),
+                    series: "Native model".into(),
+                    value: 6.25,
+                }],
+                &[],
             )
             .unwrap();
         let log = log_make_entry(
