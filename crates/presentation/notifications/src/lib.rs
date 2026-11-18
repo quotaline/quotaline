@@ -1,6 +1,6 @@
 //! Plans quota and account transition notifications.
 
-use chrono::DateTime;
+use jiff::Timestamp;
 use quotaline_quota::pace::{PaceEstimate, PaceStatus};
 use quotaline_quota::{Provider, ResetPrecision, Window};
 use quotaline_settings::{DEFAULT_THRESHOLDS, Settings};
@@ -357,8 +357,8 @@ fn reset_at(window: &Window) -> Option<i64> {
     window
         .reset
         .as_deref()
-        .and_then(|value| DateTime::parse_from_rfc3339(value).ok())
-        .map(|date| date.timestamp())
+        .and_then(|value| value.parse::<Timestamp>().ok())
+        .map(Timestamp::as_second)
 }
 
 #[cfg(test)]

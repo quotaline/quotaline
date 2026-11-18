@@ -5,10 +5,10 @@ use crate::history::{Point, Series};
 
 #[test]
 fn demo_review_counts_use_shared_aggregation() {
-    let now = Utc::now();
+    let now = Timestamp::now();
     let store = Store::open(None, 60).unwrap();
     store
-        .seed_demo(&["codex".into()], now.timestamp() as f64, false)
+        .seed_demo(&["codex".into()], now.as_second() as f64, false)
         .unwrap();
     let counts = review_counts(&store, &BTreeMap::new(), 60, now).unwrap();
     let counts = counts.unwrap();
@@ -18,10 +18,8 @@ fn demo_review_counts_use_shared_aggregation() {
 
 #[test]
 fn history_review_counts_ignore_other_providers() {
-    let now = chrono::DateTime::parse_from_rfc3339("2026-10-13T12:00:00Z")
-        .unwrap()
-        .to_utc();
-    let at = now.date_naive().and_hms_opt(0, 0, 0).unwrap().and_utc().timestamp();
+    let now = "2026-10-13T12:00:00Z".parse::<Timestamp>().unwrap();
+    let at = "2026-10-13T00:00:00Z".parse::<Timestamp>().unwrap().as_second();
     let history = History {
         metric: "codeReviews".into(),
         start: at,
@@ -50,9 +48,7 @@ fn history_review_counts_ignore_other_providers() {
 
 #[test]
 fn history_without_codex_reviews_has_no_summary() {
-    let now = chrono::DateTime::parse_from_rfc3339("2026-10-13T12:00:00Z")
-        .unwrap()
-        .to_utc();
+    let now = "2026-10-13T12:00:00Z".parse::<Timestamp>().unwrap();
     let history = History {
         metric: "codeReviews".into(),
         start: 0,

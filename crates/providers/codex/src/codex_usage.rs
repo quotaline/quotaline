@@ -4,7 +4,7 @@ use quotaline_quota::{Notice, NoticeKind};
 use quotaline_text::json::{number, text, timestamp};
 use quotaline_text::text::humanize;
 
-use chrono::DateTime;
+use jiff::Timestamp;
 use serde_json::{Value, json};
 
 use crate::{LimitGroup, LimitKind, LimitWindow};
@@ -299,8 +299,9 @@ fn range(value: &Value) -> Option<(i64, i64)> {
 
 fn display_timestamp(value: &Value) -> Option<String> {
     if let Some(seconds) = number(value) {
-        return DateTime::from_timestamp(seconds as i64, 0)
-            .map(|date| date.to_rfc3339_opts(chrono::SecondsFormat::Secs, true));
+        return Timestamp::from_second(seconds as i64)
+            .ok()
+            .map(|date| date.strftime("%Y-%m-%dT%H:%M:%SZ").to_string());
     }
     text(value).map(str::to_owned)
 }

@@ -73,7 +73,7 @@ fn local_metric_export_creates_an_owner_only_csv() {
         .await
         .unwrap();
         let path = fixture.scratch.path().join("turns.csv");
-        let now = chrono::Utc::now().timestamp();
+        let now = jiff::Timestamp::now().as_second();
         let exported: bool = proxy
             .call(
                 "ExportMetricHistory",
@@ -89,7 +89,7 @@ fn local_metric_export_creates_an_owner_only_csv() {
 
 #[test]
 fn full_history_export_streams_samples_and_analytics_with_private_projects() {
-    let now = chrono::Utc::now();
+    let now = jiff::Timestamp::now();
     let fixture = isolated_service_with(
         &serde_json::json!({"providers":{"claude":false,"codex":false,"gemini":false,
             "antigravity":false,"cursor":false,"copilot":false}}),
@@ -100,22 +100,22 @@ fn full_history_export_streams_samples_and_analytics_with_private_projects() {
             db.execute_batch("CREATE TABLE samples(ts INTEGER NOT NULL, provider TEXT NOT NULL, window_id TEXT NOT NULL, label TEXT NOT NULL, used REAL NOT NULL, reset TEXT, PRIMARY KEY(ts,provider,window_id)); CREATE TABLE daily_analytics(day TEXT NOT NULL, provider TEXT NOT NULL, metric TEXT NOT NULL, series TEXT NOT NULL, value REAL NOT NULL, PRIMARY KEY(day,provider,metric,series))").unwrap();
             db.execute(
                 "INSERT INTO samples VALUES(?1,'claude','session','Current session',42.5,NULL)",
-                [now.timestamp()],
+                [now.as_second()],
             )
             .unwrap();
             db.execute(
                 "INSERT INTO daily_analytics VALUES(?1,'claude','projectCost','/work/secret-project',1.25)",
-                [now.format("%Y-%m-%d").to_string()],
+                [now.strftime("%Y-%m-%d").to_string()],
             )
             .unwrap();
             db.execute(
                 "INSERT INTO daily_analytics VALUES(?1,'claude','projectMessages','/work/secret-project',3)",
-                [now.format("%Y-%m-%d").to_string()],
+                [now.strftime("%Y-%m-%d").to_string()],
             )
             .unwrap();
             db.execute(
                 "INSERT INTO daily_analytics VALUES(?1,'claude','messages','total',3)",
-                [now.format("%Y-%m-%d").to_string()],
+                [now.strftime("%Y-%m-%d").to_string()],
             )
             .unwrap();
         },
@@ -184,7 +184,7 @@ fn full_history_export_streams_samples_and_analytics_with_private_projects() {
 
 #[test]
 fn disabled_provider_history_is_hidden_from_charts_and_csv() {
-    let now = chrono::Utc::now();
+    let now = jiff::Timestamp::now();
     let fixture = isolated_service_with(
         &serde_json::json!({"providers":{"claude":false,"codex":true,"gemini":false,
             "antigravity":false,"cursor":false,"copilot":false}}),
@@ -196,12 +196,12 @@ fn disabled_provider_history_is_hidden_from_charts_and_csv() {
             for (provider, used) in [("claude", 25.0), ("codex", 50.0)] {
                 db.execute(
                     "INSERT INTO samples VALUES(?1,?2,'session','Session',?3,NULL)",
-                    rusqlite::params![now.timestamp(), provider, used],
+                    rusqlite::params![now.as_second(), provider, used],
                 )
                 .unwrap();
                 db.execute(
                     "INSERT INTO daily_analytics VALUES(?1,?2,'costUSD','total',?3)",
-                    rusqlite::params![now.format("%Y-%m-%d").to_string(), provider, used],
+                    rusqlite::params![now.strftime("%Y-%m-%d").to_string(), provider, used],
                 )
                 .unwrap();
             }
@@ -221,8 +221,8 @@ fn disabled_provider_history_is_hidden_from_charts_and_csv() {
         )
         .await
         .unwrap();
-        let start = now.timestamp() - 86_400;
-        let end = now.timestamp() + 86_400;
+        let start = now.as_second() - 86_400;
+        let end = now.as_second() + 86_400;
         let quota = history_view(&proxy, serde_json::json!({"kind":"load"})).await["history"].take();
         assert_eq!(quota["series"].as_array().unwrap().len(), 1);
         assert_eq!(quota["series"][0]["provider"], "codex");
@@ -271,7 +271,7 @@ fn selected_models_scope_quota_history_and_csv_but_not_analytics() {
         )
         .await
         .unwrap();
-        let end = chrono::Utc::now().timestamp() + 60;
+        let end = jiff::Timestamp::now().as_second() + 60;
         let start = end - 7 * 86_400;
         for action in [
             serde_json::json!({"kind":"period","days":7}),
@@ -324,7 +324,7 @@ fn empty_custom_model_selection_hides_quota_history() {
 
 #[test]
 fn default_model_selection_filters_retained_quota_history() {
-    let now = chrono::Utc::now().timestamp();
+    let now = jiff::Timestamp::now().as_second();
     let fixture = isolated_service_with(&serde_json::json!({}), |root| {
         let cache = root.join("cache/quotaline");
         let data = root.join("data/quotaline");

@@ -2,7 +2,7 @@
 
 use std::collections::BTreeMap;
 
-use chrono::Utc;
+use jiff::Timestamp;
 use quotaline_analytics as analytics;
 use quotaline_history::Store;
 
@@ -13,14 +13,14 @@ pub fn review_counts(
     store: &Store,
     providers: &BTreeMap<String, bool>,
     retention_days: u32,
-    now: chrono::DateTime<Utc>,
+    now: Timestamp,
 ) -> quotaline_history::Result<Option<analytics::ReviewCounts>> {
     let (start, end) = retained_range(now, retention_days);
     let history = history_analytics(store, "codeReviews", start, end, providers)?;
     Ok(counts_from_history(&history, now))
 }
 
-fn counts_from_history(history: &History, now: chrono::DateTime<Utc>) -> Option<analytics::ReviewCounts> {
+fn counts_from_history(history: &History, now: Timestamp) -> Option<analytics::ReviewCounts> {
     let rows = history_points(history)
         .into_iter()
         .filter(|point| point.provider == "codex")

@@ -1,6 +1,6 @@
 //! Builds redacted usage and history exports.
 
-use chrono::{DateTime, SecondsFormat, TimeZone, Utc};
+use jiff::Timestamp;
 use quotaline_quota::Provider;
 use serde::Serialize;
 use std::collections::BTreeMap;
@@ -36,11 +36,11 @@ impl<'a> UsageExport<'a> {
             providers: providers
                 .iter()
                 .filter_map(|(id, provider)| {
-                    let stamp = provider.updated.and_then(|at| Utc.timestamp_opt(at, 0).single())?;
+                    let stamp = provider.updated.and_then(|at| Timestamp::from_second(at).ok())?;
                     Some(ProviderExport {
                         id,
                         plan: (!provider.plan.is_empty()).then_some(provider.plan.as_str()),
-                        fetched_at: stamp.to_rfc3339_opts(SecondsFormat::Secs, true),
+                        fetched_at: stamp.strftime("%Y-%m-%dT%H:%M:%SZ").to_string(),
                         windows: provider
                             .windows
                             .iter()
@@ -51,8 +51,8 @@ impl<'a> UsageExport<'a> {
                                 resets_at: row
                                     .reset
                                     .as_deref()
-                                    .and_then(|reset| DateTime::parse_from_rfc3339(reset).ok())
-                                    .map(|reset| reset.to_utc().to_rfc3339_opts(SecondsFormat::Secs, true)),
+                                    .and_then(|reset| reset.parse::<Timestamp>().ok())
+                                    .map(|reset| reset.strftime("%Y-%m-%dT%H:%M:%SZ").to_string()),
                             })
                             .collect(),
                     })

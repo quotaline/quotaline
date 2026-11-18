@@ -1,6 +1,7 @@
 //! Parses persisted diagnostic text lines in one batch.
 
-use chrono::{Datelike, NaiveDateTime};
+use jiff::civil::DateTime;
+use jiff::tz::Offset;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct ParsedLine {
@@ -90,10 +91,10 @@ fn stored_timestamp(line: &str) -> Option<f64> {
         return None;
     }
     let stamp = line.get(1..24)?;
-    let date = NaiveDateTime::parse_from_str(stamp, "%Y-%m-%d %H:%M:%S%.3f").ok()?;
+    let date = DateTime::strptime("%Y-%m-%d %H:%M:%S%.3f", stamp).ok()?;
     (1..=9999)
         .contains(&date.year())
-        .then_some(date.and_utc().timestamp_millis() as f64 / 1_000.0)
+        .then_some(Offset::UTC.to_timestamp(date).ok()?.as_millisecond() as f64 / 1_000.0)
 }
 
 #[cfg(test)]

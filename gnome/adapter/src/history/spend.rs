@@ -2,7 +2,7 @@
 
 use std::collections::BTreeMap;
 
-use chrono::Utc;
+use jiff::Timestamp;
 use quotaline_analytics as analytics;
 use quotaline_history::Store;
 
@@ -12,14 +12,14 @@ use super::{History, history_analytics, history_points};
 pub fn spend_report(
     store: &Store,
     providers: &BTreeMap<String, bool>,
-    now: chrono::DateTime<Utc>,
+    now: Timestamp,
 ) -> quotaline_history::Result<analytics::SpendReport> {
     let (start, end) = retained_range(now, 30);
     let history = history_analytics(store, "costUSD", start, end, providers)?;
     Ok(report_from_history(&history, now))
 }
 
-fn report_from_history(history: &History, now: chrono::DateTime<Utc>) -> analytics::SpendReport {
+fn report_from_history(history: &History, now: Timestamp) -> analytics::SpendReport {
     let rows = history_points(history)
         .into_iter()
         .map(|point| analytics::SpendRow {

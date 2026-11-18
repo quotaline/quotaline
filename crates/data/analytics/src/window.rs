@@ -2,8 +2,8 @@
 
 use std::collections::{BTreeMap, HashSet};
 
-use chrono::{DateTime, Offset, Utc};
-use chrono_tz::Tz;
+use jiff::Timestamp;
+use jiff::tz::TimeZone;
 
 use super::{downsample, insert_reset_zeros, point_limits};
 
@@ -117,13 +117,13 @@ pub struct WindowChartRequest {
     pub includes_end: bool,
 }
 
-pub fn offset_at(at: f64, zone: Option<Tz>, fallback: i32) -> i32 {
-    zone.and_then(|zone| DateTime::<Utc>::from_timestamp(at as i64, 0).map(|date| date.with_timezone(&zone)))
-        .map_or(fallback, |date| date.offset().fix().local_minus_utc())
+pub fn offset_at(at: f64, zone: Option<&TimeZone>, fallback: i32) -> i32 {
+    zone.zip(Timestamp::from_second(at as i64).ok())
+        .map_or(fallback, |(zone, date)| zone.to_offset(date).seconds())
 }
 
 /// Keeps the UTC offset in sub-day keys so a repeated local hour after a DST change stays a separate bucket.
-pub fn bucket_key(at: f64, seconds: f64, zone: Option<Tz>, fallback: i32) -> (i64, i32) {
+pub fn bucket_key(at: f64, seconds: f64, zone: Option<&TimeZone>, fallback: i32) -> (i64, i32) {
     let offset = offset_at(at, zone, fallback);
     let bucket = ((at + f64::from(offset)) / seconds).floor() as i64;
     (bucket, if seconds == 86_400.0 { 0 } else { offset })
@@ -135,10 +135,10 @@ fn bucket_from<'a>(
     time_zone: &str,
     fallback_offset: i32,
 ) -> Vec<WindowChartPoint> {
-    let zone = time_zone.parse::<Tz>().ok();
+    let zone = TimeZone::get(time_zone).ok();
     let mut latest = BTreeMap::<(i64, i32), WindowChartPoint>::new();
     for sample in samples {
-        let key = bucket_key(sample.at, rollup.seconds(), zone, fallback_offset);
+        let key = bucket_key(sample.at, rollup.seconds(), zone.as_ref(), fallback_offset);
         let point = WindowChartPoint::sample(sample);
         if latest.get(&key).is_none_or(|existing| existing.at <= point.at) {
             latest.insert(key, point);

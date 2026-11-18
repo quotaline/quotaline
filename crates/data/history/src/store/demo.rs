@@ -1,14 +1,14 @@
 //! Fills a store with the shared demo data so previews read history through the same queries as real data.
 
-use chrono::{DateTime, Utc};
+use jiff::Timestamp;
 
 use super::{Result, Sample, SampleWrite, Store};
 
 pub const DEMO_DAYS: u32 = 30;
 const DEMO_INTERVAL: f64 = 1800.0;
 
-fn date(at: f64) -> DateTime<Utc> {
-    DateTime::from_timestamp_millis((at * 1000.0) as i64).unwrap_or_default()
+fn date(at: f64) -> Timestamp {
+    Timestamp::from_millisecond((at * 1000.0) as i64).unwrap_or(Timestamp::UNIX_EPOCH)
 }
 
 impl Store {
@@ -30,8 +30,8 @@ impl Store {
                             used: window.used,
                             reset_at: window
                                 .reset
-                                .and_then(|reset| DateTime::parse_from_rfc3339(&reset).ok())
-                                .map(|reset| reset.timestamp_millis() as f64 / 1000.0),
+                                .and_then(|reset| reset.parse::<Timestamp>().ok())
+                                .map(|reset| reset.as_millisecond() as f64 / 1000.0),
                         },
                         label: window.label,
                     });

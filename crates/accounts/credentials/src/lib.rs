@@ -1,7 +1,8 @@
 //! Parses provider credentials without accessing platform key stores.
 
 use base64::Engine;
-use chrono::DateTime;
+use jiff::Timestamp;
+use jiff::fmt::temporal::Pieces;
 use serde_json::Value;
 use sha2::{Digest, Sha256};
 
@@ -88,7 +89,9 @@ pub fn cursor_session_cookie(token: &str) -> String {
 pub fn codex_subscription_until(id_token: &str) -> Option<String> {
     let claims = jwt_claims(id_token)?;
     let until = claims["https://api.openai.com/auth"]["chatgpt_subscription_active_until"].as_str()?;
-    DateTime::parse_from_rfc3339(until).ok().map(|date| date.to_rfc3339())
+    let offset = Pieces::parse(until).ok()?.to_numeric_offset()?;
+    let date = until.parse::<Timestamp>().ok()?;
+    Some(date.display_with_offset(offset).to_string())
 }
 
 pub fn codex_account_fingerprint(access_token: &str, account_id: Option<&str>, id_token: Option<&str>) -> String {
@@ -212,8 +215,8 @@ pub fn antigravity_credential(document: &Value) -> Option<AntigravityCredential>
             .or_else(|| {
                 value
                     .as_str()
-                    .and_then(|value| DateTime::parse_from_rfc3339(value).ok())
-                    .map(|value| value.timestamp_millis() as f64 / 1000.0)
+                    .and_then(|value| value.parse::<Timestamp>().ok())
+                    .map(|value| value.as_millisecond() as f64 / 1000.0)
             })
     });
     Some(AntigravityCredential {

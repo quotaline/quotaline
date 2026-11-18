@@ -1,16 +1,22 @@
 //! Checks the public behavior of the adjacent module.
 
 use super::*;
-use chrono::{FixedOffset, Local, TimeZone, Utc};
+use jiff::civil::date;
+use jiff::tz::{Offset, TimeZone};
 
 fn window(used: f64, now: i64, elapsed: i64, duration: u64) -> Window {
-    let reset = Utc
-        .timestamp_opt(now + duration as i64 - elapsed, 0)
+    let reset = Timestamp::from_second(now + duration as i64 - elapsed)
         .unwrap()
-        .to_rfc3339();
+        .display_with_offset(Offset::UTC)
+        .to_string();
     let mut window = Window::new("weekly", "Weekly", used, Some(reset), "weekly");
     window.duration_seconds = Some(duration);
     window
+}
+
+fn local(year: i16, month: i8, day: i8, hour: i8) -> i64 {
+    let local = date(year, month, day).at(hour, 0, 0, 0);
+    TimeZone::system().to_timestamp(local).unwrap().as_second()
 }
 
 #[test]
@@ -60,9 +66,9 @@ fn recent_slope_projects_exhaustion_before_reset() {
 
 #[test]
 fn six_workdays_count_saturday_without_sunday() {
-    let start = Local.with_ymd_and_hms(2026, 10, 9, 0, 0, 0).unwrap().timestamp();
-    let now = Local.with_ymd_and_hms(2026, 10, 10, 12, 0, 0).unwrap().timestamp();
-    let reset = Local.with_ymd_and_hms(2026, 10, 12, 0, 0, 0).unwrap().timestamp();
+    let start = local(2026, 10, 9, 0);
+    let now = local(2026, 10, 10, 12);
+    let reset = local(2026, 10, 12, 0);
     let candidate = window(75.0, now, now - start, (reset - start) as u64);
     assert_eq!(
         PaceEstimate::estimate(&candidate, &[], 5, now).expected_percent,
@@ -76,10 +82,10 @@ fn six_workdays_count_saturday_without_sunday() {
 
 #[test]
 fn explicit_timezone_controls_workday_expectation() {
-    let utc = FixedOffset::east_opt(0).unwrap();
-    let start = utc.with_ymd_and_hms(2026, 8, 29, 0, 0, 0).unwrap().timestamp();
-    let now = utc.with_ymd_and_hms(2026, 8, 31, 9, 0, 0).unwrap().timestamp();
-    let estimate = PaceEstimate::estimate_in_timezone(&window(30.0, now, now - start, 7 * 86_400), &[], 5, now, utc);
+    let utc = TimeZone::fixed(Offset::UTC);
+    let start = utc.to_timestamp(date(2026, 8, 29).into()).unwrap().as_second();
+    let now = utc.to_timestamp(date(2026, 8, 31).at(9, 0, 0, 0)).unwrap().as_second();
+    let estimate = PaceEstimate::estimate_in_timezone(&window(30.0, now, now - start, 7 * 86_400), &[], 5, now, &utc);
     assert!((estimate.expected_percent.unwrap() - 7.5).abs() < 0.0001);
     assert_eq!(estimate.status, PaceStatus::Ahead);
 }
@@ -131,9 +137,9 @@ fn stale_samples_use_lifetime_rate() {
 
 #[test]
 fn weekly_pace_excludes_nonworking_days() {
-    let start = Local.with_ymd_and_hms(2026, 10, 9, 0, 0, 0).unwrap().timestamp();
-    let now = Local.with_ymd_and_hms(2026, 10, 11, 12, 0, 0).unwrap().timestamp();
-    let reset = Local.with_ymd_and_hms(2026, 10, 12, 0, 0, 0).unwrap().timestamp();
+    let start = local(2026, 10, 9, 0);
+    let now = local(2026, 10, 11, 12);
+    let reset = local(2026, 10, 12, 0);
     let pace = PaceEstimate::estimate(&window(75.0, now, now - start, (reset - start) as u64), &[], 5, now);
     assert_eq!(pace.expected_percent, Some(100.0));
     assert_eq!(pace.status, PaceStatus::OnTrack);

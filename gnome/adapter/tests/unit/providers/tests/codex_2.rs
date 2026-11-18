@@ -194,14 +194,14 @@ async fn codex_spend_uses_remaining_percent_when_used_is_absent() {
 
 #[tokio::test]
 async fn codex_spend_reset_uses_relative_seconds() {
-    let before = Utc::now().timestamp();
+    let before = Timestamp::now().as_second();
     let provider = codex_summary(json!({
         "spend_control":{"individual_limit":{"reset_after_seconds":3600}}
     }))
     .await;
     let reset = provider.spend.unwrap().reset.unwrap();
-    let at = DateTime::parse_from_rfc3339(&reset).unwrap().timestamp();
-    assert!((before + 3600..=Utc::now().timestamp() + 3600).contains(&at));
+    let at = reset.parse::<Timestamp>().unwrap().as_second();
+    assert!((before + 3600..=Timestamp::now().as_second() + 3600).contains(&at));
 }
 
 #[tokio::test]

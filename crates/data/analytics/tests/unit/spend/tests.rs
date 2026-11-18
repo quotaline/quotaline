@@ -11,8 +11,8 @@ fn row(day: &str, provider: &str, model: &str, value: f64) -> SpendRow {
     }
 }
 
-fn now() -> DateTime<Utc> {
-    DateTime::parse_from_rfc3339("2026-10-13T12:00:00Z").unwrap().to_utc()
+fn now() -> Timestamp {
+    "2026-10-13T12:00:00Z".parse().unwrap()
 }
 
 #[test]

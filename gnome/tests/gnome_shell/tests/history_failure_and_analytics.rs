@@ -205,7 +205,7 @@ fn history_recreates_schema_after_database_replacement() {
 fn scheduled_codex_analytics_reaches_daily_history() {
     let runtime = tokio::runtime::Runtime::new().unwrap();
     let server = runtime.block_on(MockServer::start());
-    let today = chrono::Utc::now().format("%Y-%m-%d").to_string();
+    let today = jiff::Timestamp::now().strftime("%Y-%m-%d").to_string();
     let requests = std::sync::atomic::AtomicUsize::new(0);
     runtime.block_on(async {
         Mock::given(matchers::method("GET"))

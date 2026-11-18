@@ -1,6 +1,6 @@
 //! Aggregates parsed transcript records by day, project, and minute.
 
-use chrono::{DateTime, Utc};
+use jiff::Timestamp;
 
 use super::*;
 use crate::claude_transcripts::{TokenCounts, cost};
@@ -37,9 +37,9 @@ impl TranscriptAnalytics {
 }
 
 fn day(at: f64) -> String {
-    DateTime::<Utc>::from_timestamp(at as i64, 0)
+    Timestamp::from_second(at as i64)
         .unwrap()
-        .format("%Y-%m-%d")
+        .strftime("%Y-%m-%d")
         .to_string()
 }
 

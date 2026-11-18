@@ -1,6 +1,6 @@
 //! Defines serializable provider, quota, and settings values.
 
-use chrono::Utc;
+use jiff::Timestamp;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
@@ -380,7 +380,7 @@ impl Provider {
             notices: Vec::new(),
             warnings: Vec::new(),
             notice: String::new(),
-            updated: Some(Utc::now().timestamp()),
+            updated: Some(Timestamp::now().as_second()),
             retry_after: 0,
         }
     }

@@ -30,7 +30,8 @@ async fn expiring_codex_file_token_refreshes_before_usage() {
     let home = tempfile::tempdir().unwrap();
     let expired = format!(
         "h.{}.s",
-        base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(json!({"exp":Utc::now().timestamp() + 60}).to_string())
+        base64::engine::general_purpose::URL_SAFE_NO_PAD
+            .encode(json!({"exp":Timestamp::now().as_second() + 60}).to_string())
     );
     credential_file(
         home.path(),
@@ -257,7 +258,9 @@ async fn codex_analytics_resume_from_the_stored_watermarks() {
         .mount(&server)
         .await;
     codex_analytics(&api, home.path(), 30, Some(&stored)).await.unwrap();
-    let yesterday = (Utc::now() - chrono::Duration::days(1)).format("%Y-%m-%d").to_string();
+    let yesterday = (Timestamp::now() - jiff::SignedDuration::from_hours(24))
+        .strftime("%Y-%m-%d")
+        .to_string();
     let requests = server.received_requests().await.unwrap();
     let starts = requests
         .iter()

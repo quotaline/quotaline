@@ -134,7 +134,7 @@ fn derived_short_labels_include_unselected_models_in_shell() {
                 cache.join("snapshot.json"),
                 serde_json::json!({"codex": {
                     "id": "codex", "name": "Codex", "status": "connected", "plan": "Plus",
-                    "identity": "", "source": "fixture", "notice": "", "updated": chrono::Utc::now().timestamp(),
+                    "identity": "", "source": "fixture", "notice": "", "updated": jiff::Timestamp::now().as_second(),
                     "windows": [
                         {"id": "additional:spark-alpha", "label": "Spark Alpha", "used": 20,
                             "reset": null, "group": "other"},
