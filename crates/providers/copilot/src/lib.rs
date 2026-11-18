@@ -96,16 +96,12 @@ fn window(id: String, label: String, used: f64, reset: Option<Reset>) -> Window 
         id,
         label,
         used,
-        reset.and_then(|reset| {
-            Timestamp::from_millisecond((reset.at * 1000.0) as i64)
-                .ok()
-                .map(|date| {
-                    if reset.precision == ResetPrecision::Day {
-                        date.strftime("%Y-%m-%dT%H:%M:%SZ").to_string()
-                    } else {
-                        date.display_with_offset(Offset::UTC).to_string()
-                    }
-                })
+        reset.map(|reset| {
+            if reset.precision == ResetPrecision::Day {
+                reset.at.strftime("%Y-%m-%dT%H:%M:%SZ").to_string()
+            } else {
+                reset.at.display_with_offset(Offset::UTC).to_string()
+            }
         }),
         "monthly",
     );
@@ -204,29 +200,26 @@ fn label(key: &str, credits: bool) -> String {
 
 #[derive(Clone, Copy)]
 struct Reset {
-    at: f64,
+    at: Timestamp,
     precision: ResetPrecision,
 }
 
 fn reset(value: &Value) -> Option<Reset> {
-    if let Some(at) = number(value) {
-        return Some(Reset {
-            at,
-            precision: ResetPrecision::Instant,
-        });
-    }
-    let stamp = text(value)?;
-    if let Ok(date) = stamp.parse::<Timestamp>() {
-        return Some(Reset {
-            at: date.as_millisecond() as f64 / 1000.0,
-            precision: ResetPrecision::Instant,
-        });
-    }
-    let date = Date::strptime("%Y-%m-%d", stamp).ok()?;
-    Some(Reset {
-        at: Offset::UTC.to_timestamp(date.into()).ok()?.as_second() as f64,
-        precision: ResetPrecision::Day,
-    })
+    let (at, precision) = if let Some(seconds) = number(value) {
+        (
+            Timestamp::from_millisecond((seconds * 1000.0) as i64).ok()?,
+            ResetPrecision::Instant,
+        )
+    } else {
+        let stamp = text(value)?;
+        if let Ok(at) = stamp.parse::<Timestamp>() {
+            (at, ResetPrecision::Instant)
+        } else {
+            let date = Date::strptime("%Y-%m-%d", stamp).ok()?;
+            (Offset::UTC.to_timestamp(date.into()).ok()?, ResetPrecision::Day)
+        }
+    };
+    (at != Timestamp::UNIX_EPOCH).then_some(Reset { at, precision })
 }
 
 #[cfg(test)]

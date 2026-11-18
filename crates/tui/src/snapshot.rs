@@ -1,6 +1,7 @@
 //! Reads the redacted export and preserves the last usable snapshot.
 
 use jiff::Timestamp;
+use quotaline_catalog::COPILOT;
 use serde::Deserialize;
 use std::{
     fs::File,
@@ -48,6 +49,10 @@ impl State {
             }
             for window in &mut provider.windows {
                 window.label.retain(|character| !character.is_control());
+                // Older Copilot readings can contain the epoch in place of a reset date.
+                if provider.id == COPILOT.id && window.resets_at == Some(Timestamp::UNIX_EPOCH) {
+                    window.resets_at = None;
+                }
             }
         }
     }

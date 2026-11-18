@@ -40,6 +40,19 @@ fn displays_desktop_state_history_settings_and_logs_without_an_export() {
 }
 
 #[test]
+fn old_service_quota_reports_usage_without_the_epoch_reset() {
+    let bus = Bus::start();
+    let _service = Fixture::serve(&bus.address, false);
+    let mut cli = bus.cli();
+    cli.read_until("Reset unavailable");
+    let screen = cli.screen.screen().contents();
+    let premium = screen.lines().find(|line| line.contains("Premium requests")).unwrap();
+    assert!(premium.contains("40.0%"));
+    assert!(premium.contains("Reset unavailable"));
+    cli.quit(b"q");
+}
+
+#[test]
 fn sends_desktop_controls_to_the_service() {
     let bus = Bus::start();
     let service = Fixture::serve(&bus.address, false);
@@ -302,10 +315,16 @@ impl Service {
                 "gemini":{
                     "plan":"","status":"sign-in","show_in_usage":true,
                     "identity":"","show_organization":false,"details":[],"notices":[],"warnings":[],"windows":[]
+                },
+                "copilot":{
+                    "plan":"Pro","updated":1780000000,"status":"ready","show_in_usage":true,
+                    "identity":"","show_organization":false,"details":[],"notices":[],"warnings":[],
+                    "windows":[{"id":"premium_interactions","label":"Premium requests","used":40.0,
+                                "reset":"1970-01-01T00:00:00+00:00"}]
                 }
             },
-            "ordering":{"providers":["notCached","codex","cursor","gemini"]},
-            "selected_window_keys":["codex:weekly"],
+            "ordering":{"providers":["notCached","codex","cursor","gemini","copilot"]},
+            "selected_window_keys":["codex:weekly","copilot:premium_interactions"],
             "settings":{"write_usage_json":false,"hide_identity":true,"history_stacked":self.stacked}
         })
         .to_string()

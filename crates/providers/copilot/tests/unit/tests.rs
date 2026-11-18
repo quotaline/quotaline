@@ -169,3 +169,72 @@ fn provider_keeps_source_and_identity() {
         ("fixture", "octocat")
     );
 }
+
+#[test]
+fn unavailable_window_resets_use_the_next_valid_cycle_date() {
+    for unavailable in [
+        json!(0),
+        json!("0"),
+        json!("1970-01-01T00:00:00+00:00"),
+        json!("1969-12-31T19:00:00-05:00"),
+        json!("1970-01-01"),
+        json!(1e20),
+    ] {
+        let result = provider(json!({
+            "quota_reset_date_utc":0,
+            "quota_reset_date":"2026-09-01",
+            "limited_user_reset_date":unavailable,
+            "quota_snapshots":{"premium_interactions":{"percent_remaining":60,"quota_reset_at":unavailable}},
+            "limited_user_quotas":{"chat":30},
+            "monthly_quotas":{"chat":50}
+        }));
+        assert_eq!(
+            result
+                .windows
+                .iter()
+                .map(|window| (window.used, window.reset.as_deref(), window.reset_precision))
+                .collect::<Vec<_>>(),
+            [(40.0, Some("2026-09-01T00:00:00Z"), ResetPrecision::Day); 2],
+            "{unavailable}",
+        );
+    }
+}
+
+#[test]
+fn epoch_without_a_valid_fallback_keeps_the_usage_reading() {
+    let result = provider(json!({
+        "quota_reset_date_utc":"1970-01-01T00:00:00Z",
+        "quota_reset_date":"1970-01-01",
+        "limited_user_reset_date":"0.0",
+        "quota_snapshots":{"premium_interactions":{"percent_remaining":60,"quota_reset_at":0}}
+    }));
+    let window = &result.windows[0];
+    assert_eq!(
+        (window.used, window.reset.as_deref(), window.reset_precision),
+        (40.0, None, ResetPrecision::Instant)
+    );
+}
+
+#[test]
+fn genuine_elapsed_dates_take_precedence_over_the_cycle_date() {
+    for (reported_reset, reset, precision) in [
+        (json!("1969-12-31"), "1969-12-31T00:00:00Z", ResetPrecision::Day),
+        (
+            json!("1970-01-02T05:00:00Z"),
+            "1970-01-02T05:00:00+00:00",
+            ResetPrecision::Instant,
+        ),
+        (json!("-1"), "1969-12-31T23:59:59+00:00", ResetPrecision::Instant),
+        (json!("2025-08-04"), "2025-08-04T00:00:00Z", ResetPrecision::Day),
+    ] {
+        let result = provider(json!({
+            "quota_reset_date":"2026-09-01",
+            "quota_snapshots":{"premium_interactions":{"percent_remaining":60,"quota_reset_at":reported_reset}}
+        }));
+        let window = &result.windows[0];
+        assert_eq!(
+            (window.used, window.reset.as_deref(), window.reset_precision),
+            (40.0, Some(reset), precision)
+        );
+    }
+}

@@ -739,3 +739,60 @@ fn history_reload_drops_selection_when_the_reading_disappears() {
     dashboard.apply_output(Page::History, Ok(Output::History(history)));
     assert!(render(&dashboard, 100, 24).contains("Latest 78.00%"));
 }
+
+#[test]
+fn old_exports_hide_only_copilots_epoch_reset() {
+    let directory = tempdir().unwrap();
+    let path = directory.path().join("usage.json");
+    write_export(
+        &path,
+        [
+            provider(
+                "copilot",
+                "",
+                vec![
+                    Window::new(
+                        "premium",
+                        "Premium",
+                        40.0,
+                        Some("1970-01-01T00:00:00+00:00".into()),
+                        "monthly",
+                    ),
+                    Window::new(
+                        "older",
+                        "Older reading",
+                        70.0,
+                        Some("1970-01-02T00:00:00Z".into()),
+                        "monthly",
+                    ),
+                ],
+            ),
+            provider(
+                "codex",
+                "",
+                vec![Window::new(
+                    "weekly",
+                    "Weekly",
+                    50.0,
+                    Some("1970-01-01T00:00:00Z".into()),
+                    "weekly",
+                )],
+            ),
+        ],
+    );
+    let mut dashboard = Dashboard::new(true);
+    dashboard.refresh(&Source::File(path));
+    let screen = render(&dashboard, 100, 24);
+    let premium = screen.lines().find(|line| line.contains("Premium")).unwrap();
+    assert!(premium.contains("40.0%"));
+    assert!(premium.contains("Reset unavailable"));
+    for label in ["Weekly", "Older reading"] {
+        assert!(
+            screen
+                .lines()
+                .find(|line| line.contains(label))
+                .unwrap()
+                .contains("Reset was due")
+        );
+    }
+}
