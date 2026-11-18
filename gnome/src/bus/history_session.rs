@@ -11,7 +11,7 @@ impl Bus {
         }
         let action: HistoryAction =
             serde_json::from_str(raw_action).map_err(|error| fdo::Error::InvalidArgs(error.to_string()))?;
-        let now = (Utc::now().timestamp_millis() as f64 / 1_000.0).ceil();
+        let now = (Timestamp::now().as_millisecond() as f64 / 1_000.0).ceil();
         let (view, rollup, settings, selected, changed) = {
             let mut inner = self.0.inner.lock().await;
             let mut session = inner.history_session.clone();

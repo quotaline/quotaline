@@ -21,7 +21,7 @@ fn service_exits_when_session_bus_closes() {
 
 #[test]
 fn model_activity_reports_last_increase_or_reset_within_retention() {
-    let now = chrono::Utc::now().timestamp();
+    let now = jiff::Timestamp::now().as_second();
     let providers = serde_json::json!({"claude":false,"codex":false,"gemini":false,"antigravity":false,"cursor":false,"copilot":false});
     let fixture = isolated_service_with(
         &serde_json::json!({"providers":providers,"retention_days":7,"hide_unused_models":false}),

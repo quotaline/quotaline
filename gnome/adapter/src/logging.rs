@@ -1,6 +1,6 @@
 //! Stores bounded diagnostics for the GNOME service in the text log format both desktops share.
 
-use chrono::Utc;
+use jiff::Timestamp;
 use quotaline_logging::buffer;
 use quotaline_logging::buffer::Buffer;
 use quotaline_logging::buffer::FILE_BYTE_LIMIT;
@@ -86,7 +86,7 @@ impl LogStore {
 }
 
 fn now() -> f64 {
-    Utc::now().timestamp_millis() as f64 / 1_000.0
+    Timestamp::now().as_millisecond() as f64 / 1_000.0
 }
 
 fn home() -> Option<String> {

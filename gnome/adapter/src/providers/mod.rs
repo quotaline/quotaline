@@ -5,7 +5,7 @@ pub mod claude_transcripts;
 use quotaline_credential_sources::codex_rollouts;
 
 use crate::credentials;
-use chrono::Utc;
+use jiff::Timestamp;
 use quotaline_analytics::AnalyticsSnapshot;
 use quotaline_analytics::watermark::Watermarks;
 use quotaline_antigravity as core_antigravity;
@@ -281,7 +281,7 @@ fn retry_after(headers: &HeaderMap, body: Option<&Value>) -> u64 {
     quotaline_http::retry_after(
         headers.get("Retry-After").and_then(|value| value.to_str().ok()),
         body,
-        Utc::now().timestamp_millis() as f64 / 1000.0,
+        Timestamp::now().as_millisecond() as f64 / 1000.0,
     )
     .map_or(0, |seconds| seconds.ceil() as u64)
 }

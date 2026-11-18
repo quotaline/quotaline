@@ -28,7 +28,7 @@ pub(super) async fn cursor(client: &Api, home: &Path) -> Result<Provider, Failur
     let (token, doc, path) = cursor_credentials(home)?;
     if quotaline_credentials::credential_expired(
         quotaline_credentials::jwt_expiry(&token),
-        Utc::now().timestamp() as f64,
+        Timestamp::now().as_second() as f64,
     ) {
         return Err(Failure::new(
             "sign-in",

@@ -3,7 +3,7 @@
 use quotaline_text::json::{number, text};
 use quotaline_text::text::{decimal, humanize};
 
-use chrono::DateTime;
+use jiff::Timestamp;
 use quotaline_quota::{Detail, Provider, Window};
 use serde_json::Value;
 use std::collections::BTreeMap;
@@ -95,7 +95,7 @@ pub fn project(quota: &Value, assist: &Value, hosted_domain: Option<&str>, email
         if let (Some(model), Some(remaining)) = (text(&bucket["modelId"]), number(&bucket["remainingFraction"])) {
             let used_percent = (1.0 - remaining) * 100.0;
             let reset = text(&bucket["resetTime"])
-                .filter(|value| DateTime::parse_from_rfc3339(value).is_ok())
+                .filter(|value| value.parse::<Timestamp>().is_ok())
                 .map(str::to_owned);
             let mut window = Window::new(format!("model:{model}"), humanize(model), used_percent, reset, "other");
             window.scope = Some(model.into());

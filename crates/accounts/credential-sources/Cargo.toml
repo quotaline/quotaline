@@ -7,10 +7,10 @@ license = "MIT"
 [dependencies]
 memchr = "2.8.3"
 parking_lot = "0.13.0"
-rusqlite = { version = "0.41", features = ["bundled"] }
+rusqlite = { version = "0.43", features = ["bundled"] }
 serde_json = "1"
 thiserror = "2"
-toml = "1.1.8"
+toml = "1.2.1"
 quotaline-codex = { version = "0.2.0", path = "../../providers/codex" }
 quotaline-credentials = { version = "0.2.0", path = "../credentials" }
 quotaline-storage = { version = "0.2.0", path = "../../data/storage" }

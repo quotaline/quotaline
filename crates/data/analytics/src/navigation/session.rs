@@ -1,6 +1,6 @@
 //! Owns history period and calendar selection across UI events.
 
-use chrono::NaiveDate;
+use jiff::civil::Date;
 
 use super::{HistoryNavigation, HistoryRange, NavigationState};
 use crate::WindowRollup;
@@ -24,8 +24,8 @@ pub struct HistorySession {
     utc: bool,
     local_time_zone: String,
     local_offset: i32,
-    last_custom_dates: Option<(NaiveDate, NaiveDate)>,
-    applied_custom_dates: Option<(NaiveDate, NaiveDate)>,
+    last_custom_dates: Option<(Date, Date)>,
+    applied_custom_dates: Option<(Date, Date)>,
 }
 
 #[derive(Clone, Debug, PartialEq, serde::Serialize)]
@@ -112,7 +112,7 @@ impl HistorySession {
         self.update_mode();
     }
 
-    pub fn select_custom_dates(&mut self, from: NaiveDate, to: NaiveDate) -> bool {
+    pub fn select_custom_dates(&mut self, from: Date, to: Date) -> bool {
         if !self.navigation.select_calendar_dates(from, to) {
             return false;
         }

@@ -6,7 +6,7 @@ use super::{
 use crate::WindowRollup;
 
 fn at(value: &str) -> f64 {
-    chrono::DateTime::parse_from_rfc3339(value).unwrap().timestamp() as f64
+    value.parse::<jiff::Timestamp>().unwrap().as_second() as f64
 }
 
 fn state(range: HistoryRange) -> HistoryNavigation {

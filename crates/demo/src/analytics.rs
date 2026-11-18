@@ -1,9 +1,9 @@
 //! Generates provider analytics for shared demo previews.
 
-use chrono::{DateTime, Duration, Utc};
+use jiff::{SignedDuration, Timestamp};
 use quotaline_analytics::Point;
 
-pub fn demo_analytics_at(id: &str, now: DateTime<Utc>, days: u32, long_text: bool) -> Option<Vec<Point>> {
+pub fn demo_analytics_at(id: &str, now: Timestamp, days: u32, long_text: bool) -> Option<Vec<Point>> {
     if id != "claude" && id != "codex" {
         return None;
     }
@@ -56,8 +56,10 @@ pub fn demo_analytics_at(id: &str, now: DateTime<Utc>, days: u32, long_text: boo
     Some(points)
 }
 
-fn demo_day(now: DateTime<Utc>, offset: u32) -> String {
-    (now - Duration::days(i64::from(offset))).format("%Y-%m-%d").to_string()
+fn demo_day(now: Timestamp, offset: u32) -> String {
+    (now - SignedDuration::from_hours(i64::from(offset) * 24))
+        .strftime("%Y-%m-%d")
+        .to_string()
 }
 
 fn demo_activity(offset: u32) -> f64 {

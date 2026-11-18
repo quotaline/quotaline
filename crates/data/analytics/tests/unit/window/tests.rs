@@ -42,7 +42,7 @@ fn bucketed(samples: &[WindowSample], rollup: WindowRollup, time_zone: &str, fal
 }
 
 fn utc(text: &str) -> f64 {
-    chrono::DateTime::parse_from_rfc3339(text).unwrap().timestamp() as f64
+    text.parse::<jiff::Timestamp>().unwrap().as_second() as f64
 }
 
 #[test]

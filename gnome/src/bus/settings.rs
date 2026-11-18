@@ -90,7 +90,7 @@ impl Bus {
                     &inner.settings,
                     "UTC".into(),
                     0,
-                    Utc::now().timestamp() as f64,
+                    Timestamp::now().as_second() as f64,
                 );
             }
         }

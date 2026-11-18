@@ -66,7 +66,7 @@ fn scheduled_provider_refresh_updates_cursor_usage() {
         assert!(
             state["last_refresh"]
                 .as_i64()
-                .is_some_and(|stamp| stamp <= chrono::Utc::now().timestamp())
+                .is_some_and(|stamp| stamp <= jiff::Timestamp::now().as_second())
         );
     });
 }

@@ -5,7 +5,7 @@ use quotaline_analytics::Endpoint;
 
 #[tokio::test]
 async fn codex_confirms_an_early_zero_on_the_second_fetch() {
-    let reset = Utc::now().timestamp() + 3_600;
+    let reset = Timestamp::now().as_second() + 3_600;
     assert_eq!(
         codex_reset_readings(&[45.0, 0.0, 0.0], Some(reset), &["one", "one", "one"]).await,
         [
@@ -18,7 +18,7 @@ async fn codex_confirms_an_early_zero_on_the_second_fetch() {
 
 #[tokio::test]
 async fn codex_false_zero_does_not_change_the_accepted_window() {
-    let reset = Utc::now().timestamp() + 3_600;
+    let reset = Timestamp::now().as_second() + 3_600;
     assert_eq!(
         codex_reset_readings(&[45.0, 0.0, 45.0, 0.0], Some(reset), &["one", "one", "one", "one"]).await,
         [
@@ -32,7 +32,7 @@ async fn codex_false_zero_does_not_change_the_accepted_window() {
 
 #[tokio::test]
 async fn codex_account_change_drops_pending_reset_state() {
-    let reset = Utc::now().timestamp() + 3_600;
+    let reset = Timestamp::now().as_second() + 3_600;
     assert_eq!(
         codex_reset_readings(&[45.0, 0.0], Some(reset), &["one", "two"]).await,
         [(45.0, String::new()), (0.0, String::new())]
@@ -41,7 +41,7 @@ async fn codex_account_change_drops_pending_reset_state() {
 
 #[tokio::test]
 async fn codex_accepts_zero_without_a_future_reset() {
-    for reset in [None, Some(Utc::now().timestamp() - 1)] {
+    for reset in [None, Some(Timestamp::now().as_second() - 1)] {
         assert_eq!(
             codex_reset_readings(&[45.0, 0.0], reset, &["one", "one"]).await,
             [(45.0, String::new()), (0.0, String::new())]
@@ -51,7 +51,7 @@ async fn codex_accepts_zero_without_a_future_reset() {
 
 #[tokio::test]
 async fn codex_keeps_a_confirmed_zero_without_restarting_confirmation() {
-    let reset = Utc::now().timestamp() + 3_600;
+    let reset = Timestamp::now().as_second() + 3_600;
     assert_eq!(
         codex_reset_readings(&[0.0, 0.0], Some(reset), &["one", "one"]).await,
         [(0.0, String::new()), (0.0, String::new())]

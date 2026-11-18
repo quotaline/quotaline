@@ -2,7 +2,7 @@
 
 use crate::Endpoint;
 use crate::utc_day::retained_utc_days;
-use chrono::NaiveDate;
+use jiff::civil::Date;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
@@ -168,9 +168,10 @@ impl Watermarks {
 }
 
 fn previous_day(day: &str) -> Option<String> {
-    NaiveDate::parse_from_str(day, "%Y-%m-%d")
+    Date::strptime("%Y-%m-%d", day)
         .ok()?
-        .pred_opt()
+        .yesterday()
+        .ok()
         .map(|day| day.to_string())
 }
 
@@ -180,8 +181,8 @@ fn prune(state: &mut State, now: f64, retention_days: u32) -> bool {
     state.accounts.retain(|_, account| {
         account.coverage.retain(|key, coverage| {
             Endpoint::ALL.iter().any(|endpoint| endpoint.path() == key)
-                && NaiveDate::parse_from_str(&coverage.start, "%Y-%m-%d").is_ok()
-                && NaiveDate::parse_from_str(&coverage.through, "%Y-%m-%d").is_ok()
+                && Date::strptime("%Y-%m-%d", &coverage.start).is_ok()
+                && Date::strptime("%Y-%m-%d", &coverage.through).is_ok()
                 && coverage.start <= coverage.through
                 && coverage.through >= cutoff
                 && coverage.through <= end

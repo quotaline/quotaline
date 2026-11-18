@@ -38,7 +38,7 @@ impl Transport for Api {
                 headers.get("Content-Type").and_then(|value| value.to_str().ok()),
                 headers.get("Retry-After").and_then(|value| value.to_str().ok()),
                 &body,
-                Utc::now().timestamp_millis() as f64 / 1000.0,
+                Timestamp::now().as_millisecond() as f64 / 1000.0,
             ) else {
                 return Ok(body.to_vec());
             };

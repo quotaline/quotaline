@@ -5,7 +5,7 @@ edition = "2024"
 license = "MIT"
 
 [dependencies]
-chrono = { version = "0.4", default-features = false, features = ["clock", "serde"] }
+jiff = "1"
 serde = { version = "1", features = ["derive"] }
 quotaline-catalog = { version = "0.2.0", path = "../../catalog" }
 quotaline-quota = { version = "0.2.0", path = "../quota" }

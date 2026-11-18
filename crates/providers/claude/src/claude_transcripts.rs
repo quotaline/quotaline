@@ -1,6 +1,6 @@
 //! Parses Claude transcript events and estimates their token cost.
 
-use chrono::{DateTime, Utc};
+use jiff::Timestamp;
 use serde::Deserialize;
 use std::path::{Component, Path};
 
@@ -223,9 +223,7 @@ pub fn parse(line: &[u8]) -> Option<Record> {
     let message = line.message?;
     let usage = message.usage?;
     let model = message.model?;
-    let date = DateTime::parse_from_rfc3339(line.timestamp.as_deref()?)
-        .ok()?
-        .with_timezone(&Utc);
+    let date = line.timestamp.as_deref()?.parse::<Timestamp>().ok()?;
     let input = usage.input_tokens.unwrap_or(0).max(0);
     let output = usage.output_tokens.unwrap_or(0).max(0);
     let cache_write = usage.cache_creation_input_tokens.unwrap_or(0).max(0);
@@ -252,8 +250,8 @@ pub fn parse(line: &[u8]) -> Option<Record> {
             message.id.or(line.uuid).unwrap_or_default(),
             line.request_id.unwrap_or_default()
         ),
-        timestamp: date.timestamp(),
-        day: date.format("%Y-%m-%d").to_string(),
+        timestamp: date.as_second(),
+        day: date.strftime("%Y-%m-%d").to_string(),
         session: line.session.unwrap_or_default(),
         model,
         project: line.cwd.map(project_path),

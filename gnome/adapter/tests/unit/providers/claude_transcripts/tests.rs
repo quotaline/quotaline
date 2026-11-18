@@ -14,7 +14,7 @@ fn line(id: Option<&str>) -> String {
     format!(
         "{}\n",
         serde_json::json!({
-            "type": "assistant", "timestamp": Utc::now().to_rfc3339(), "message": message
+            "type": "assistant", "timestamp": Timestamp::now().to_string(), "message": message
         })
     )
 }
@@ -28,7 +28,7 @@ fn scan_counts_distinct_files_without_provider_message_ids() {
         fs::write(root.join(name), line(None)).unwrap();
     }
     let mut scanner = Scanner::new(root, directory.path().join("checkpoint.json"));
-    let scan = scanner.scan(60, Utc::now().timestamp() - 18_000, true);
+    let scan = scanner.scan(60, Timestamp::now().as_second() - 18_000, true);
     assert!(!scan.pending);
     assert_eq!(scan.usage.unwrap().today_messages, 2);
 }
@@ -43,7 +43,7 @@ fn scan_follows_appended_hot_files_while_discovery_is_throttled() {
     let mut scanner = Scanner::new(root, directory.path().join("checkpoint.json"));
     assert_eq!(
         scanner
-            .scan(60, Utc::now().timestamp() - 18_000, true)
+            .scan(60, Timestamp::now().as_second() - 18_000, true)
             .usage
             .unwrap()
             .today_messages,
@@ -57,7 +57,7 @@ fn scan_follows_appended_hot_files_while_discovery_is_throttled() {
         .unwrap();
     assert_eq!(
         scanner
-            .scan(60, Utc::now().timestamp() - 18_000, false)
+            .scan(60, Timestamp::now().as_second() - 18_000, false)
             .usage
             .unwrap()
             .today_messages,
@@ -73,13 +73,13 @@ fn clear_removes_checkpoint_and_restarts_the_reader() {
     fs::write(root.join("session.jsonl"), line(Some("one"))).unwrap();
     let checkpoint = directory.path().join("checkpoint.json");
     let mut scanner = Scanner::new(root, checkpoint.clone());
-    scanner.scan(60, Utc::now().timestamp() - 18_000, true);
+    scanner.scan(60, Timestamp::now().as_second() - 18_000, true);
     assert!(checkpoint.exists());
     scanner.clear().unwrap();
     assert!(!checkpoint.exists());
     assert_eq!(
         scanner
-            .scan(60, Utc::now().timestamp() - 18_000, true)
+            .scan(60, Timestamp::now().as_second() - 18_000, true)
             .usage
             .unwrap()
             .today_messages,
@@ -94,7 +94,7 @@ fn missing_project_root_has_no_usage_or_checkpoint() {
         directory.path().join("missing"),
         directory.path().join("checkpoint.json"),
     );
-    let scan = scanner.scan(60, Utc::now().timestamp() - 18_000, false);
+    let scan = scanner.scan(60, Timestamp::now().as_second() - 18_000, false);
     assert!(!scan.pending);
     assert!(scan.usage.is_none());
     scanner.clear().unwrap();
@@ -109,7 +109,7 @@ fn discovery_removes_deleted_file_contributions() {
     fs::write(&removed, line(Some("removed"))).unwrap();
     fs::write(root.join("kept.jsonl"), line(Some("kept"))).unwrap();
     let mut scanner = Scanner::new(root, directory.path().join("checkpoint.json"));
-    let window = Utc::now().timestamp() - 18_000;
+    let window = Timestamp::now().as_second() - 18_000;
     assert_eq!(scanner.scan(60, window, true).usage.unwrap().today_messages, 2);
     fs::remove_file(removed).unwrap();
     assert!(scanner.scan(60, window, true).pending);
@@ -132,7 +132,7 @@ fn large_oversized_file_does_not_block_a_later_transcript() {
     fs::write(root.join("b.jsonl"), line(Some("after-budget"))).unwrap();
     let mut scanner = Scanner::new(root, directory.path().join("checkpoint.json"));
     let scan = (0..100)
-        .map(|_| scanner.scan(60, Utc::now().timestamp() - 18_000, true))
+        .map(|_| scanner.scan(60, Timestamp::now().as_second() - 18_000, true))
         .find(|scan| scan.usage.is_some());
     assert_eq!(
         scan.and_then(|scan| scan.usage.map(|usage| usage.today_messages)),

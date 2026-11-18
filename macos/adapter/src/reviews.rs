@@ -1,6 +1,6 @@
 //! Exposes shared review counts to Swift.
 
-use chrono::{DateTime, Utc};
+use jiff::Timestamp;
 use quotaline_analytics as analytics;
 use quotaline_analytics::ReviewRow;
 
@@ -18,7 +18,7 @@ pub struct ReviewCountsRecord {
 
 #[uniffi::export]
 pub fn review_counts(rows: Vec<ReviewRowRecord>, now: f64) -> Option<ReviewCountsRecord> {
-    let now = DateTime::<Utc>::from_timestamp(now as i64, 0)?;
+    let now = Timestamp::from_second(now as i64).ok()?;
     analytics::review_counts(
         &rows
             .into_iter()

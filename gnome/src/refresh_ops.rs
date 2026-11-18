@@ -23,7 +23,7 @@ impl App {
             if inner.settings.demo {
                 inner.providers = demo();
                 inner.statuses.clear();
-                inner.last_refresh = Some(Utc::now().timestamp());
+                inner.last_refresh = Some(Timestamp::now().as_second());
                 drop(inner);
                 self.persist().await;
                 self.emit().await;
@@ -115,7 +115,7 @@ impl App {
             }
             _ => false,
         };
-        let clock = quotaline_gnome_adapter::clock::SessionClock::new(chrono::Local, twelve_hour);
+        let clock = quotaline_gnome_adapter::clock::SessionClock::new(jiff::tz::TimeZone::system(), twelve_hour);
         let (detailed, planned) = {
             let mut inner = self.inner.lock().await;
             inner.running.remove(id);

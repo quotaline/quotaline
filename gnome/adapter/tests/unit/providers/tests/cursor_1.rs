@@ -32,7 +32,7 @@ async fn cursor_http_uses_local_session() {
 async fn cursor_expiring_sessions_require_sign_in_before_a_request() {
     let server = MockServer::start().await;
     let home = tempfile::tempdir().unwrap();
-    for expiry in [1, Utc::now().timestamp() + 60] {
+    for expiry in [1, Timestamp::now().as_second() + 60] {
         let payload = base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(json!({"exp":expiry}).to_string());
         credential_file(
             home.path(),
@@ -62,7 +62,7 @@ async fn cursor_valid_jwt_session_reaches_usage() {
         .await;
     let home = tempfile::tempdir().unwrap();
     let payload = base64::engine::general_purpose::URL_SAFE_NO_PAD
-        .encode(json!({"exp":Utc::now().timestamp() + 3600}).to_string());
+        .encode(json!({"exp":Timestamp::now().as_second() + 3600}).to_string());
     credential_file(
         home.path(),
         ".cursor/auth.json",
@@ -78,7 +78,7 @@ async fn cursor_valid_jwt_session_reaches_usage() {
 async fn cursor_cookie_preserves_the_complete_user_subject() {
     let server = MockServer::start().await;
     let payload = base64::engine::general_purpose::URL_SAFE_NO_PAD
-        .encode(json!({"sub":"auth0|user|region","exp":Utc::now().timestamp() + 3600}).to_string());
+        .encode(json!({"sub":"auth0|user|region","exp":Timestamp::now().as_second() + 3600}).to_string());
     let token = format!("header.{payload}.signature");
     Mock::given(matchers::method("GET"))
         .and(matchers::path("/api/usage-summary"))

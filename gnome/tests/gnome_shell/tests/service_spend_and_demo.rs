@@ -8,7 +8,7 @@ fn claude_spend_reason_and_purchase_reach_shell() {
     let _shell = shell_lock();
     let runtime = tokio::runtime::Runtime::new().unwrap();
     let server = runtime.block_on(MockServer::start());
-    let reset = (chrono::Utc::now() + chrono::Duration::days(30)).to_rfc3339();
+    let reset = (jiff::Timestamp::now() + jiff::SignedDuration::from_hours(720)).to_string();
     runtime.block_on(async {
         Mock::given(matchers::method("GET"))
             .and(matchers::path("/api/oauth/usage"))
@@ -62,7 +62,7 @@ fn claude_invalid_reset_is_readable_in_shell() {
 #[cfg(feature = "fixture-api")]
 #[test]
 fn claude_overdue_reset_matches_macos_deadline() {
-    let reset = (chrono::Utc::now() - chrono::Duration::hours(1)).to_rfc3339();
+    let reset = (jiff::Timestamp::now() - jiff::SignedDuration::from_hours(1)).to_string();
     claude_reset_shell_fixture(&reset, "Reset due\nAwaiting refresh", "claude-reset-due.png");
 }
 
@@ -72,8 +72,8 @@ fn copilot_day_reset_uses_the_provider_calendar_date_in_shell() {
     let _shell = shell_lock();
     let runtime = tokio::runtime::Runtime::new().unwrap();
     let server = runtime.block_on(MockServer::start());
-    let day = (chrono::Utc::now().date_naive() + chrono::Duration::days(3))
-        .format("%Y-%m-%d")
+    let day = (jiff::Timestamp::now() + jiff::SignedDuration::from_hours(72))
+        .strftime("%Y-%m-%d")
         .to_string();
     runtime.block_on(async {
         Mock::given(matchers::method("GET"))
@@ -208,7 +208,7 @@ fn cursor_exhausted_limit_uses_the_warning_color_in_shell() {
 #[cfg(feature = "fixture-api")]
 #[test]
 fn cursor_at_limit_format_shows_reset_in_warning_color() {
-    let reset = (chrono::Utc::now() + chrono::Duration::hours(2)).to_rfc3339();
+    let reset = (jiff::Timestamp::now() + jiff::SignedDuration::from_hours(2)).to_string();
     cursor_shell_fixture(
         serde_json::json!({"billingCycleEnd":reset,"individualUsage":{"plan":{"enabled":true,"used":100,"limit":100,"remaining":0}}}),
         "extension/tests/integration/cursor-at-limit.test.js",
@@ -233,10 +233,12 @@ fn rolled_history_uses_local_calendar_buckets_and_rejects_unknown_rollups() {
     .unwrap();
     let db = rusqlite::Connection::open(data.join("history.sqlite3")).unwrap();
     db.execute_batch("CREATE TABLE samples(ts INTEGER NOT NULL, provider TEXT NOT NULL, window_id TEXT NOT NULL, label TEXT NOT NULL, used REAL NOT NULL, reset TEXT, PRIMARY KEY(ts,provider,window_id))").unwrap();
-    let stamp = |date: &str| chrono::DateTime::parse_from_rfc3339(date).unwrap().timestamp();
+    let stamp = |date: &str| date.parse::<jiff::Timestamp>().unwrap().as_second();
     // A recent day keeps the samples inside retention; the zone below has no daylight saving.
-    let day = (chrono::Utc::now() - chrono::Duration::days(3)).date_naive();
-    let next = day.succ_opt().unwrap();
+    let day = jiff::tz::Offset::UTC
+        .to_datetime(jiff::Timestamp::now() - jiff::SignedDuration::from_hours(72))
+        .date();
+    let next = day.tomorrow().unwrap();
     for (time, used) in [("06:50:00Z", 10.0), ("07:10:00Z", 20.0)] {
         db.execute(
             "INSERT INTO samples VALUES(?1,'claude','session','Session',?2,NULL)",
@@ -309,7 +311,7 @@ fn rolled_history_uses_local_calendar_buckets_and_rejects_unknown_rollups() {
         assert_eq!(daily["history"]["series"][0]["points"].as_array().unwrap().len(), 1);
         db.execute(
             "INSERT INTO analytics VALUES('claude',?1,'costUSD','opus',4)",
-            [chrono::Utc::now().date_naive().to_string()],
+            [jiff::Timestamp::now().strftime("%Y-%m-%d").to_string()],
         )
         .unwrap();
         let spend: String = proxy.call("GetSpendSummary", &()).await.unwrap();

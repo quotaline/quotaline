@@ -67,7 +67,7 @@ pub(crate) fn project_history_shell(private: bool, projects: &[(&str, f64)], exp
                 .iter()
                 .enumerate()
                 .map(|(index, (project, value))| {
-                    serde_json::json!({"type":"assistant","timestamp":chrono::Utc::now().to_rfc3339(),
+                    serde_json::json!({"type":"assistant","timestamp":jiff::Timestamp::now().to_string(),
                         "cwd":project,"sessionId":"session","costUSD":value,
                         "message":{"id":format!("message-{index}"),"model":"claude-sonnet-5-5",
                             "usage":{"input_tokens":1,"output_tokens":1}}})
@@ -131,7 +131,7 @@ pub(crate) fn cloud_credit_shell_case(case: &str, credits: serde_json::Value, st
                 cache.join("snapshot.json"),
                 serde_json::json!({"claude":{
                     "id":"claude","name":"Claude","status":status,"plan":"Max 20x",
-                    "identity":"","source":"Local","notice":"","updated":chrono::Utc::now().timestamp(),
+                    "identity":"","source":"Local","notice":"","updated":jiff::Timestamp::now().as_second(),
                     "windows":[{"id":"weekly","label":"All models","used":25,"reset":null,"group":"weekly"}],
                     "cloud_credits":credits
                 }})

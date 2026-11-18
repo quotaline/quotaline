@@ -1,11 +1,12 @@
 //! Converts between Unix timestamps and the `YYYY-MM-DD` UTC days that key daily analytics.
 
-use chrono::{DateTime, Days, NaiveDate, NaiveTime};
+use jiff::civil::{Date, Time};
+use jiff::tz::Offset;
+use jiff::{Timestamp, ToSpan};
 
-fn date(at: f64) -> NaiveDate {
-    DateTime::from_timestamp(at.floor() as i64, 0)
-        .unwrap_or_default()
-        .date_naive()
+fn date(at: f64) -> Date {
+    let timestamp = Timestamp::from_second(at.floor() as i64).unwrap_or(Timestamp::UNIX_EPOCH);
+    Offset::UTC.to_datetime(timestamp).date()
 }
 
 pub fn day(at: f64) -> String {
@@ -13,14 +14,16 @@ pub fn day(at: f64) -> String {
 }
 
 pub fn midnight(day: &str) -> Option<f64> {
-    NaiveDate::parse_from_str(day, "%Y-%m-%d")
+    let date = Date::strptime("%Y-%m-%d", day).ok()?;
+    Offset::UTC
+        .to_timestamp(date.to_datetime(Time::midnight()))
         .ok()
-        .map(|date| date.and_time(NaiveTime::MIN).and_utc().timestamp() as f64)
+        .map(|timestamp| timestamp.as_second() as f64)
 }
 
 pub fn retained_utc_days(now: f64, retention_days: u32) -> (String, String) {
     let end = date(now);
-    let start = end - Days::new(u64::from(retention_days.saturating_sub(1)));
+    let start = end - i64::from(retention_days.saturating_sub(1)).days();
     (start.to_string(), end.to_string())
 }
 

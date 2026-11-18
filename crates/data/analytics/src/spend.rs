@@ -1,10 +1,12 @@
 //! Aggregates daily provider costs for both desktop frontends.
 
-use chrono::{DateTime, Days, Utc};
+use jiff::civil::Date;
+use jiff::tz::Offset;
+use jiff::{Timestamp, ToSpan};
 use serde::Serialize;
 use std::collections::{BTreeMap, BTreeSet};
 
-pub const WINDOW_DAYS: u64 = 30;
+pub const WINDOW_DAYS: i64 = 30;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct SpendDays {
@@ -13,14 +15,14 @@ pub struct SpendDays {
     pub today: String,
 }
 
-pub fn spend_days(now: DateTime<Utc>) -> SpendDays {
-    let today = now.date_naive();
+pub fn spend_days(now: Timestamp) -> SpendDays {
+    let today = Offset::UTC.to_datetime(now).date();
     SpendDays {
         start: today
-            .checked_sub_days(Days::new(WINDOW_DAYS - 1))
+            .checked_sub((WINDOW_DAYS - 1).days())
             .expect("valid UTC day")
             .to_string(),
-        yesterday: today.pred_opt().expect("valid UTC day").to_string(),
+        yesterday: today.yesterday().expect("valid UTC day").to_string(),
         today: today.to_string(),
     }
 }
@@ -55,13 +57,13 @@ pub struct SpendReport {
     pub by_provider: BTreeMap<String, SpendSummary>,
 }
 
-pub fn spend_summary(rows: &[SpendRow], now: DateTime<Utc>) -> SpendSummary {
+pub fn spend_summary(rows: &[SpendRow], now: Timestamp) -> SpendSummary {
     let days = spend_days(now);
     let mut totals = (0.0, 0.0, 0.0);
     let mut models = BTreeMap::<(String, String), f64>::new();
     let mut providers = BTreeSet::new();
     for row in rows {
-        if chrono::NaiveDate::parse_from_str(&row.day, "%Y-%m-%d").is_err() {
+        if Date::strptime("%Y-%m-%d", &row.day).is_err() {
             continue;
         }
         if row.day < days.start || row.day > days.today {
@@ -96,7 +98,7 @@ pub fn spend_summary(rows: &[SpendRow], now: DateTime<Utc>) -> SpendSummary {
     }
 }
 
-pub fn spend_report(rows: &[SpendRow], now: DateTime<Utc>) -> SpendReport {
+pub fn spend_report(rows: &[SpendRow], now: Timestamp) -> SpendReport {
     let total = spend_summary(rows, now);
     let by_provider = total
         .providers
