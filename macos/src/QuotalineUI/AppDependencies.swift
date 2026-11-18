@@ -22,6 +22,7 @@ public struct AppDependencies {
   public var notifier: Notifier
   public var launchAtLogin: LaunchAtLoginBackend
   public var clock: Clock
+  public var refreshesAutomatically: Bool
   public var updater: (any UpdaterHook)?
   public var statusBar: NSStatusBar
   public var isSandboxed: Bool
@@ -61,6 +62,7 @@ public struct AppDependencies {
     notifier: Notifier,
     launchAtLogin: LaunchAtLoginBackend,
     clock: Clock = .system,
+    refreshesAutomatically: Bool = true,
     updater: (any UpdaterHook)? = nil,
     statusBar: NSStatusBar = .system,
     isSandboxed: Bool = false,
@@ -101,6 +103,7 @@ public struct AppDependencies {
     self.notifier = notifier
     self.launchAtLogin = launchAtLogin
     self.clock = clock
+    self.refreshesAutomatically = refreshesAutomatically
     self.updater = updater
     self.statusBar = statusBar
     self.isSandboxed = isSandboxed

@@ -29,6 +29,7 @@ public final class RefreshCoordinator {
   private let session: QuotalineRust.RefreshSession
   private let notify: @MainActor ([NotificationEvent]) -> Void
   private var loop: Task<Void, Never>?
+  private let refreshesAutomatically: Bool
   private var refreshRun: RefreshRun?
   private var historyClearTask: Task<Int, any Error>?
   private var activeGeneration: Int?
@@ -56,8 +57,10 @@ public final class RefreshCoordinator {
     cache: SnapshotCache = SnapshotCache(url: nil),
     persistence: SnapshotPersistence? = nil,
     powerState: @escaping @Sendable () -> PowerState = PowerState.current,
+    refreshesAutomatically: Bool = true,
     notify: @escaping @MainActor ([NotificationEvent]) -> Void
   ) {
+    self.refreshesAutomatically = refreshesAutomatically
     self.registry = registry
     self.settings = settings
     self.state = state
@@ -199,7 +202,7 @@ public final class RefreshCoordinator {
   }
 
   public func reschedule() {
-    guard loop != nil else { return }
+    guard loop != nil, refreshesAutomatically else { return }
     loop?.cancel()
     loop = makeLoop()
   }
@@ -235,7 +238,7 @@ public final class RefreshCoordinator {
       }
       while !Task.isCancelled {
         await refresh(RefreshRequest())
-        guard !Task.isCancelled, let deadline = nextRefreshDate() else { break }
+        guard refreshesAutomatically, !Task.isCancelled, let deadline = nextRefreshDate() else { break }
         state.setNextRefresh(deadline)
         do {
           try await clock.sleep(max(0, deadline.timeIntervalSince(clock.now())))

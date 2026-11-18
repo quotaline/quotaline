@@ -50,7 +50,8 @@ public final class AppController {
       log: dependencies.log,
       clock: dependencies.clock,
       cache: dependencies.snapshotCache,
-      persistence: dependencies.persistence
+      persistence: dependencies.persistence,
+      refreshesAutomatically: dependencies.refreshesAutomatically
     ) { [settings = dependencies.settings] events in
       notifier.playSound = settings.notifications.playSound
       Task { await notifier.deliver(events) }

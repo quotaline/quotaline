@@ -163,6 +163,8 @@ public enum LiveDependencies {
       notifier: Notifier(center: notificationCenter, log: log),
       launchAtLogin: launchAtLogin,
       clock: clock,
+      // A refresh re-lays out the panel, so UI tests refresh only on request and never mid-click.
+      refreshesAutomatically: verificationProfile == nil,
       updater: updater,
       isSandboxed: effectiveSandboxed,
       isDemo: isDemo,

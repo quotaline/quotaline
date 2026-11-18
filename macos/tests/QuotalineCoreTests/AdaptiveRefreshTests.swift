@@ -10,7 +10,7 @@ private let lowPower = PowerState(lowPowerMode: true, thermalPressure: false)
 @MainActor
 private func makeAdaptiveCoordinator(
   interval: Int = 300, clock: Clock = testClock, power: PowerSwitch = PowerSwitch(),
-  persistence: SnapshotPersistence? = nil, settings: Settings? = nil
+  persistence: SnapshotPersistence? = nil, settings: Settings? = nil, refreshesAutomatically: Bool = true
 ) throws -> (RefreshCoordinator, AppState, ScriptedProvider) {
   let settings = settings ?? Settings(defaults: testDefaults())
   settings.setProvider(.cursor, enabled: true)
@@ -33,9 +33,28 @@ private func makeAdaptiveCoordinator(
   let coordinator = RefreshCoordinator(
     registry: ProviderRegistry([provider]), settings: settings, state: state,
     history: try UsageHistoryStore(url: nil), log: makeLog(), clock: clock, persistence: persistence,
-    powerState: { power.current }
+    powerState: { power.current }, refreshesAutomatically: refreshesAutomatically
   ) { _ in }
   return (coordinator, state, provider)
+}
+
+@Test @MainActor func aCoordinatorWithoutAutomaticRefreshPollsOnlyAtStartAndOnRequest() async throws {
+  let recorder = SleepRecorder()
+  let clock = Clock(now: { fixedNow }, sleep: { try await recorder.sleep($0) })
+  let (coordinator, state, provider) = try makeAdaptiveCoordinator(clock: clock, refreshesAutomatically: false)
+  coordinator.start()
+  defer { coordinator.stop() }
+  while provider.callCount < 1 { await Task.yield() }
+
+  state.popoverVisible = true
+  coordinator.reschedule()
+  for _ in 0..<100 { await Task.yield() }
+  #expect(provider.callCount == 1)
+  #expect(await recorder.durations.isEmpty)
+  #expect(state.nextRefreshAt == nil)
+
+  await coordinator.refresh(RefreshRequest(reason: .userInitiated, usage: .force))
+  #expect(provider.callCount == 2)
 }
 
 @Test(arguments: throttledPowerStates)
