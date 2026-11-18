@@ -3,7 +3,9 @@
 use quotaline_text::json::{number, text};
 use quotaline_text::text::{decimal, humanize};
 
-use chrono::{DateTime, NaiveDate, SecondsFormat};
+use jiff::Timestamp;
+use jiff::civil::Date;
+use jiff::tz::Offset;
 use serde_json::Value;
 
 use quotaline_quota::{Detail, Notice, NoticeKind, Provider, ResetPrecision, Window};
@@ -95,13 +97,15 @@ fn window(id: String, label: String, used: f64, reset: Option<Reset>) -> Window 
         label,
         used,
         reset.and_then(|reset| {
-            DateTime::from_timestamp_millis((reset.at * 1000.0) as i64).map(|date| {
-                if reset.precision == ResetPrecision::Day {
-                    date.to_rfc3339_opts(SecondsFormat::Secs, true)
-                } else {
-                    date.to_rfc3339()
-                }
-            })
+            Timestamp::from_millisecond((reset.at * 1000.0) as i64)
+                .ok()
+                .map(|date| {
+                    if reset.precision == ResetPrecision::Day {
+                        date.strftime("%Y-%m-%dT%H:%M:%SZ").to_string()
+                    } else {
+                        date.display_with_offset(Offset::UTC).to_string()
+                    }
+                })
         }),
         "monthly",
     );
@@ -212,15 +216,15 @@ fn reset(value: &Value) -> Option<Reset> {
         });
     }
     let stamp = text(value)?;
-    if let Ok(date) = DateTime::parse_from_rfc3339(stamp) {
+    if let Ok(date) = stamp.parse::<Timestamp>() {
         return Some(Reset {
-            at: date.timestamp_millis() as f64 / 1000.0,
+            at: date.as_millisecond() as f64 / 1000.0,
             precision: ResetPrecision::Instant,
         });
     }
-    let date = NaiveDate::parse_from_str(stamp, "%Y-%m-%d").ok()?;
+    let date = Date::strptime("%Y-%m-%d", stamp).ok()?;
     Some(Reset {
-        at: date.and_hms_opt(0, 0, 0).unwrap().and_utc().timestamp() as f64,
+        at: Offset::UTC.to_timestamp(date.into()).ok()?.as_second() as f64,
         precision: ResetPrecision::Day,
     })
 }

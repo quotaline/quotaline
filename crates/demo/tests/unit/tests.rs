@@ -1,7 +1,6 @@
 //! Checks demo behavior through the public API.
 
 use super::*;
-use chrono::TimeZone;
 
 #[test]
 fn demo_has_every_provider() {
@@ -9,9 +8,9 @@ fn demo_has_every_provider() {
 }
 #[test]
 fn demo_windows_follow_macos_boundaries_and_change_with_time() {
-    let now = Utc.with_ymd_and_hms(2026, 10, 12, 14, 0, 0).unwrap();
+    let now = "2026-10-12T14:00:00Z".parse::<Timestamp>().unwrap();
     let first = demo_at(now);
-    let later = demo_at(now + chrono::Duration::minutes(30));
+    let later = demo_at(now + SignedDuration::from_mins(30));
     let session = &first["claude"].windows[0];
     assert_eq!(session.reset.as_deref(), Some("2026-10-12T18:00:00+00:00"));
     assert!(later["claude"].windows[0].used > session.used);
@@ -19,7 +18,7 @@ fn demo_windows_follow_macos_boundaries_and_change_with_time() {
         first
             .values()
             .flat_map(|provider| &provider.windows)
-            .all(|row| { DateTime::parse_from_rfc3339(row.reset.as_deref().unwrap()).unwrap() > now })
+            .all(|row| { row.reset.as_deref().unwrap().parse::<Timestamp>().unwrap() > now })
     );
     assert_eq!(first["claude"].windows[2].scope.as_deref(), Some("Fable"));
     assert_eq!(
@@ -60,8 +59,13 @@ fn demo_includes_reference_quota_windows() {
 fn demo_uses_reference_credit_estimates() {
     let providers = demo();
     let codex = &providers["codex"];
-    let renewal = DateTime::parse_from_rfc3339(codex.subscription_active_until.as_deref().unwrap()).unwrap();
-    assert!((renewal.timestamp() - Utc::now().timestamp() - 40 * 86_400).abs() <= 2);
+    let renewal = codex
+        .subscription_active_until
+        .as_deref()
+        .unwrap()
+        .parse::<Timestamp>()
+        .unwrap();
+    assert!((renewal.as_second() - Timestamp::now().as_second() - 40 * 86_400).abs() <= 2);
     assert_eq!(codex.usage_credits.as_ref().unwrap().local_messages, Some((120, 260)));
     assert_eq!(codex.usage_credits.as_ref().unwrap().cloud_messages, Some((60, 130)));
     assert_eq!(codex.reset_credits.as_ref().unwrap().available, 1);
@@ -89,10 +93,10 @@ fn demo_uses_synthetic_account_identities_and_reference_plans() {
 
 #[test]
 fn demo_preserves_reference_metadata_and_refresh_time() {
-    let now = Utc.with_ymd_and_hms(2026, 10, 12, 14, 0, 0).unwrap();
+    let now = "2026-10-12T14:00:00Z".parse::<Timestamp>().unwrap();
     let providers = demo_at(now);
     let claude = &providers["claude"];
-    assert_eq!(claude.updated, Some(now.timestamp()));
+    assert_eq!(claude.updated, Some(now.as_second()));
     assert_eq!(claude.tier.as_deref(), Some("default_claude_max_20x"));
     assert_eq!(claude.local_usage.as_ref().unwrap().today_tokens, 6_200_000);
     assert_eq!(
@@ -105,7 +109,7 @@ fn demo_preserves_reference_metadata_and_refresh_time() {
 
 #[test]
 fn long_text_demo_keeps_quota_values() {
-    let now = Utc.with_ymd_and_hms(2026, 10, 12, 14, 0, 0).unwrap();
+    let now = "2026-10-12T14:00:00Z".parse::<Timestamp>().unwrap();
     let standard = demo_at(now);
     let expanded = IDS
         .iter()
@@ -124,7 +128,7 @@ fn long_text_demo_keeps_quota_values() {
 
 #[test]
 fn individual_demo_matches_full_snapshot_without_extra_providers() {
-    let now = Utc.with_ymd_and_hms(2026, 10, 12, 14, 0, 0).unwrap();
+    let now = "2026-10-12T14:00:00Z".parse::<Timestamp>().unwrap();
     let all = demo_at(now);
     for id in IDS {
         let provider = demo_provider_at(id, now, false).unwrap();

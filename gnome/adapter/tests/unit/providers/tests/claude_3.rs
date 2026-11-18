@@ -52,7 +52,7 @@ async fn expiring_claude_token_refreshes_and_preserves_credential_fields() {
         home.path(),
         ".claude/.credentials.json",
         &json!({
-            "claudeAiOauth":{"accessToken":"old","refreshToken":"shared","expiresAt":Utc::now().timestamp_millis() + 60_000,"subscriptionType":"Pro"},
+            "claudeAiOauth":{"accessToken":"old","refreshToken":"shared","expiresAt":Timestamp::now().as_millisecond() + 60_000,"subscriptionType":"Pro"},
             "unrelated":{"retained":true}
         }),
     );
@@ -66,7 +66,7 @@ async fn expiring_claude_token_refreshes_and_preserves_credential_fields() {
     assert_eq!(saved["claudeAiOauth"]["refreshToken"], "rotated");
     assert_eq!(saved["claudeAiOauth"]["subscriptionType"], "Pro");
     assert_eq!(saved["unrelated"]["retained"], true);
-    assert!(saved["claudeAiOauth"]["expiresAt"].as_i64().unwrap() > Utc::now().timestamp_millis());
+    assert!(saved["claudeAiOauth"]["expiresAt"].as_i64().unwrap() > Timestamp::now().as_millisecond());
     assert_eq!(fs::metadata(path).unwrap().permissions().mode() & 0o777, 0o600);
 }
 

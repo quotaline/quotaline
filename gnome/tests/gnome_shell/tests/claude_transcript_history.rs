@@ -14,7 +14,7 @@ fn claude_local_analytics_reaches_history_without_network_credentials() {
     fs::create_dir_all(scratch.path().join("data")).unwrap();
     let log_path = scratch.path().join("data/quotaline/log.txt");
     fs::create_dir_all(log_path.parent().unwrap()).unwrap();
-    let timestamp = chrono::Utc::now().timestamp_millis();
+    let timestamp = jiff::Timestamp::now().as_millisecond();
     let entries = (0..205)
         .map(|index| serde_json::json!({"timestamp":timestamp,"level":"info","category":"fixture","message":format!("Log fixture {index}")}).to_string())
         .collect::<Vec<_>>()
@@ -26,8 +26,8 @@ fn claude_local_analytics_reaches_history_without_network_credentials() {
         serde_json::json!({"providers":providers}).to_string(),
     )
     .unwrap();
-    let today = chrono::Utc::now().date_naive().format("%Y-%m-%d").to_string();
-    let line = serde_json::json!({"type":"assistant","timestamp":chrono::Utc::now().to_rfc3339(),"sessionId":"session", "message":{"id":"message","model":"claude-sonnet-5-5","usage":{"input_tokens":100_000,"output_tokens":100_000}}});
+    let today = jiff::Timestamp::now().strftime("%Y-%m-%d").to_string();
+    let line = serde_json::json!({"type":"assistant","timestamp":jiff::Timestamp::now().to_string(),"sessionId":"session", "message":{"id":"message","model":"claude-sonnet-5-5","usage":{"input_tokens":100_000,"output_tokens":100_000}}});
     let (_bus, address) = private_bus(scratch.path(), "session-bus");
     let service_log = scratch.path().join("service.log");
     let _service = Process(
@@ -151,14 +151,14 @@ fn claude_local_analytics_reaches_history_without_network_credentials() {
 
 #[test]
 fn claude_transcript_scan_skips_oversized_old_and_incomplete_records() {
-    let now = chrono::Utc::now();
+    let now = jiff::Timestamp::now();
     let fixture = isolated_service_with(
         &serde_json::json!({"providers":{"claude":true,"codex":false,"gemini":false,
             "antigravity":false,"cursor":false,"copilot":false}}),
         |root| {
             let path = root.join("home/.claude/projects/app/session.jsonl");
             fs::create_dir_all(path.parent().unwrap()).unwrap();
-            let valid = serde_json::json!({"type":"assistant","timestamp":now.to_rfc3339(),
+            let valid = serde_json::json!({"type":"assistant","timestamp":now.to_string(),
                 "message":{"model":"claude-sonnet-5-5","usage":{"input_tokens":10}}});
             let old = serde_json::json!({"type":"assistant","timestamp":"2020-01-01T00:00:00Z",
                 "message":{"model":"claude-sonnet-5-5","usage":{"input_tokens":20}}});
@@ -200,14 +200,14 @@ fn claude_transcript_scan_skips_oversized_old_and_incomplete_records() {
     });
     let checkpoint = fs::read(fixture.scratch.path().join("data/quotaline/claude-transcripts.json")).unwrap();
     let state: serde_json::Value = serde_json::from_slice(&checkpoint).unwrap();
-    let day = now.date_naive().format("%Y-%m-%d").to_string();
+    let day = now.strftime("%Y-%m-%d").to_string();
     assert_eq!(state["days"][&day]["messages"], 1);
     assert!(state["seenByDay"][&day][0].as_str().unwrap().ends_with(":0"));
 }
 
 #[test]
 fn unpriced_claude_transcript_keeps_message_metrics_without_cost_points() {
-    let now = chrono::Utc::now();
+    let now = jiff::Timestamp::now();
     let fixture = isolated_service_with(
         &serde_json::json!({"providers":{"claude":true,"codex":false,"gemini":false,
             "antigravity":false,"cursor":false,"copilot":false}}),
@@ -219,7 +219,7 @@ fn unpriced_claude_transcript_keeps_message_metrics_without_cost_points() {
                 format!(
                     "{}\n",
                     serde_json::json!({
-                        "type":"assistant","timestamp":now.to_rfc3339(),"cwd":"/work/app",
+                        "type":"assistant","timestamp":now.to_string(),"cwd":"/work/app",
                         "message":{"model":"unknown-local-model","usage":{"input_tokens":10}}
                     })
                 ),
@@ -261,7 +261,7 @@ fn unpriced_claude_transcript_keeps_message_metrics_without_cost_points() {
 
 #[test]
 fn claude_transcript_scan_removes_deleted_file_history() {
-    let now = chrono::Utc::now();
+    let now = jiff::Timestamp::now();
     let fixture = isolated_service_with(
         &serde_json::json!({"providers":{"claude":true,"codex":false,"gemini":false,
             "antigravity":false,"cursor":false,"copilot":false}}),
@@ -273,7 +273,7 @@ fn claude_transcript_scan_removes_deleted_file_history() {
                 format!(
                     "{}\n",
                     serde_json::json!({
-                        "type":"assistant","timestamp":now.to_rfc3339(),
+                        "type":"assistant","timestamp":now.to_string(),
                         "message":{"id":"removed-message","model":"claude-sonnet-5-5","usage":{"input_tokens":10}}
                     })
                 ),

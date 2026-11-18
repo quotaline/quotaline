@@ -1,12 +1,12 @@
 //! Formats times in a fixed zone the way a GNOME session would.
 
 use super::*;
-use chrono::FixedOffset;
+use jiff::tz;
 
 const NOON: i64 = 1_792_004_400;
 
-fn clock(twelve_hour: bool) -> SessionClock<FixedOffset> {
-    SessionClock::new(FixedOffset::west_opt(7 * 3600).unwrap(), twelve_hour)
+fn clock(twelve_hour: bool) -> SessionClock {
+    SessionClock::new(TimeZone::fixed(tz::offset(-7)), twelve_hour)
 }
 
 #[test]

@@ -253,7 +253,7 @@ impl FaultService {
     async fn get_history_view(&self, action: &str, _time_zone: &str, _offset: i32) -> zbus::fdo::Result<String> {
         let action: serde_json::Value =
             serde_json::from_str(action).map_err(|error| zbus::fdo::Error::InvalidArgs(error.to_string()))?;
-        let now = chrono::Utc::now().timestamp() as f64;
+        let now = jiff::Timestamp::now().as_second() as f64;
         let view = {
             let mut session = self.history_session.lock().await;
             match action["kind"].as_str() {

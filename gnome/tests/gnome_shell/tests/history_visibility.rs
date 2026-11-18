@@ -18,7 +18,7 @@ fn state_filters_only_selected_full_limit_notices() {
                 serde_json::json!({"claude":{
                     "id":"claude","name":"Claude","status":"connected","plan":"Pro",
                     "identity":"","source":"Local","notice":"",
-                    "updated":chrono::Utc::now().timestamp(),
+                    "updated":jiff::Timestamp::now().as_second(),
                     "windows":[
                         {"id":"session","label":"Current session","used":100,"reset":null,"group":"session"},
                         {"id":"weekly","label":"All models","used":100,"reset":null,"group":"weekly"}

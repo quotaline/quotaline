@@ -1,7 +1,8 @@
 //! Connects the shared Claude reader to GNOME history and data paths.
 
 use crate::store;
-use chrono::{Local, Utc};
+use jiff::tz::{Offset, TimeZone};
+use jiff::{Timestamp, ToSpan};
 use quotaline_analytics::Point;
 use quotaline_claude::claude_transcripts::LocalTranscriptUsage;
 use quotaline_history::claude::{Config, Reader};
@@ -41,26 +42,19 @@ impl Scanner {
     }
 
     pub fn scan(&mut self, retention_days: u32, window_start: i64, discover: bool) -> Scan {
-        let now = Utc::now();
+        let now = Timestamp::now();
         if discover {
             self.reader.request_discovery();
         }
-        let snapshot = self.reader.refresh(now.timestamp() as f64, retention_days, !discover);
-        let today = Local::now()
-            .date_naive()
-            .and_hms_opt(0, 0, 0)
-            .unwrap()
-            .and_local_timezone(Local)
-            .earliest()
-            .unwrap()
-            .timestamp() as f64;
+        let snapshot = self.reader.refresh(now.as_second() as f64, retention_days, !discover);
+        let today = now.to_zoned_datetime(TimeZone::system()).start_of_day().unwrap();
+        let today = today.timestamp().as_second() as f64;
         let usage = snapshot
             .state
-            .local_usage(window_start as f64, today, now.timestamp() as f64);
-        let first = (now.date_naive() - chrono::Duration::days(i64::from(retention_days.clamp(7, 365))))
-            .format("%Y-%m-%d")
-            .to_string();
-        let last = now.date_naive().format("%Y-%m-%d").to_string();
+            .local_usage(window_start as f64, today, now.as_second() as f64);
+        let utc_today = Offset::UTC.to_datetime(now).date();
+        let first = (utc_today - i64::from(retention_days.clamp(7, 365)).days()).to_string();
+        let last = utc_today.to_string();
         let points = snapshot
             .state
             .analytics_without_unpriced_costs()

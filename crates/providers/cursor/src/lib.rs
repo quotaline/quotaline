@@ -3,7 +3,7 @@
 use quotaline_text::json::{number, text, timestamp};
 use quotaline_text::text::humanize;
 
-use chrono::{DateTime, SecondsFormat};
+use jiff::Timestamp;
 use quotaline_quota::{Detail, MoneyAmount, Notice, NoticeKind, Provider, SpendControl, Window};
 use serde_json::{Value, json};
 
@@ -196,8 +196,9 @@ fn dollars(amount_minor: i64) -> MoneyAmount {
 }
 
 fn reset_iso(value: f64) -> Option<String> {
-    DateTime::from_timestamp_millis((value * 1000.0) as i64)
-        .map(|date| date.to_rfc3339_opts(SecondsFormat::AutoSi, true))
+    Timestamp::from_millisecond((value * 1000.0) as i64)
+        .ok()
+        .map(|date| date.to_string())
 }
 
 fn bucket_detail(id: &str, title: &str, bucket: &Value) -> Option<Detail> {

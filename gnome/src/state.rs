@@ -14,7 +14,7 @@ impl App {
             first_run_pending: inner.first_run_pending,
             claude_local_usage: inner.claude_local_usage.as_ref(),
             recent_samples: &inner.recent_samples,
-            now: Utc::now().timestamp_millis() as f64 / 1000.0,
+            now: Timestamp::now().as_millisecond() as f64 / 1000.0,
         })
     }
 }

@@ -4,7 +4,8 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use std::sync::Arc;
 
-use chrono::{Local, Offset, Utc};
+use jiff::Timestamp;
+use jiff::tz::TimeZone;
 use quotaline_analytics as analytics;
 use quotaline_analytics::{WindowChartRequest, WindowRollup};
 use quotaline_history::Store;
@@ -75,7 +76,7 @@ impl History {
 #[path = "../../tests/unit/history/chart/tests.rs"]
 mod tests;
 
-// chrono::Local honours TZ before /etc/localtime, so the bucket boundaries must name the same zone.
+// jiff's system zone honours TZ before /etc/localtime, so the bucket boundaries must name the same zone.
 fn local_zone() -> String {
     std::env::var("TZ")
         .ok()
@@ -112,14 +113,14 @@ pub fn history(
         keys,
         start: start as f64,
         end: end as f64,
-        now: Utc::now().timestamp_millis() as f64 / 1000.0,
+        now: Timestamp::now().as_millisecond() as f64 / 1000.0,
         rollup,
         stacked: false,
         time_zone: if utc { "UTC".to_string() } else { local_zone() },
         fallback_offset: if utc {
             0
         } else {
-            Local::now().offset().fix().local_minus_utc()
+            TimeZone::system().to_offset(Timestamp::now()).seconds()
         },
         includes_end: true,
     };

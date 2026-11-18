@@ -1,6 +1,6 @@
 //! Classifies provider HTTP failures and retry delays for both frontends.
 
-use chrono::DateTime;
+use jiff::fmt::rfc2822;
 use serde_json::Value;
 
 use quotaline_logging as logging;
@@ -149,8 +149,8 @@ pub fn retry_after(header: Option<&str>, body: Option<&Value>, now: f64) -> Opti
         .filter(|seconds| seconds.is_finite() && *seconds >= 0.0)
         .or_else(|| {
             header
-                .and_then(|value| DateTime::parse_from_rfc2822(value).ok())
-                .map(|date| (date.timestamp_millis() as f64 / 1000.0 - now).max(0.0))
+                .and_then(|value| rfc2822::parse(value).ok())
+                .map(|date| (date.timestamp().as_millisecond() as f64 / 1000.0 - now).max(0.0))
         })
         .or_else(|| {
             body.and_then(|body| body.get("retry_after"))

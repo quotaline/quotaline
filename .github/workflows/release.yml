@@ -131,8 +131,8 @@ jobs:
           persist-credentials: false
       - name: 📦 Install extension packaging tools
         run: |
-          sudo apt-get update
-          sudo apt-get install --yes --no-install-recommends gnome-shell unzip
+          sudo apt-get -o Acquire::Retries=5 -o Acquire::http::Timeout=30 update
+          sudo apt-get -o Acquire::Retries=5 -o Acquire::http::Timeout=30 install --yes --no-install-recommends gnome-shell unzip
       - name: 🦀 Install Rust toolchain
         uses: actions-rust-lang/setup-rust-toolchain@v2.0.1
         with:

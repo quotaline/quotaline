@@ -52,8 +52,9 @@ fn window(id: &str, label: &str, used: f64, reset_at: f64, duration: u64, by_day
         label: label.into(),
         used,
         active: true,
-        reset: chrono::DateTime::from_timestamp(reset_at as i64, 0)
-            .map(|at: chrono::DateTime<chrono::Utc>| at.to_rfc3339()),
+        reset: jiff::Timestamp::from_second(reset_at as i64)
+            .ok()
+            .map(|at| at.display_with_offset(jiff::tz::Offset::UTC).to_string()),
         reset_by_day: by_day,
         group: id.into(),
         scope: None,

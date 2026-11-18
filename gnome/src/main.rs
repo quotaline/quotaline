@@ -1,7 +1,7 @@
 //! Runs the GNOME D-Bus service and publishes panel state.
 
-use chrono::Utc;
 use futures_util::{StreamExt, TryStreamExt};
+use jiff::Timestamp;
 use quotaline_analytics as analytics;
 use quotaline_analytics::project;
 use quotaline_catalog::IDS;
@@ -103,17 +103,18 @@ impl App {
             &settings,
             "UTC".into(),
             0,
-            Utc::now().timestamp() as f64,
+            Timestamp::now().as_second() as f64,
         );
         let mut history_visibility = analytics::HistoryVisibility::default();
         history_visibility.set_hidden("global", settings.history_hidden_keys.clone());
         let providers = if settings.demo { demo() } else { store::read_snapshot() };
         let last_refresh = providers.values().filter_map(|provider| provider.updated).max();
         let client = providers::Api::new()?;
-        let recent_samples = blocking(|| store::recent_samples_all(Utc::now().timestamp())).unwrap_or_else(|error| {
-            eprintln!("Recent history read failed: {error}");
-            BTreeMap::new()
-        });
+        let recent_samples =
+            blocking(|| store::recent_samples_all(Timestamp::now().as_second())).unwrap_or_else(|error| {
+                eprintln!("Recent history read failed: {error}");
+                BTreeMap::new()
+            });
         let home = env::var_os("HOME").map(PathBuf::from).unwrap_or_default();
         let claude_root = env::var_os("CLAUDE_CONFIG_DIR")
             .map(PathBuf::from)
@@ -236,9 +237,11 @@ impl App {
         let Some(connection) = connection.filter(|_| !planned.is_empty()) else {
             return;
         };
-        let clock =
-            quotaline_gnome_adapter::clock::SessionClock::new(chrono::Local, self.twelve_hour_clock(&connection).await);
-        let now = Utc::now().timestamp();
+        let clock = quotaline_gnome_adapter::clock::SessionClock::new(
+            jiff::tz::TimeZone::system(),
+            self.twelve_hour_clock(&connection).await,
+        );
+        let now = Timestamp::now().as_second();
         for item in planned {
             // GNOME plans sign-in notices with the provider's own message, so no login hint is needed here.
             let copy = notifications::copy(
@@ -411,7 +414,7 @@ fn emitter(connection: &zbus::Connection) -> SignalEmitter<'static> {
 }
 
 fn epoch() -> f64 {
-    Utc::now().timestamp_millis() as f64 / 1000.0
+    Timestamp::now().as_millisecond() as f64 / 1000.0
 }
 
 // SQLite history calls block; running them in place lets the two runtime workers hand off D-Bus requests meanwhile.

@@ -85,8 +85,8 @@ async fn transport_preserves_retry_after_and_rate_limit_status() {
 #[tokio::test]
 async fn transport_uses_http_date_retry_after() {
     let server = MockServer::start().await;
-    let date = (Utc::now() + chrono::Duration::seconds(120))
-        .format("%a, %d %b %Y %H:%M:%S GMT")
+    let date = (Timestamp::now() + jiff::SignedDuration::from_secs(120))
+        .strftime("%a, %d %b %Y %H:%M:%S GMT")
         .to_string();
     Mock::given(matchers::method("GET"))
         .and(matchers::path("/rate-limited"))
@@ -102,8 +102,8 @@ async fn transport_uses_http_date_retry_after() {
 #[tokio::test]
 async fn transport_uses_expired_http_date_before_body_retry_after() {
     let server = MockServer::start().await;
-    let date = (Utc::now() - chrono::Duration::seconds(120))
-        .format("%a, %d %b %Y %H:%M:%S GMT")
+    let date = (Timestamp::now() - jiff::SignedDuration::from_secs(120))
+        .strftime("%a, %d %b %Y %H:%M:%S GMT")
         .to_string();
     Mock::given(matchers::method("GET"))
         .and(matchers::path("/rate-limited"))

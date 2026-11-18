@@ -1,6 +1,6 @@
 //! Projects Antigravity quota responses into shared models.
 
-use chrono::DateTime;
+use jiff::Timestamp;
 use quotaline_quota::{Detail, Provider, Window};
 use quotaline_text::json::{number, text};
 use serde_json::Value;
@@ -98,7 +98,7 @@ fn project_with_id_policy(
                 && let Some(remaining) = remaining
             {
                 let reset = text(&bucket["resetTime"])
-                    .filter(|value| DateTime::parse_from_rfc3339(value).is_ok())
+                    .filter(|value| value.parse::<Timestamp>().is_ok())
                     .map(str::to_owned);
                 let mut window = Window::new(spec.0, spec.1, (1.0 - remaining) * 100.0, reset, spec.2);
                 window.duration_seconds = spec.3;

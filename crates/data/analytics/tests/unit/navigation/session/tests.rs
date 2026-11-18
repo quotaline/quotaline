@@ -1,11 +1,11 @@
-use chrono::NaiveDate;
+use jiff::civil::Date;
 
 use super::{HistoryRange, HistorySession, HistorySessionConfig, WindowRollup};
 
 const NOW: f64 = 1_788_955_200.0;
 
-fn date(value: &str) -> NaiveDate {
-    NaiveDate::parse_from_str(value, "%Y-%m-%d").unwrap()
+fn date(value: &str) -> Date {
+    value.parse().unwrap()
 }
 
 fn session(range: HistoryRange) -> HistorySession {
@@ -66,7 +66,7 @@ fn rollup_and_period_selection_keep_supported_pairings() {
 fn custom_dates_follow_local_or_utc_calendar_boundaries() {
     let mut history = session(HistoryRange::Week);
     assert!(!history.select_custom_dates(date("2026-09-08"), date("2026-09-07")));
-    assert!(!history.select_custom_dates(NaiveDate::MAX, NaiveDate::MAX));
+    assert!(!history.select_custom_dates(Date::MAX, Date::MAX));
     assert!(history.select_custom_dates(date("2026-09-06"), date("2026-09-08")));
     let local = history.view(NOW);
     assert_eq!(local.days, 0);

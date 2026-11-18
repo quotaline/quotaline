@@ -4,7 +4,7 @@ use super::super::*;
 
 #[test]
 fn claude_transcript_scan_resumes_after_its_byte_budget() {
-    let now = chrono::Utc::now();
+    let now = jiff::Timestamp::now();
     let fixture = isolated_service_with(
         &serde_json::json!({"providers":{"claude":true,"codex":false,"gemini":false,
             "antigravity":false,"cursor":false,"copilot":false}}),
@@ -17,7 +17,7 @@ fn claude_transcript_scan_resumes_after_its_byte_budget() {
                 format!(
                     "{}\n",
                     serde_json::json!({
-                        "type":"assistant","timestamp":now.to_rfc3339(),
+                        "type":"assistant","timestamp":now.to_string(),
                         "message":{"id":"after-budget","model":"claude-sonnet-5-5","usage":{"input_tokens":10}}
                     }),
                 ),

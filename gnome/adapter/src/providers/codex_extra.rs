@@ -37,7 +37,7 @@ pub(super) async fn codex_reset_credits(
 }
 
 pub(super) fn codex_provider(data: &Value, source: String) -> Provider {
-    let now = Utc::now().timestamp() as f64;
+    let now = Timestamp::now().as_second() as f64;
     codex::codex_usage::usage(data, now).into_provider(None, source, now)
 }
 
@@ -61,7 +61,7 @@ pub async fn codex_analytics(
         .or_else(|| text(&doc["OPENAI_API_KEY"]))
         .expect("discovered Codex credentials contain a token");
     let fingerprint = codex_account_fingerprint(&doc);
-    let now = Utc::now().timestamp_millis() as f64 / 1000.0;
+    let now = Timestamp::now().as_millisecond() as f64 / 1000.0;
     let watermarks = std::sync::Mutex::new(Watermarks::load(stored, fingerprint.clone(), now, retention_days));
     let account = codex_fetch::Account {
         base: &client.codex_base,

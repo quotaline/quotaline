@@ -1,6 +1,6 @@
 //! Exposes shared spend aggregation to Swift.
 
-use chrono::{DateTime, Utc};
+use jiff::Timestamp;
 use quotaline_analytics as analytics;
 
 #[derive(Clone, Debug, PartialEq, Eq, uniffi::Record)]
@@ -40,8 +40,8 @@ pub struct SpendReportRecord {
     pub by_provider: std::collections::HashMap<String, SpendSummaryRecord>,
 }
 
-fn date(now: f64) -> DateTime<Utc> {
-    DateTime::from_timestamp(now as i64, 0).expect("supported timestamp")
+fn date(now: f64) -> Timestamp {
+    Timestamp::from_second(now as i64).expect("supported timestamp")
 }
 
 impl From<analytics::SpendSummary> for SpendSummaryRecord {

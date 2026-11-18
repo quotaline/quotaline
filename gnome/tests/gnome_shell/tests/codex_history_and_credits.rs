@@ -60,7 +60,7 @@ fn codex_history_tracks_each_account_separately() {
                 .unwrap(),
             31.0
         );
-        let day = chrono::Utc::now().format("%Y-%m-%d").to_string();
+        let day = jiff::Timestamp::now().strftime("%Y-%m-%d").to_string();
         db.execute("INSERT INTO analytics VALUES('codex',?1,'turns','total',3)", [&day])
             .unwrap();
 

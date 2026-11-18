@@ -48,7 +48,7 @@ fn drops_entries_older_than_the_retention_window() {
 fn rotates_full_files_and_clears_every_archive() {
     let root = tempfile::tempdir().unwrap();
     let path = root.path().join("log.txt");
-    let stamp = Utc::now().format("%Y-%m-%d %H:%M:%S%.3f");
+    let stamp = Timestamp::now().strftime("%Y-%m-%d %H:%M:%S%.3f");
     fs::write(
         &path,
         format!("[{stamp}] [info] {}\n", "x".repeat(FILE_BYTE_LIMIT - 40)),

@@ -3,7 +3,8 @@
 use quotaline_text::json::{number, text};
 use quotaline_text::text::{humanize, slug};
 
-use chrono::{DateTime, Utc};
+use jiff::Timestamp;
+use jiff::tz::Offset;
 use quotaline_quota::{CloudCredits, Detail, MoneyAmount, Notice, NoticeKind, Provider, SpendControl, Window};
 use serde_json::Value;
 use std::collections::HashSet;
@@ -70,7 +71,9 @@ fn claude_plan_name(auth: &Value, profile: Option<&Value>) -> String {
 }
 fn iso(value: &Value) -> Option<String> {
     if let Some(number) = number(value) {
-        return DateTime::from_timestamp(number as i64, 0).map(|date: DateTime<Utc>| date.to_rfc3339());
+        return Timestamp::from_second(number as i64)
+            .ok()
+            .map(|date| date.display_with_offset(Offset::UTC).to_string());
     }
     text(value).map(str::to_string)
 }
@@ -322,7 +325,7 @@ pub fn project(
             reset: iso(&data["credit_reset_at"])
                 .or_else(|| iso(&spend["resets_at"]))
                 .or_else(|| iso(&extra["resets_at"]))
-                .filter(|value| DateTime::parse_from_rfc3339(value).is_ok()),
+                .filter(|value| value.parse::<Timestamp>().is_ok()),
             limit_reached: extra["spend_limit_reached"].as_bool() == Some(true),
             balance,
             balance_money,

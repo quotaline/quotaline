@@ -1,6 +1,8 @@
 //! Counts daily code reviews for provider cards.
 
-use chrono::{DateTime, Days, Utc};
+use jiff::civil::Date;
+use jiff::tz::Offset;
+use jiff::{Timestamp, ToSpan};
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct ReviewRow {
@@ -14,14 +16,14 @@ pub struct ReviewCounts {
     pub week: i64,
 }
 
-pub fn review_counts(rows: &[ReviewRow], now: DateTime<Utc>) -> Option<ReviewCounts> {
+pub fn review_counts(rows: &[ReviewRow], now: Timestamp) -> Option<ReviewCounts> {
     if rows.is_empty() {
         return None;
     }
-    let today = now.date_naive();
-    let week = today.checked_sub_days(Days::new(6)).expect("valid UTC day");
+    let today = Offset::UTC.to_datetime(now).date();
+    let week = today.checked_sub(6.days()).expect("valid UTC day");
     let (today_count, week_count) = rows.iter().fold((0.0, 0.0), |(today_count, week_count), row| {
-        let Ok(day) = chrono::NaiveDate::parse_from_str(&row.day, "%Y-%m-%d") else {
+        let Ok(day) = Date::strptime("%Y-%m-%d", &row.day) else {
             return (today_count, week_count);
         };
         (
