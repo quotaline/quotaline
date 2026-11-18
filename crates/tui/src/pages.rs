@@ -297,7 +297,9 @@ impl HistoryView {
     }
 
     pub(crate) fn step(&self, timestamp: Option<i64>, direction: i32) -> Option<i64> {
-        let current = timestamp.and_then(|timestamp| self.reading_index(timestamp));
+        let current = timestamp
+            .and_then(|timestamp| self.reading_index(timestamp))
+            .or_else(|| self.readings.len().checked_sub(1));
         step_reading(self.readings.len(), current, &[direction]).map(|index| self.readings[index] as i64)
     }
 

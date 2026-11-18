@@ -359,8 +359,9 @@ fn history_navigation_inspects_actual_readings_and_retains_hidden_series() {
 
     dashboard.apply_output(Page::History, Ok(Output::History(history_fixture())));
     assert!(render(&dashboard, 100, 24).contains("Latest 78.00"));
-    dashboard.navigate(Navigation::Left);
+    dashboard.navigate(Navigation::Right);
     assert!(render(&dashboard, 100, 24).contains("2026-05-28T20:26:45Z · 78.00"));
+    dashboard.show(Page::History);
     dashboard.navigate(Navigation::Left);
     assert!(render(&dashboard, 100, 24).contains("2026-05-28T20:26:40Z · 33.00"));
     dashboard.navigate(Navigation::Right);
@@ -682,8 +683,7 @@ fn history_mouse_leave_preserves_keyboard_reading() {
     let mut history = history_fixture();
     history.series[1].points.insert(0, (1_780_000_003, 45.0, None, false));
     dashboard.apply_output(Page::History, Ok(Output::History(history)));
-    dashboard.navigate(Navigation::Right);
-    dashboard.navigate(Navigation::Right);
+    dashboard.navigate(Navigation::Left);
     let area = Rect::new(0, 0, 100, 24);
     assert!(dashboard.history_mouse(HistoryMouse::Leave, area).is_none());
     let screen = render(&dashboard, 100, 24);
@@ -732,7 +732,7 @@ fn history_reload_drops_selection_when_the_reading_disappears() {
     let mut dashboard = Dashboard::new(true);
     dashboard.show(Page::History);
     dashboard.apply_output(Page::History, Ok(Output::History(history_fixture())));
-    dashboard.navigate(Navigation::Right);
+    dashboard.navigate(Navigation::Left);
     assert!(render(&dashboard, 100, 24).contains("2026-05-28T20:26:40Z"));
     let mut history = history_fixture();
     history.series[0].points.remove(0);
