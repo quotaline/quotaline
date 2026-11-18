@@ -35,3 +35,6 @@ jq -r '.providers[] | .id as $provider | .windows[] | "\($provider) \(.label): \
 The example path is for Direct and Homebrew builds. Use the sandbox support path for an App Store install, or the GNOME
 path above on Linux. The file may be stale if collection has stopped; inspect `fetchedAt`. Turning export off stops
 future writes, so do not treat an existing file as evidence that export remains enabled.
+
+The [terminal dashboard](/tui/) reads the same file and shows quota percentages and reset times without another provider
+request.

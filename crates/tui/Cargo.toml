@@ -1,0 +1,22 @@
+[package]
+name = "quotaline-tui"
+version = "0.2.0"
+edition = "2024"
+license = "MIT"
+
+[target.'cfg(any(target_os = "linux", target_os = "macos"))'.dependencies]
+jiff = { version = "1", features = ["serde"] }
+quotaline-catalog = { version = "0.2.0", path = "../catalog" }
+quotaline-demo = { version = "0.2.0", path = "../demo" }
+quotaline-export = { version = "0.2.0", path = "../data/export" }
+ratatui = { version = "0.30", default-features = false, features = ["termion"] }
+rustix = { version = "1", features = ["event", "fs"] }
+termion = "4"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+signal-hook = "0.4"
+
+[dev-dependencies]
+quotaline-quota = { version = "0.2.0", path = "../presentation/quota" }
+tempfile = "3"
+rustix = { version = "1", features = ["process", "pty", "termios"] }

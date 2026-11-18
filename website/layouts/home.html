@@ -25,7 +25,7 @@
     <div class="hero-media">
       <div class="hero-panel hero-panel-all" role="tabpanel" id="hero-panel-all" aria-labelledby="hero-tab-all">
         {{ range hugo.Data.platforms }}
-          <div class="hero-preview">
+          <div class="hero-preview hero-preview-{{ .id }}">
             {{ $platform := . }}
             {{ if .variants }}
               {{ range $variant := .variants }}
@@ -75,7 +75,7 @@
     <div class="section-head">
       <span class="section-kicker">Choose a frontend</span>
       <h2 id="platform-heading">Choose how to view your quota.</h2>
-      <p>Each frontend uses the same provider data and history rules.</p>
+      <p>Use a desktop frontend or open its quota export in a terminal.</p>
     </div>
     {{ partial "platform-cards.html" (dict "start" false) }}
   </div>

@@ -46,3 +46,21 @@
   overviewScale: 1
   gallery: [Usage, History, Settings]
   galleryImage: images/gnome-%s.webp
+
+- id: tui
+  name: Terminal
+  navIcon: M3 5h18v14H3zM7 9l3 3-3 3m5 0h5
+  label: Linux and macOS
+  requires: Linux or macOS for the terminal dashboard
+  title: Terminal dashboard
+  summary: Provider quota meters and reset times from the desktop export.
+  startTitle: Install the terminal dashboard
+  startSummary: Build from source and try the demo or open your desktop quota snapshot.
+  action: Install the dashboard
+  install: tui/install/
+  cardUsageImage: images/tui-usage.webp
+  cardUsageAlt: Provider and quota windows panels in the Quotaline terminal dashboard
+  cardUsageScale: 1
+  overviewImage: images/tui-usage.webp
+  overviewAlt: Provider and quota windows panels in the Quotaline terminal dashboard
+  overviewScale: 1

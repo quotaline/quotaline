@@ -48,19 +48,16 @@ test('site builds with versioned links and platform guides', context => {
     }
 });
 
-test('a frontend entry adds navigation and install cards', context => {
-    const {destination, result} = build(context, undefined, {}, source => {
-        fs.appendFileSync(path.join(source, 'data/platforms.yaml'), `\n- id: tui\n  name: TUI\n  navIcon: M4 4h16v16H4z\n  label: Terminal\n  requires: A terminal\n  title: Terminal app\n  summary: Quota readings in a terminal.\n  startTitle: Install the TUI\n  startSummary: Install the terminal app.\n  action: Install the TUI\n  install: tui/install/\n`);
-        fs.mkdirSync(path.join(source, 'content/tui'));
-        fs.writeFileSync(path.join(source, 'content/tui/_index.md'), '---\ntitle: TUI\nlayout: platform\n---\n');
-        fs.writeFileSync(path.join(source, 'content/tui/install.md'), '---\ntitle: Install\n---\n');
-    });
+test('terminal dashboard appears in navigation and install cards', context => {
+    const {destination, result} = build(context);
     assert.equal(result.status, 0, result.stderr);
     const home = fs.readFileSync(path.join(destination, 'index.html'), 'utf8');
     const start = fs.readFileSync(path.join(destination, 'start/index.html'), 'utf8');
+    const install = fs.readFileSync(path.join(destination, 'tui/install/index.html'), 'utf8');
     assert.match(home, /href=\/en\/preview\/tui\//);
-    assert.match(start, /Install the TUI/);
-    assert.ok(fs.statSync(path.join(destination, 'tui/index.html')).size > 0);
+    assert.match(home, /id=hero-tab-tui/);
+    assert.match(start, /Install the terminal dashboard/);
+    assert.match(install, /quotaline-tui --demo/);
 });
 
 test('site shows both platform previews without hidden desktop state', context => {
@@ -117,7 +114,7 @@ test('site rejects missing screenshots', context => {
     assert.match(result.stderr, /Missing screenshot images\/missing-doc-image/);
 });
 
-function build(context, addition, environment = {}, changeSource = () => {}) {
+function build(context, addition, environment = {}) {
     const temporary = path.join(root, 'target/tmp');
     fs.mkdirSync(temporary, {recursive: true});
     const scratch = fs.mkdtempSync(path.join(temporary, 'site-test-'));
@@ -127,7 +124,6 @@ function build(context, addition, environment = {}, changeSource = () => {}) {
     for (const item of ['hugo.toml', 'content', 'layouts', 'assets', 'data', 'static', 'resources']) {
         fs.cpSync(path.join(root, 'website', item), path.join(source, item), {recursive: true});
     }
-    changeSource(source);
     if (addition) {
         fs.writeFileSync(path.join(source, 'content/link-check.md'), `---\ntitle: Link check\n---\n${addition}\n`);
     }

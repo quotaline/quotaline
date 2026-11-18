@@ -516,6 +516,16 @@ td {
   object-position: top;
 }
 
+.hero-preview-tui {
+  grid-column: 1 / -1;
+}
+
+.hero-preview-tui .shot,
+#hero-panel-tui > .shot {
+  width: 100%;
+  height: auto;
+}
+
 .hero-image .shot {
   width: 100%;
 }
