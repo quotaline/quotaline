@@ -124,6 +124,7 @@ struct TooltipTrackingTests {
         pressure: 0
       )
     )
+    window.mouseLocation = CGPoint(x: 400, y: 30)
     view.mouseExited(with: exit)
     #expect(presenter.hasPendingTask)
 
@@ -171,6 +172,7 @@ struct TooltipTrackingTests {
     view.update(content: view.tooltipContent, focused: true)
     while await gate.durations.isEmpty { await Task.yield() }
     view.mouseEntered(with: try mouseEvent())
+    window.mouseLocation = CGPoint(x: 400, y: 30)
     view.mouseExited(with: try mouseEvent())
 
     #expect(await gate.durations == [TooltipTiming.presentationDelay])
@@ -182,4 +184,110 @@ struct TooltipTrackingTests {
     presenter.tearDown()
     window.orderOut(nil)
   }
+
+  @Test @MainActor func tooltipTrackingViewPresentsHelpWhenThePointerIsInsideWithoutAnEnterEvent() async throws {
+    let (presenter, view, window) = try hoverFixture(applicationIsActive: true)
+
+    presenter.syncHover(windowNumber: window.windowNumber)
+    await presenter.settle()
+
+    #expect(presenter.visibleOwner == view.tooltipOwner)
+    tearDownHoverFixture(presenter, view, window)
+  }
+
+  @Test @MainActor func tooltipTrackingViewIgnoresAnExitEventWhileThePointerStaysInside() async throws {
+    let (presenter, view, window) = try hoverFixture(applicationIsActive: true)
+    view.mouseEntered(with: try mouseEvent())
+    await presenter.settle()
+
+    view.mouseExited(with: try mouseEvent())
+    await presenter.settle()
+
+    #expect(presenter.visibleOwner == view.tooltipOwner)
+    tearDownHoverFixture(presenter, view, window)
+  }
+
+  @Test @MainActor func tooltipTrackingViewDismissesHelpWhenThePointerLeftWithoutAnExitEvent() async throws {
+    let (presenter, view, window) = try hoverFixture(applicationIsActive: true)
+    view.mouseEntered(with: try mouseEvent())
+    await presenter.settle()
+
+    window.mouseLocation = CGPoint(x: 400, y: 30)
+    presenter.syncHover(windowNumber: window.windowNumber)
+    await presenter.settle()
+
+    #expect(presenter.visibleOwner == nil)
+    tearDownHoverFixture(presenter, view, window)
+  }
+
+  @Test @MainActor func tooltipTrackingViewIgnoresThePointerOverAHiddenView() async throws {
+    let (presenter, view, window) = try hoverFixture(applicationIsActive: true)
+    view.isHidden = true
+
+    presenter.syncHover(windowNumber: window.windowNumber)
+    await presenter.settle()
+
+    #expect(presenter.visibleOwner == nil)
+    tearDownHoverFixture(presenter, view, window)
+  }
+
+  @Test @MainActor func tooltipTrackingViewHonorsAnExitOntoAWindowAboveIt() async throws {
+    let (presenter, view, window) = try hoverFixture(applicationIsActive: true, coveredByAnotherWindow: true)
+    view.mouseEntered(with: try mouseEvent())
+    await presenter.settle()
+
+    view.mouseExited(with: try mouseEvent())
+    await presenter.settle()
+
+    #expect(presenter.visibleOwner == nil)
+    tearDownHoverFixture(presenter, view, window)
+  }
+
+  @Test @MainActor func tooltipPresenterKeepsHoverRecoveryAcrossTeardown() throws {
+    let (presenter, view, window) = try hoverFixture(applicationIsActive: true)
+
+    presenter.tearDown()
+
+    #expect(presenter.hasHoverMonitor)
+    tearDownHoverFixture(presenter, view, window)
+  }
+
+  @Test @MainActor func tooltipTrackingViewIgnoresThePointerWhileTheApplicationIsInactive() async throws {
+    let (presenter, view, window) = try hoverFixture(applicationIsActive: false)
+
+    presenter.syncHover(windowNumber: window.windowNumber)
+    await presenter.settle()
+
+    #expect(presenter.visibleOwner == nil)
+    tearDownHoverFixture(presenter, view, window)
+  }
+
+  @MainActor
+  private func hoverFixture(
+    applicationIsActive: Bool, coveredByAnotherWindow: Bool = false
+  ) throws -> (TooltipPresenter, TooltipTrackingView, TooltipMouseWindow) {
+    let topWindow = TopWindowStub()
+    let presenter = TooltipPresenter(
+      sleep: { _ in }, panelFactory: { TooltipPanelSpy() }, applicationIsActive: { applicationIsActive },
+      topWindowNumber: { _ in topWindow.number })
+    let view = TooltipTrackingView(
+      content: TooltipContent(title: "Refresh", body: "Fetches current limits"),
+      presenter: presenter
+    )
+    let window = try showInvisibleWindow(containing: view)
+    topWindow.number = coveredByAnotherWindow ? window.windowNumber + 1 : window.windowNumber
+    return (presenter, view, window)
+  }
+
+  @MainActor
+  private func tearDownHoverFixture(_ presenter: TooltipPresenter, _ view: TooltipTrackingView, _ window: NSWindow) {
+    view.dismantle()
+    presenter.tearDown()
+    window.orderOut(nil)
+  }
+}
+
+@MainActor
+private final class TopWindowStub {
+  var number = 0
 }

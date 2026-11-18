@@ -26,6 +26,7 @@ final class TooltipTrackingView: NSView, TooltipPresentationSource {
       )
       addTrackingArea(tracking)
       self.tracking = tracking
+      presenter.trackHover(of: self)
     }
     setAccessibilityElement(false)
     setAccessibilityHidden(true)
@@ -80,8 +81,25 @@ final class TooltipTrackingView: NSView, TooltipPresentationSource {
   }
 
   override func mouseExited(with event: NSEvent) {
+    guard !pointerIsInside else { return }
     hovering = false
     presenter?.update(source: self, hovering: hovering, focused: focused)
+  }
+
+  func syncHoverWithPointer() {
+    let inside = pointerIsInside
+    guard inside != hovering else { return }
+    hovering = inside
+    presenter?.update(source: self, hovering: hovering, focused: focused)
+  }
+
+  private var pointerIsInside: Bool {
+    guard let window, let presenter, window.isVisible, !isHiddenOrHasHiddenAncestor, presenter.applicationIsActive()
+    else { return false }
+    let pointer = window.mouseLocationOutsideOfEventStream
+    let visibleBounds = visibleRect.intersection(bounds)
+    return !visibleBounds.isEmpty && visibleBounds.contains(convert(pointer, from: nil))
+      && presenter.topWindowNumber(window.convertPoint(toScreen: pointer)) == window.windowNumber
   }
 
   override func viewDidMoveToWindow() {

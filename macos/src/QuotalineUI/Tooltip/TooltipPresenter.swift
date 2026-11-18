@@ -59,10 +59,14 @@ public final class TooltipPresenter {
   typealias Sleep = @Sendable (Duration) async throws -> Void
   typealias PanelFactory = @MainActor () -> any TooltipPanelPresenting
   typealias CursorContext = @MainActor () -> TooltipPresentationContext?
+  typealias ApplicationActivity = @MainActor () -> Bool
+  typealias TopWindowNumber = @MainActor (CGPoint) -> Int
 
   private let sleep: Sleep
   private let panelFactory: PanelFactory
   private let cursorContext: CursorContext
+  let applicationIsActive: ApplicationActivity
+  let topWindowNumber: TopWindowNumber
   private var arbiter = TooltipArbiter()
   private var presentationTask: Task<Void, Never>?
   private var dismissalTask: Task<Void, Never>?
@@ -74,6 +78,9 @@ public final class TooltipPresenter {
   private var nextOwnerValue: UInt64 = 0
   private var cursorSource: CursorTooltipSource?
   private var eventMonitor: Any?
+  private let hoverSources = NSHashTable<TooltipTrackingView>.weakObjects()
+  private var hoverMonitor: Any?
+  private var pendingHoverWindows: Set<Int> = []
   private var windowObservers: [any NSObjectProtocol] = []
   private weak var observedWindow: NSWindow?
   private var accessibilityObserver: (any NSObjectProtocol)?
@@ -86,16 +93,21 @@ public final class TooltipPresenter {
     panelFactory: @escaping PanelFactory = { TooltipPanel() },
     cursorContext: @escaping CursorContext = {
       TooltipPresenter.currentCursorContext(point: NSEvent.mouseLocation, windows: NSApp.orderedWindows)
-    }
+    },
+    applicationIsActive: @escaping ApplicationActivity = { NSApp.isActive },
+    topWindowNumber: @escaping TopWindowNumber = { NSWindow.windowNumber(at: $0, belowWindowWithWindowNumber: 0) }
   ) {
     self.sleep = sleep
     self.panelFactory = panelFactory
     self.cursorContext = cursorContext
+    self.applicationIsActive = applicationIsActive
+    self.topWindowNumber = topWindowNumber
   }
 
   var hasPanel: Bool { panel != nil }
   var hasPendingTask: Bool { presentationTask != nil || dismissalTask != nil }
   var hasEventMonitor: Bool { eventMonitor != nil }
+  var hasHoverMonitor: Bool { hoverMonitor != nil }
   var visibleOwner: TooltipOwner? { arbiter.visible?.owner }
 
   func makeOwner() -> TooltipOwner {
@@ -229,6 +241,35 @@ public final class TooltipPresenter {
     panel?.tearDown()
     panel = nil
     cursorSource = nil
+  }
+
+  // The popover tears the presenter down on every close while its tab views persist, so hover recovery outlives that.
+  isolated deinit {
+    if let hoverMonitor { NSEvent.removeMonitor(hoverMonitor) }
+  }
+
+  func trackHover(of source: TooltipTrackingView) {
+    hoverSources.add(source)
+    guard hoverMonitor == nil else { return }
+    hoverMonitor = NSEvent.addLocalMonitorForEvents(matching: [.mouseEntered, .mouseExited, .mouseMoved]) {
+      [weak self] event in
+      // A SwiftUI hover handler that relayouts the window rebuilds its tracking areas while AppKit dispatches the
+      // event, which drops a tooltip's mouseEntered or sends it a stray mouseExited. Re-read the pointer afterwards.
+      let windowNumber = event.windowNumber
+      if self?.pendingHoverWindows.insert(windowNumber).inserted == true {
+        Task { @MainActor [weak self] in
+          self?.pendingHoverWindows.remove(windowNumber)
+          self?.syncHover(windowNumber: windowNumber)
+        }
+      }
+      return event
+    }
+  }
+
+  func syncHover(windowNumber: Int) {
+    for source in hoverSources.allObjects where source.window?.windowNumber == windowNumber {
+      source.syncHoverWithPointer()
+    }
   }
 
   func refresh(source: any TooltipPresentationSource) {
