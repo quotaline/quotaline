@@ -243,12 +243,13 @@ struct TooltipTrackingTests {
     tearDownHoverFixture(presenter, view, window)
   }
 
-  @Test @MainActor func tooltipPresenterFindsTheWindowUnderThePointer() throws {
+  @Test @MainActor func tooltipPresenterAsksTheWindowServerForTheWindowUnderThePointer() throws {
     let window = try showInvisibleWindow(containing: NSView())
-    window.alphaValue = 1
+    let point = CGPoint(x: window.frame.midX, y: window.frame.midY)
     let presenter = TooltipPresenter()
 
-    #expect(presenter.topWindowNumber(CGPoint(x: window.frame.midX, y: window.frame.midY)) == window.windowNumber)
+    // Another process's window can sit above the test window on a shared desktop, so compare with AppKit's answer.
+    #expect(presenter.topWindowNumber(point) == NSWindow.windowNumber(at: point, belowWindowWithWindowNumber: 0))
     presenter.tearDown()
     window.orderOut(nil)
   }
