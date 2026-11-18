@@ -388,12 +388,12 @@ fn history_navigation_inspects_actual_readings_and_retains_hidden_series() {
 }
 
 #[test]
-fn settings_keyboard_edits_preselect_values_and_handles_text() {
+fn settings_keyboard_activates_controls_and_keeps_the_command_editor() {
     let mut dashboard = Dashboard::new(true);
     dashboard.edit_setting();
     assert!(!dashboard.editing());
     dashboard.apply_snapshot(Ok(State {
-        settings: json!({"hide_identity":false,"format":"custom","template":"a"}),
+        settings: json!({"hide_identity":false}),
         providers: Vec::new(),
     }));
     dashboard.show(Page::Settings);
@@ -402,13 +402,6 @@ fn settings_keyboard_edits_preselect_values_and_handles_text() {
         dashboard.edit_setting(),
         Some(Command::Set("hide_identity".into(), "true".into()))
     );
-    dashboard.navigate(Navigation::Down);
-    dashboard.navigate(Navigation::Down);
-    dashboard.edit_setting();
-    assert!(render(&dashboard, 80, 24).contains(r#":set template "a""#));
-    dashboard.edit(27);
-    assert!(!dashboard.editing());
-
     dashboard.start_command();
     for &byte in "testé".as_bytes() {
         dashboard.edit(byte);
@@ -483,7 +476,7 @@ fn settings_navigation_changes_numbers_choices_and_provider_intervals() {
     assert!(dashboard.edit_setting().is_none());
     dashboard.apply_snapshot(Ok(State {
         settings: json!({
-            "providers":{"cursor":false},"interval_minutes":{"codex":2,"cursor":10},"show_as":"used","decimals":0,"format":"custom","template":"active",
+            "providers":{"cursor":false},"interval_minutes":{"codex":2,"cursor":10},"show_as":"used","decimals":0,"history_stacked":false,
             "notifications":false,"notify_sound":true
         }),
         providers: Vec::new(),
@@ -508,12 +501,9 @@ fn settings_navigation_changes_numbers_choices_and_provider_intervals() {
         dashboard.navigate(Navigation::Left),
         Some(Command::Set("decimals".into(), "0".into()))
     );
-    dashboard.navigate(Navigation::Down);
-    dashboard.navigate(Navigation::Down);
-    assert!(dashboard.navigate(Navigation::Left).is_none());
     assert!(!render(&dashboard, 80, 24).contains("Notification sound"));
     dashboard.navigate(Navigation::NextGroup);
-    assert!(render(&dashboard, 80, 24).contains("› Enable desktop notifications"));
+    assert!(render(&dashboard, 80, 24).contains("› Stack compatible history series"));
     dashboard.navigate(Navigation::NextGroup);
     assert!(render(&dashboard, 80, 24).contains("› Codex refresh interval"));
 
@@ -907,11 +897,11 @@ fn mouse_usage_opens_the_detail_for_the_clicked_provider_or_window() {
 }
 
 #[test]
-fn mouse_settings_edits_switches_and_text_from_their_rows() {
+fn mouse_settings_toggles_a_switch_from_its_row() {
     let mut dashboard = Dashboard::new(true);
     let size = (80, 24);
     dashboard.apply_snapshot(Ok(State {
-        settings: json!({"hide_identity":false,"format":"custom","template":"example"}),
+        settings: json!({"hide_identity":false}),
         providers: vec![],
     }));
     dashboard.show(Page::Settings);
@@ -923,8 +913,6 @@ fn mouse_settings_edits_switches_and_text_from_their_rows() {
             "true".into()
         )))
     );
-    assert!(click_label(&mut dashboard, size, "Desktop menu-bar template").is_none());
-    assert!(render(&dashboard, size.0, size.1).contains(r#":set template "example""#));
 }
 
 #[test]
@@ -932,13 +920,13 @@ fn mouse_settings_uses_visible_step_arrows_in_both_directions() {
     let mut dashboard = Dashboard::new(true);
     let size = (80, 24);
     dashboard.apply_snapshot(Ok(State {
-        settings: json!({"decimals":1,"format":"inline"}),
+        settings: json!({"decimals":1,"show_as":"used"}),
         providers: vec![],
     }));
     dashboard.show(Page::Settings);
     for (label, key, previous, next) in [
         ("Quota decimal places", "decimals", "0", "2"),
-        ("Desktop menu-bar layout", "format", r#""stacked""#, r#""mini-bars""#),
+        ("Quota numbers", "show_as", r#""remaining""#, r#""remaining""#),
     ] {
         assert!(click_label(&mut dashboard, size, label).is_none());
         let screen = render(&dashboard, size.0, size.1);

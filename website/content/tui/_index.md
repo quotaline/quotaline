@@ -21,7 +21,7 @@ dashboard updates as the desktop backend updates and keeps the last readable quo
 | R, s       | Request a refresh or sign-in for the selected provider (Linux) |
 | [ / ], n   | Page through history ranges or return to the current range     |
 | v, i       | Toggle or isolate the selected history series                  |
-| Enter      | Toggle or edit the selected setting on Linux                   |
+| Enter      | Activate the selected setting on Linux                         |
 | :, ?       | Enter a command or open the command reference                  |
 | q, Ctrl+C  | Quit                                                           |
 
@@ -46,10 +46,9 @@ filename.
 
 ## Settings and diagnostics
 
-Settings groups provider collection, display options, notifications, data, and diagnostics. On Linux, click a control or
-press **Enter** to toggle a switch or edit a text field. Click **‹** or **›** or use the arrow keys to adjust a value.
-The terminal and desktop app share these settings. **Esc** cancels text entry. Use **?** for additional model and
-support commands.
+Settings covers provider collection, quota display and privacy, history, data retention, and logging. On Linux, click a
+switch or press **Enter** to toggle it. Click **‹** or **›** or use the arrow keys to adjust a value. The terminal and
+desktop app share these settings. Use **?** for model and support commands.
 
 Press **4** for recent desktop logs. `:logs full` shows retained logs, `:diagnostics` displays the diagnostic report,
 and `:issue` displays the issue report link. Use the left and right arrows to pan long lines.

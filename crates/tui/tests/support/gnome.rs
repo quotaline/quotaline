@@ -27,7 +27,7 @@ fn displays_desktop_state_history_settings_and_logs_without_an_export() {
     cli.click(2, 2);
     cli.read_until("Example workspace");
     cli.click(22, 23);
-    cli.read_until("Write usage.json");
+    cli.read_until("Stack compatible history series");
     cli.click(2, 3);
     service.wait_for("SetSetting", &mut cli);
     cli.read_until("Settings saved");

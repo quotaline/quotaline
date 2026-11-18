@@ -29,7 +29,6 @@ enum Editor {
         unit: &'static str,
     },
     Choice(&'static [(&'static str, &'static str)]),
-    Text,
     Interval(&'static str),
 }
 
@@ -46,13 +45,8 @@ impl Control {
                 json!(choices[next].0)
             }),
             Editor::Interval(id) => return Some(Command::StepInterval(id.into(), direction)),
-            Editor::Text => None,
         };
         value.map(|value| Command::Set(self.key.clone(), value.to_string()))
-    }
-
-    pub(crate) fn answer(&self) -> Option<String> {
-        matches!(self.editor, Editor::Text).then(|| format!("set {} {}", self.key, self.value))
     }
 
     fn stepped(&self) -> bool {
@@ -76,12 +70,11 @@ impl Control {
                 .find(|(id, _)| self.value == *id)
                 .map_or("Unknown", |(_, label)| *label)
                 .into(),
-            Editor::Text => self.value.as_str().unwrap_or_default().replace(char::is_control, " "),
         }
     }
 }
 
-pub(crate) fn controls(settings: &Value) -> Vec<Control> {
+pub(crate) fn controls(settings: &Value, show_model_filter: bool) -> Vec<Control> {
     let toggled = Editor::Switch("On", "Off");
     let mut controls = Vec::new();
     for provider in quotaline_catalog::ALL {
@@ -132,54 +125,10 @@ pub(crate) fn controls(settings: &Value) -> Vec<Control> {
         ),
         (
             "Display",
-            "Provider order",
-            "order",
-            Editor::Choice(&[("stable", "Configured"), ("usage", "Usage")]),
-        ),
-        (
-            "Display",
-            "Zero readings",
-            "hide_zero",
-            Editor::Switch("Hidden", "Visible"),
-        ),
-        (
-            "Display",
-            "Unused models",
+            "Unused models in model list",
             "hide_unused_models",
             Editor::Switch("Hidden", "Visible"),
         ),
-        ("Display", "All providers in settings", "show_all_providers", toggled),
-        (
-            "Display",
-            "Desktop menu-bar layout",
-            "format",
-            Editor::Choice(&[
-                ("stacked", "Stacked"),
-                ("inline", "Inline"),
-                ("mini-bars", "Mini-bars"),
-                ("countdown", "Countdown"),
-                ("exhausted", "Exhausted"),
-                ("custom", "Custom"),
-            ]),
-        ),
-        ("Display", "Desktop menu-bar template", "template", Editor::Text),
-        ("Display", "Fit desktop menu-bar space", "fit_to_space", toggled),
-        (
-            "Notifications",
-            "Enable desktop notifications",
-            "notifications",
-            toggled,
-        ),
-        ("Notifications", "Quota reset alerts", "notify_resets", toggled),
-        ("Notifications", "Sign-in alerts", "notify_sign_in", toggled),
-        ("Notifications", "Pace alerts", "notify_pace", toggled),
-        (
-            "Notifications",
-            "Credit expiry alerts",
-            "notify_expiring_credits",
-            toggled,
-        ),
-        ("Notifications", "Notification sound", "notify_sound", toggled),
         (
             "Data",
             "Keep history for",
@@ -214,16 +163,12 @@ pub(crate) fn controls(settings: &Value) -> Vec<Control> {
             },
         ),
         ("Data", "Allow credential refresh", "allow_token_refresh", toggled),
-        ("Data", "Write usage.json", "write_usage_json", toggled),
-        ("Data", "Desktop demo data", "demo", toggled),
+        ("Data", "Use shared demo data", "demo", toggled),
         ("History", "Stack compatible history series", "history_stacked", toggled),
         ("Diagnostics", "Detailed logging", "detailed_logging", toggled),
     ];
     controls.extend(choices.into_iter().filter_map(|(group, label, key, editor)| {
-        if key == "template" && settings["format"] != "custom" {
-            return None;
-        }
-        if group == "Notifications" && key != "notifications" && settings["notifications"] == false {
+        if key == "hide_unused_models" && !show_model_filter {
             return None;
         }
         Some(Control {
@@ -262,7 +207,7 @@ pub(crate) fn draw(frame: &mut Frame<'_>, area: Rect, controls: &[Control], sele
         }
     }
     let hint = if editable {
-        "↑↓ Move   Tab Next group\n←→ Adjust   Enter Toggle or edit"
+        "↑↓ Move   Tab Next group\n←→ Adjust   Enter Activate"
     } else {
         "↑↓ Move   Tab Next group\nChange these settings in the desktop app"
     };
@@ -305,28 +250,33 @@ fn draw_control(frame: &mut Frame<'_>, row: Rect, control: &Control, active: boo
     let label = format!("{} {}", if active { "›" } else { " " }, control.label);
     let label = Line::from(label);
     let value = Line::from(control.formatted());
-    let [label_area, value_area, previous, next] = control_sections(row, editable && control.stepped());
+    let [label_area, value_area, previous, next] = control_sections(row, editable && control.stepped(), value.width());
     frame.render_widget(if active { label.cyan().bold() } else { label }, label_area);
     frame.render_widget(if active { value.bold() } else { value }, value_area);
     frame.render_widget(Line::from("‹").cyan(), previous);
     frame.render_widget(Line::from("›").cyan(), next);
 }
 
-fn control_sections(row: Rect, stepped: bool) -> [Rect; 4] {
+fn control_sections(row: Rect, stepped: bool, value_width: usize) -> [Rect; 4] {
     let [label, value] = Layout::horizontal([Constraint::Percentage(62), Constraint::Fill(1)])
         .spacing(2)
         .areas(row);
     if stepped {
+        let cluster = Rect {
+            width: value_width.saturating_add(4).min(usize::from(value.width)) as u16,
+            ..value
+        };
         let [previous, value, next] =
             Layout::horizontal([Constraint::Length(1), Constraint::Fill(1), Constraint::Length(1)])
                 .spacing(1)
-                .areas(value);
+                .areas(cluster);
         [label, value, previous, next]
     } else {
         [label, value, Rect::ZERO, Rect::ZERO]
     }
 }
 
+#[cfg_attr(test, derive(Debug, PartialEq, Eq))]
 pub(crate) enum SettingsHit {
     Edit,
     Adjust(i32),
@@ -342,7 +292,7 @@ pub(crate) fn hit(area: Rect, controls: &[Control], selected: usize, at: Positio
     };
     let control = &controls[index];
     let action = if control.stepped() {
-        let [_, _, previous, next] = control_sections(row, true);
+        let [_, _, previous, next] = control_sections(row, true, Line::from(control.formatted()).width());
         if previous.contains(at) {
             SettingsHit::Adjust(-1)
         } else if next.contains(at) {
@@ -355,3 +305,7 @@ pub(crate) fn hit(area: Rect, controls: &[Control], selected: usize, at: Positio
     };
     Some((index, action))
 }
+
+#[cfg(test)]
+#[path = "../tests/unit/preferences.rs"]
+mod tests;

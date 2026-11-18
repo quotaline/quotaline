@@ -23,6 +23,7 @@ fn reads_mutates_session_and_recovers_using_the_native_mac_data() {
     cli.read_until("Settings · read only");
     cli.read_until("Codex collection");
     cli.write(b":set decimals 2\r");
+    assert!(!cli.screen.screen().contents().contains('‹'));
     cli.read_until("Change decimals in the Quotaline menu bar app");
 
     cli.write(b"2");

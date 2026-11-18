@@ -107,7 +107,7 @@ impl Dashboard {
         let selected = self.providers.get(self.provider).map(|provider| provider.id.clone());
         self.providers = state.providers;
         self.settings = state.settings;
-        self.controls = preferences::controls(&self.settings);
+        self.controls = preferences::controls(&self.settings, self.settings_editable);
         if self.page == Page::Settings {
             self.scroll = self.scroll.min(self.controls.len().saturating_sub(1));
         }
@@ -345,13 +345,7 @@ impl Dashboard {
         if self.page != Page::Settings || !self.settings_editable {
             return None;
         }
-        let control = self.controls.get(self.scroll)?;
-        if let Some(text) = control.answer() {
-            self.command = Some(text.into_bytes());
-            None
-        } else {
-            control.adjust(1)
-        }
+        self.controls.get(self.scroll)?.adjust(1)
     }
 
     pub(crate) fn visibility(&self, isolate: bool) -> Option<Command> {
