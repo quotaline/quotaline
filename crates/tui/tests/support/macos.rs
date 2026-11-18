@@ -38,9 +38,11 @@ fn reads_mutates_session_and_recovers_using_the_native_mac_data() {
         )
         .as_bytes(),
     );
-    cli.read_until("○ Codex · Native session");
+    cli.read_until("Series hidden · v to show it");
+    cli.read_until("● Codex · Native week");
+    cli.read_until("44.00%");
     cli.write(b"v");
-    cli.read_until("● Codex · Native session");
+    cli.read_until("Latest 78.00%");
     cli.write(b":clear history confirm\r");
     cli.read_until("Clear history in the Quotaline menu bar app");
     let csv = fixture.home.path().join("usage history.csv");
