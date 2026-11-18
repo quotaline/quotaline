@@ -81,7 +81,7 @@ export class SnapshotWidget {
             : attention
               ? COPY.signInNeeded
               : 'Open to choose limits';
-        if (!this.toggle.menu.isOpen) return;
+        // GNOME 51 opens only a menu that already has items, so the rows cannot wait for the menu to open.
         this.toggle.menu.removeAll();
         const updated = state?.last_refresh == null ? '' : ` · updated ${state.time_presentation.refresh_age}`;
         this.toggle.menu.setHeader(
