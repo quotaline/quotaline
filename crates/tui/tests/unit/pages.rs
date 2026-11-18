@@ -67,7 +67,7 @@ fn history_draws_each_visible_usage_series_and_highlights_selected_reading() {
             ),
         ],
     );
-    let buffer = history_buffer(&history, (0, Some(1)), (60, 22));
+    let buffer = history_buffer(&history, (0, Some(43_200)), (60, 22));
     let selected = Color::Indexed(81);
     let other = Color::Indexed(215);
     assert_eq!((buffer[(20, 13)].fg, buffer[(20, 10)].fg), (selected, other));
@@ -289,12 +289,19 @@ fn chart_fixture<const COUNT: usize>(
 
 fn history_buffer(
     history: &History,
-    position: (usize, Option<usize>),
+    position: (usize, Option<i64>),
     (width, height): (u16, u16),
 ) -> ratatui::buffer::Buffer {
     let mut terminal = ratatui::Terminal::new(ratatui::backend::TestBackend::new(width, height)).unwrap();
     terminal
-        .draw(|frame| draw_history(frame, frame.area(), history, position))
+        .draw(|frame| {
+            draw_history(
+                frame,
+                frame.area(),
+                &HistoryView::new(serde_json::from_value(serde_json::to_value(history).unwrap()).unwrap()),
+                position,
+            )
+        })
         .unwrap();
     terminal.backend().buffer().clone()
 }
@@ -337,5 +344,71 @@ fn output_stays_in_the_relevant_view() {
         (Command::Refresh("all".into()), Page::Settings),
     ] {
         assert_eq!(output_page(&command, Page::Settings), page);
+    }
+}
+
+#[test]
+fn history_legend_uses_last_real_bucket_and_reserves_space_for_values() {
+    let history = chart_fixture(
+        "projectCost",
+        false,
+        259_200,
+        [
+            (
+                "one",
+                "A long project name that should be clipped",
+                json!([
+                    [0, 81.02, null, false],
+                    [86_400, 31.50, null, false],
+                    [172_800, 8000.0, null, true]
+                ]),
+            ),
+            (
+                "two",
+                "Second",
+                json!([[129_600, 50.0, null, false], [172_800, 418.02, null, false]]),
+            ),
+        ],
+    );
+    let rows = history_rows(&history_buffer(&history, (0, None), (34, 20)));
+    let first = rows.lines().find(|line| line.contains("A long")).unwrap();
+    let second = rows.lines().find(|line| line.contains("Second")).unwrap();
+    assert!(first.ends_with("$31.50│"), "{first}");
+    assert!(second.ends_with("$418.02│"), "{second}");
+    assert!(!first.contains("8000"));
+
+    for timestamp in [129_600, 172_800] {
+        let rows = history_rows(&history_buffer(&history, (0, Some(timestamp)), (34, 20)));
+        let first = rows.lines().find(|line| line.contains("A long")).unwrap();
+        assert!(first.ends_with("—│"), "{first}");
+    }
+}
+
+#[test]
+fn history_legend_interpolates_lines_at_the_same_timestamp() {
+    let history = chart_fixture(
+        "creditBalance",
+        false,
+        259_200,
+        [
+            (
+                "one",
+                "First",
+                json!([[0, 10.0, null, false], [259_200, 70.0, null, false]]),
+            ),
+            ("two", "Second", json!([[86_400, 25.0, null, false]])),
+            ("three", "Third", json!([[86_400, 99.0, null, true]])),
+            ("four", "Ended", json!([[43_200, 120.0, null, false]])),
+        ],
+    );
+    let rows = history_rows(&history_buffer(&history, (0, Some(86_400)), (80, 24)));
+    for (label, value) in [
+        ("First", "30.00 credits"),
+        ("Second", "25.00 credits"),
+        ("Third", "99.00 credits"),
+        ("Ended", "—"),
+    ] {
+        let row = rows.lines().find(|line| line.contains(label)).unwrap();
+        assert!(row.contains(value), "{row}");
     }
 }

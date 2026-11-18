@@ -47,8 +47,92 @@ fn decodes_navigation_and_commands() {
     ] {
         let mut keys = Keys::default();
         assert_eq!(
-            input.iter().filter_map(|&byte| keys.push(byte)).collect::<Vec<_>>(),
+            input
+                .iter()
+                .filter_map(|&byte| keys.push(byte, false).0)
+                .collect::<Vec<_>>(),
             actions
         );
     }
+}
+
+#[test]
+fn decodes_fragmented_sgr_mouse_coordinates_and_modifiers() {
+    let mut keys = Keys::default();
+    for (bytes, expected) in [
+        (&b"\x1b[<35;8"[..], Vec::new()),
+        (&b";6M"[..], vec![Action::Mouse(HistoryMouse::Move(7, 5))]),
+        (&b"\x1b[<48;9;7M"[..], vec![Action::Mouse(HistoryMouse::Move(8, 6))]),
+        (&b"\x1b[<16;1;2M"[..], vec![Action::Mouse(HistoryMouse::Click(0, 1))]),
+        (
+            &b"\x1b[<0;2;\x1b[<35;7;3M"[..],
+            vec![Action::Mouse(HistoryMouse::Move(6, 2))],
+        ),
+    ] {
+        assert_eq!(
+            bytes
+                .iter()
+                .filter_map(|&byte| keys.push(byte, false).0)
+                .collect::<Vec<_>>(),
+            expected
+        );
+    }
+}
+
+#[test]
+fn ignores_releases_scroll_and_malformed_reports_before_keyboard_input() {
+    for report in [
+        &b"\x1b[<0;3;7m"[..],
+        &b"\x1b[<64;3;7M"[..],
+        &b"\x1b[<1;3;7M"[..],
+        &b"\x1b[<0;3M"[..],
+        &b"\x1b[<0;3;7;5M"[..],
+        &b"\x1b[<0;0;7M"[..],
+        &b"\x1b[<0;3;0M"[..],
+        &b"\x1b[<0;65536;7M"[..],
+        &b"\x1b[<0;3;65536M"[..],
+        &b"\x1b[<256;2;7M"[..],
+        &b"\x1b[<0;2222222222222222222222222;7M"[..],
+        &b"\x1b[<0;3;7q"[..],
+        &b"\x1b[<0;+3;7M"[..],
+        &b"\x1b[<0;\xff3;7M"[..],
+        &b"\x1b[<0M"[..],
+        &b"\x1b[Mq23"[..],
+        &b"\x1bO<0;3;7M"[..],
+        &b"\x1bOM"[..],
+    ] {
+        let mut keys = Keys::default();
+        let actions = report
+            .iter()
+            .chain(b"j")
+            .filter_map(|&byte| keys.push(byte, false).0)
+            .collect::<Vec<_>>();
+        assert_eq!(actions, [Action::Navigate(Navigation::Down)]);
+    }
+}
+
+#[test]
+fn escape_cancellation_keeps_the_following_key() {
+    let mut keys = Keys::default();
+    assert_eq!(keys.push(b'\x1b', true), (None, false));
+    assert_eq!(keys.push(b':', true), (Some(Action::StartCommand), true));
+    assert_eq!(keys.push(b'q', true), (Some(Action::Edit(b'q')), false));
+}
+
+#[test]
+fn only_a_lone_escape_cancels_the_editor_at_a_poll_timeout() {
+    let mut keys = Keys::default();
+    assert!(!keys.cancel_escape(true));
+    assert_eq!(keys.push(b'\x1b', true), (None, false));
+    assert!(!keys.cancel_escape(false));
+    assert!(keys.cancel_escape(true));
+    for &byte in b"\x1b[<35;2;" {
+        assert_eq!(keys.push(byte, true), (None, false));
+    }
+    assert!(!keys.cancel_escape(true));
+    assert_eq!(keys.push(b'1', true), (None, false));
+    assert_eq!(
+        keys.push(b'M', true),
+        (Some(Action::Mouse(HistoryMouse::Move(1, 0))), false)
+    );
 }

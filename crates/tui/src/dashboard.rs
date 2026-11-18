@@ -2,7 +2,7 @@
 
 use ratatui::{
     Frame,
-    layout::{Constraint, Layout},
+    layout::{Constraint, Layout, Position, Rect},
     style::Stylize,
     text::Line,
     widgets::Paragraph,
@@ -11,13 +11,34 @@ use ratatui::{
 use serde_json::{Value, json};
 
 use crate::{
-    desktop::{Command, History, Output, State},
+    desktop::{Command, Output, State},
     keys::Navigation,
-    pages::{self, Page},
+    pages::{self, HistoryHit, HistoryView, Page},
     preferences::{self, Control},
     snapshot::Provider,
     usage,
 };
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(crate) enum HistoryMouse {
+    Move(u16, u16),
+    Click(u16, u16),
+    Leave,
+}
+
+#[derive(Clone, Copy)]
+enum HistoryCursor {
+    Keyboard(i64),
+    Mouse(i64),
+}
+
+impl HistoryCursor {
+    fn timestamp(self) -> i64 {
+        match self {
+            Self::Keyboard(timestamp) | Self::Mouse(timestamp) => timestamp,
+        }
+    }
+}
 
 pub(crate) struct Dashboard {
     providers: Vec<Provider>,
@@ -26,12 +47,12 @@ pub(crate) struct Dashboard {
     controls: Vec<Control>,
     settings_editable: bool,
     page: Page,
-    history: Option<History>,
+    history: Option<HistoryView>,
     logs: Vec<String>,
     response: Vec<String>,
     scroll: usize,
     column: u16,
-    reading: Option<usize>,
+    reading: Option<HistoryCursor>,
     command: Option<Vec<u8>>,
     message: Option<String>,
     provider: usize,
@@ -141,7 +162,7 @@ impl Dashboard {
             self.reading = None;
             let length = match self.page {
                 Page::Settings => self.controls.len(),
-                Page::History => self.history.as_ref().map_or(0, |history| history.series.len()),
+                Page::History => self.history.as_ref().map_or(0, |history| history.data.series.len()),
                 _ => self.text().len(),
             };
             self.scroll = next_index(self.scroll, length, action);
@@ -167,18 +188,10 @@ impl Dashboard {
                 }
             }
             Page::History => {
-                if let Some(series) = self
-                    .history
-                    .as_ref()
-                    .and_then(|history| history.series.get(self.scroll))
-                {
-                    let last = series.points.iter().filter(|point| !point.3).count().saturating_sub(1);
-                    let current = self.reading.unwrap_or(last);
-                    self.reading = Some(if forward {
-                        (current + 1).min(last)
-                    } else {
-                        current.saturating_sub(1)
-                    });
+                if let Some(history) = &self.history {
+                    self.reading = history
+                        .step(self.reading.map(HistoryCursor::timestamp), if forward { 1 } else { -1 })
+                        .map(HistoryCursor::Keyboard);
                 }
             }
             _ => {
@@ -190,6 +203,40 @@ impl Dashboard {
             }
         }
         None
+    }
+
+    pub(crate) fn history_mouse(&mut self, action: HistoryMouse, area: Rect) -> Option<Command> {
+        let (HistoryMouse::Move(column, row) | HistoryMouse::Click(column, row)) = action else {
+            self.clear_history_hover();
+            return None;
+        };
+        if self.page != Page::History || self.command.is_some() || area.width < 34 || area.height < 14 {
+            return None;
+        }
+        let history = self.history.as_ref()?;
+        let [_, content, _, _] = dashboard_sections(area);
+        let hit = pages::history_hit(content, history, self.scroll, Position::new(column, row));
+        match (action, hit) {
+            (HistoryMouse::Click(..), Some(HistoryHit::Series(index))) => {
+                self.scroll = index;
+                self.reading = None;
+                self.visibility(false)
+            }
+            (_, Some(HistoryHit::Reading(timestamp))) => {
+                self.reading = Some(HistoryCursor::Mouse(timestamp));
+                None
+            }
+            _ => {
+                self.clear_history_hover();
+                None
+            }
+        }
+    }
+
+    fn clear_history_hover(&mut self) {
+        if matches!(self.reading, Some(HistoryCursor::Mouse(_))) {
+            self.reading = None;
+        }
     }
 
     pub(crate) fn edit_setting(&mut self) -> Option<Command> {
@@ -209,7 +256,7 @@ impl Dashboard {
         if self.page != Page::History {
             return None;
         }
-        let history = self.history.as_ref()?;
+        let history = &self.history.as_ref()?.data;
         let current = history.series.get(self.scroll)?;
         let kind = if isolate {
             if history
@@ -283,7 +330,7 @@ impl Dashboard {
             self.show(Page::Result);
             return None;
         }
-        match pages::parse(text, self.history.as_ref()) {
+        match pages::parse(text, self.history.as_ref().map(|view| &view.data)) {
             Ok(command) => Some(command),
             Err(error) => {
                 self.message = Some(error.to_string());
@@ -307,10 +354,14 @@ impl Dashboard {
         }
         match output {
             Ok(Output::History(history)) => {
+                let view = HistoryView::new(history);
                 if active {
-                    self.scroll = self.scroll.min(history.series.len().saturating_sub(1));
+                    self.scroll = self.scroll.min(view.data.series.len().saturating_sub(1));
+                    self.reading = self
+                        .reading
+                        .filter(|reading| view.reading_index(reading.timestamp()).is_some());
                 }
-                self.history = Some(history);
+                self.history = Some(view);
             }
             Ok(Output::Text(lines)) if page == Page::Logs => self.logs = lines,
             Ok(Output::Text(lines)) => self.response = lines,
@@ -347,13 +398,7 @@ impl Dashboard {
             return;
         }
 
-        let [title, content, status, help] = Layout::vertical([
-            Constraint::Length(1),
-            Constraint::Min(0),
-            Constraint::Length(1),
-            Constraint::Length(1),
-        ])
-        .areas(area);
+        let [title, content, status, help] = dashboard_sections(area);
         let mut heading = Line::from(vec![
             " QUOTALINE ".black().on_cyan().bold(),
             format!(" · {}", self.page.title()).bold(),
@@ -377,7 +422,7 @@ impl Dashboard {
                     frame,
                     content,
                     self.history.as_ref().expect("history is loaded"),
-                    (self.scroll, self.reading),
+                    (self.scroll, self.reading.map(HistoryCursor::timestamp)),
                 );
             }
             _ => pages::draw_text(frame, content, self.page, &self.text(), (self.scroll, self.column)),
@@ -408,6 +453,16 @@ impl Dashboard {
         );
         frame.render_widget(line, help);
     }
+}
+
+fn dashboard_sections(area: Rect) -> [Rect; 4] {
+    Layout::vertical([
+        Constraint::Length(1),
+        Constraint::Min(0),
+        Constraint::Length(1),
+        Constraint::Length(1),
+    ])
+    .areas(area)
 }
 
 fn next_index(selected: usize, length: usize, action: Navigation) -> usize {

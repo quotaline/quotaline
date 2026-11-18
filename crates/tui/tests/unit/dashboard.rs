@@ -1,4 +1,5 @@
 use super::*;
+use crate::desktop::History;
 use crate::snapshot::LocalSnapshot as Source;
 use jiff::{SignedDuration, Timestamp};
 use quotaline_export::UsageExport;
@@ -359,6 +360,8 @@ fn history_navigation_inspects_actual_readings_and_retains_hidden_series() {
     dashboard.apply_output(Page::History, Ok(Output::History(history_fixture())));
     assert!(render(&dashboard, 100, 24).contains("Latest 78.00"));
     dashboard.navigate(Navigation::Left);
+    assert!(render(&dashboard, 100, 24).contains("2026-05-28T20:26:45Z · 78.00"));
+    dashboard.navigate(Navigation::Left);
     assert!(render(&dashboard, 100, 24).contains("2026-05-28T20:26:40Z · 33.00"));
     dashboard.navigate(Navigation::Right);
     assert!(render(&dashboard, 100, 24).contains("2026-05-28T20:26:45Z · 78.00"));
@@ -615,4 +618,124 @@ fn displays_backend_errors_in_the_active_view() {
     dashboard.show(Page::History);
     dashboard.apply_output(Page::History, Err(std::io::Error::other("History unavailable")));
     assert!(render(&dashboard, 80, 24).contains("History unavailable"));
+}
+
+#[test]
+fn history_mouse_inspects_the_plot_and_restores_latest_on_exit() {
+    let mut dashboard = Dashboard::new(true);
+    let area = Rect::new(0, 0, 100, 24);
+    dashboard.show(Page::History);
+    dashboard.apply_output(Page::History, Ok(Output::History(history_fixture())));
+    assert!(render(&dashboard, 100, 24).contains("Latest 78.00%"));
+    assert!(dashboard.history_mouse(HistoryMouse::Move(8, 7), area).is_none());
+    let screen = render(&dashboard, 100, 24);
+    assert!(screen.contains("2026-05-28T20:26:40Z · 33.00%"));
+    assert!(
+        screen
+            .lines()
+            .find(|line| line.contains("Daily"))
+            .unwrap()
+            .contains("—")
+    );
+
+    assert!(dashboard.history_mouse(HistoryMouse::Click(49, 7), area).is_none());
+    assert!(render(&dashboard, 100, 24).contains("2026-05-28T20:26:45Z · 78.00%"));
+    assert!(dashboard.history_mouse(HistoryMouse::Move(8, 21), area).is_none());
+    assert!(render(&dashboard, 100, 24).contains("Latest 78.00%"));
+
+    dashboard.history_mouse(HistoryMouse::Move(8, 7), area);
+    dashboard.history_mouse(HistoryMouse::Leave, Rect::new(0, 0, 20, 10));
+    assert!(render(&dashboard, 100, 24).contains("Latest 78.00%"));
+}
+
+#[test]
+fn history_mouse_only_toggles_legend_rows_on_click() {
+    let mut dashboard = Dashboard::new(true);
+    let area = Rect::new(0, 0, 100, 24);
+    let click = HistoryMouse::Click(79, 5);
+    assert!(dashboard.history_mouse(click, area).is_none());
+    dashboard.show(Page::History);
+    assert!(dashboard.history_mouse(click, area).is_none());
+    dashboard.apply_output(Page::History, Ok(Output::History(history_fixture())));
+    assert!(dashboard.history_mouse(click, Rect::new(0, 0, 100, 12)).is_none());
+    assert!(dashboard.history_mouse(click, Rect::new(0, 0, 20, 24)).is_none());
+    dashboard.start_command();
+    assert!(dashboard.history_mouse(click, area).is_none());
+    dashboard.edit(27);
+    assert!(dashboard.history_mouse(HistoryMouse::Click(79, 7), area).is_none());
+    assert!(dashboard.history_mouse(HistoryMouse::Move(79, 5), area).is_none());
+    assert_eq!(
+        dashboard.visibility(false),
+        Some(visibility_command("toggle", "weekly"))
+    );
+    assert_eq!(
+        dashboard.history_mouse(click, area),
+        Some(visibility_command("toggle", "daily"))
+    );
+    assert!(render(&dashboard, 100, 24).contains("›● Codex · Daily"));
+}
+
+#[test]
+fn history_mouse_leave_preserves_keyboard_reading() {
+    let mut dashboard = Dashboard::new(true);
+    dashboard.show(Page::History);
+    let mut history = history_fixture();
+    history.series[1].points.insert(0, (1_780_000_003, 45.0, None, false));
+    dashboard.apply_output(Page::History, Ok(Output::History(history)));
+    dashboard.navigate(Navigation::Right);
+    dashboard.navigate(Navigation::Right);
+    let area = Rect::new(0, 0, 100, 24);
+    assert!(dashboard.history_mouse(HistoryMouse::Leave, area).is_none());
+    let screen = render(&dashboard, 100, 24);
+    assert!(screen.contains("2026-05-28T20:26:43Z · 33.00%"));
+    assert!(
+        screen
+            .lines()
+            .find(|line| line.contains("Daily"))
+            .unwrap()
+            .contains("45.00%")
+    );
+}
+
+#[test]
+fn history_mouse_uses_the_scrolled_legend_after_resize() {
+    let mut dashboard = Dashboard::new(true);
+    dashboard.show(Page::History);
+    let mut history = history_fixture();
+    history.series = (0..9)
+        .map(|index| crate::desktop::Series {
+            id: format!("model-{index}"),
+            provider: "Codex".into(),
+            label: format!("Model {index}"),
+            points: vec![(1_780_000_000, f64::from(index), None, false)],
+        })
+        .collect();
+    dashboard.apply_output(Page::History, Ok(Output::History(history)));
+    for _ in 0..8 {
+        dashboard.navigate(Navigation::Down);
+    }
+    for (width, column, row, expected) in [(34, 26, 7, "model-6"), (80, 77, 4, "model-3")] {
+        let command = dashboard.history_mouse(HistoryMouse::Click(column, row), Rect::new(0, 0, width, 14));
+        let action = command.unwrap();
+        assert_eq!(
+            action,
+            Command::Visibility(
+                json!({"kind":"toggle","metric":"usage","id":expected,"series":(0..9).map(|index| format!("model-{index}")).collect::<Vec<_>>()})
+                    .to_string(),
+            )
+        );
+    }
+}
+
+#[test]
+fn history_reload_drops_selection_when_the_reading_disappears() {
+    let mut dashboard = Dashboard::new(true);
+    dashboard.show(Page::History);
+    dashboard.apply_output(Page::History, Ok(Output::History(history_fixture())));
+    dashboard.navigate(Navigation::Right);
+    assert!(render(&dashboard, 100, 24).contains("2026-05-28T20:26:40Z"));
+    let mut history = history_fixture();
+    history.series[0].points.remove(0);
+    dashboard.apply_output(Page::History, Ok(Output::History(history)));
+    assert!(render(&dashboard, 100, 24).contains("Latest 78.00%"));
 }

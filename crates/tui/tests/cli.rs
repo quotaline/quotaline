@@ -131,10 +131,47 @@ fn redraws_and_reloads_an_explicit_snapshot_in_a_terminal() {
 }
 
 #[test]
+fn history_mouse_tracking_follows_the_page_and_editor() {
+    let mut cli = Interactive::start(command().arg("--demo"));
+    cli.read_until("Antigravity");
+    cli.write(b"2");
+    cli.read_until("\x1b[?1006h\x1b[?1003h");
+    cli.write(b"\x1b[<35;5;2M\x1b[<0;5;2M\x1b[<0;5;2m:");
+    cli.read_until("\x1b[?1003l\x1b[?1006l");
+    cli.write(b"\x1b[<35;5;2Mmetrics\r");
+    cli.read_until("Quota usage");
+    cli.write(b"2");
+    cli.read_until("\x1b[?1006h\x1b[?1003h");
+    cli.write(b"1");
+    cli.read_until("\x1b[?1003l\x1b[?1006l");
+    cli.write(b"\x1b[<0;5;2M?");
+    cli.read_until("Enter a command");
+    cli.quit(b"q");
+}
+
+#[test]
+fn lone_escape_cancels_the_history_editor_and_restores_tracking() {
+    let mut cli = Interactive::start(command().arg("--demo"));
+    cli.read_until("Demo data");
+    cli.write(b"2");
+    cli.read_until("\x1b[?1006h\x1b[?1003h");
+    cli.write(b":");
+    cli.read_until("\x1b[?1003l\x1b[?1006l");
+    cli.write(b"\x1b");
+    cli.read_until("\x1b[?1006h\x1b[?1003h");
+    cli.write(b"q");
+    cli.read_until("\x1b[?1003l\x1b[?1006l");
+    cli.assert_restored();
+}
+
+#[test]
 fn restores_terminal_after_termination_signal() {
     let mut cli = Interactive::start(command().arg("--demo"));
     cli.read_until("Demo data");
+    cli.write(b"2");
+    cli.read_until("\x1b[?1006h\x1b[?1003h");
     kill_process(Pid::from_raw(cli.child.id() as i32).unwrap(), Signal::TERM).unwrap();
+    cli.read_until("\x1b[?1003l\x1b[?1006l");
     cli.assert_restored();
 }
 
@@ -148,6 +185,7 @@ struct Interactive {
     slave: File,
     original_modes: LocalModes,
     screen: vt100::Parser,
+    output: Vec<u8>,
 }
 
 impl Interactive {
@@ -176,15 +214,24 @@ impl Interactive {
             slave,
             original_modes,
             screen: vt100::Parser::new(NonZeroU16::new(24).unwrap(), NonZeroU16::new(80).unwrap(), 0),
+            output: Vec::new(),
         }
     }
 
     fn read_until(&mut self, text: &str) {
         let deadline = Instant::now() + Duration::from_secs(5);
-        let mut bytes = Vec::new();
         loop {
             let output = self.screen.screen().contents();
-            if output.contains(text) || String::from_utf8_lossy(&bytes).contains(text) {
+            if let Some(index) = self
+                .output
+                .windows(text.len())
+                .position(|window| window == text.as_bytes())
+            {
+                self.output.drain(..index + text.len());
+                break;
+            }
+            if output.contains(text) {
+                self.output.clear();
                 break;
             }
             assert!(Instant::now() < deadline, "did not read {text:?} in {output:?}");
@@ -201,7 +248,7 @@ impl Interactive {
                 let mut chunk = [0; 2048];
                 let read = self.master.read(&mut chunk).unwrap();
                 self.screen.process(&chunk[..read]);
-                bytes.extend_from_slice(&chunk[..read]);
+                self.output.extend_from_slice(&chunk[..read]);
             }
         }
     }

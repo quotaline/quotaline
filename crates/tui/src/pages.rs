@@ -3,10 +3,10 @@
 use std::{collections::BTreeMap, io, path::Path};
 
 use jiff::{Timestamp, tz::TimeZone};
-use quotaline_analytics::{MetricDefinition, metric_definitions};
+use quotaline_analytics::{MetricDefinition, metric_definitions, step_reading, window_nearest};
 use ratatui::{
     Frame,
-    layout::{Constraint, Layout, Rect},
+    layout::{Constraint, Layout, Position, Rect},
     style::{Color, Stylize},
     text::{Line, Span},
     widgets::{
@@ -194,25 +194,13 @@ pub(crate) fn draw_text(frame: &mut Frame<'_>, area: Rect, page: Page, lines: &[
     }
 }
 
-pub(crate) fn draw_history(frame: &mut Frame<'_>, area: Rect, history: &History, position: (usize, Option<usize>)) {
+pub(crate) fn draw_history(frame: &mut Frame<'_>, area: Rect, view: &HistoryView, position: (usize, Option<i64>)) {
+    let history = &view.data;
     let block = Block::bordered().title(" History ").cyan();
     let inner = block.inner(area);
     frame.render_widget(block, area);
-    let [heading, range, body, reading] = Layout::vertical([
-        Constraint::Length(1),
-        Constraint::Length(1),
-        Constraint::Min(0),
-        Constraint::Length(1),
-    ])
-    .areas(inner);
-    let metric = if history.metric == "usage" {
-        "windowUsagePercent"
-    } else {
-        &history.metric
-    };
-    let definition = metric_definitions()
-        .into_iter()
-        .find(|definition| definition.id == metric);
+    let [heading, range, body, reading] = history_sections(inner);
+    let definition = &view.definition;
     let title = definition
         .as_ref()
         .map_or("History metric", |definition| &definition.title);
@@ -240,48 +228,180 @@ pub(crate) fn draw_history(frame: &mut Frame<'_>, area: Rect, history: &History,
         range,
     );
 
-    let (selected, reading_index) = position;
+    let (selected, timestamp) = position;
     let Some(series) = history.series.get(selected) else {
         frame.render_widget(Line::from("No history in this range").dim(), body);
         return;
     };
-    let wide = body.width >= 76;
-    let [chart, legend] = if wide {
-        Layout::horizontal([Constraint::Min(0), Constraint::Length((body.width / 3).min(44))]).areas(body)
-    } else {
-        Layout::vertical([
-            Constraint::Min(0),
-            Constraint::Length((history.series.len().min(usize::from(body.height / 2))) as u16),
-        ])
-        .areas(body)
-    };
-    let visible = draw_history_legend(frame, legend, history, selected);
-    let hidden = history.hidden.contains(&series.id);
-    let cursor = if hidden {
-        frame.render_widget(Line::from("Series hidden · v to show it").dim(), reading);
-        None
-    } else {
-        draw_history_reading(
-            frame,
-            reading,
-            series,
-            (reading_index, selected),
-            unit,
-            (&zone, reading_format),
-        )
-    };
+    let [chart, legend] = history_body(body, history.series.len());
+    let visible = visible_history_series(history);
+    let mark = view.mark();
+    draw_history_legend(frame, legend, history, position, (mark, unit));
+    draw_history_reading(
+        frame,
+        reading,
+        series,
+        position,
+        (mark, unit, &zone, reading_format),
+        history.hidden.contains(&series.id),
+    );
     if visible.is_empty() {
         frame.render_widget(Line::from("No visible readings in this range").dim(), chart);
         return;
     }
-    draw_history_chart(
-        frame,
-        chart,
-        history,
-        &visible,
-        (selected, cursor),
-        (definition.as_ref(), unit, &zone),
-    );
+    let cursor = timestamp.map(|timestamp| {
+        let value =
+            history_series_value(series, Some(timestamp), mark).filter(|_| !history.hidden.contains(&series.id));
+        (timestamp, value)
+    });
+    draw_history_chart(frame, chart, view, &visible, (selected, cursor), &zone);
+}
+
+fn history_sections(inner: Rect) -> [Rect; 4] {
+    Layout::vertical([
+        Constraint::Length(1),
+        Constraint::Length(1),
+        Constraint::Min(0),
+        Constraint::Length(1),
+    ])
+    .areas(inner)
+}
+
+pub(crate) struct HistoryView {
+    pub(crate) data: History,
+    readings: Vec<f64>,
+    definition: Option<MetricDefinition>,
+    upper: f64,
+    ticks: [String; 5],
+    stacked: bool,
+}
+
+impl HistoryView {
+    pub(crate) fn new(data: History) -> Self {
+        let definition = history_definition(&data);
+        let unit = definition
+            .as_ref()
+            .map_or("", |definition| definition.display_unit.as_str());
+        let stacked = data.stacked && definition.as_ref().is_some_and(|definition| definition.stackable);
+        let upper = history_upper(&visible_history_series(&data), stacked, unit);
+        let ticks = history_tick_ratios().map(|ratio| history_tick(upper * ratio, unit));
+        let readings = history_readings(&data);
+        Self {
+            data,
+            readings,
+            definition,
+            upper,
+            ticks,
+            stacked,
+        }
+    }
+
+    pub(crate) fn step(&self, timestamp: Option<i64>, direction: i32) -> Option<i64> {
+        let current = timestamp.and_then(|timestamp| self.reading_index(timestamp));
+        step_reading(self.readings.len(), current, &[direction]).map(|index| self.readings[index] as i64)
+    }
+
+    pub(crate) fn reading_index(&self, timestamp: i64) -> Option<usize> {
+        self.readings
+            .binary_search_by(|date| date.total_cmp(&(timestamp as f64)))
+            .ok()
+    }
+
+    fn mark(&self) -> &str {
+        self.definition
+            .as_ref()
+            .map_or("line", |definition| definition.mark.as_str())
+    }
+
+    fn geometry(&self, area: Rect) -> [Rect; 3] {
+        let [body, timeline] = Layout::vertical([Constraint::Min(0), Constraint::Length(1)]).areas(area);
+        let width = self.ticks.iter().map(String::len).fold(0, usize::max) as u16 + 1;
+        let [axis, plot] = Layout::horizontal([Constraint::Length(width), Constraint::Min(0)]).areas(body);
+        [axis, plot, timeline]
+    }
+}
+
+fn history_definition(history: &History) -> Option<MetricDefinition> {
+    let metric = if history.metric == "usage" {
+        "windowUsagePercent"
+    } else {
+        &history.metric
+    };
+    metric_definitions()
+        .into_iter()
+        .find(|definition| definition.id == metric)
+}
+
+fn history_body(body: Rect, count: usize) -> [Rect; 2] {
+    if body.width >= 76 {
+        Layout::horizontal([
+            Constraint::Min(0),
+            Constraint::Length((u32::from(body.width) * 2 / 5).min(44) as u16),
+        ])
+        .areas(body)
+    } else {
+        Layout::vertical([
+            Constraint::Min(0),
+            Constraint::Length((count.min(usize::from(body.height / 2))) as u16),
+        ])
+        .areas(body)
+    }
+}
+
+fn visible_history_series(history: &History) -> Vec<(usize, &Series)> {
+    history
+        .series
+        .iter()
+        .enumerate()
+        .filter(|(_, series)| !history.hidden.contains(&series.id) && !series.points.is_empty())
+        .collect()
+}
+
+fn history_legend_start(selected: usize, count: usize, height: u16) -> usize {
+    let rows = usize::from(height);
+    selected.saturating_sub(rows / 2).min(count.saturating_sub(rows))
+}
+
+pub(crate) enum HistoryHit {
+    Reading(i64),
+    Series(usize),
+}
+
+pub(crate) fn history_hit(area: Rect, view: &HistoryView, selected: usize, at: Position) -> Option<HistoryHit> {
+    let history = &view.data;
+    let [_, _, body, _] = history_sections(Block::bordered().inner(area));
+    let [chart, legend] = history_body(body, history.series.len());
+    if legend.contains(at) {
+        let index = history_legend_start(selected, history.series.len(), legend.height) + usize::from(at.y - legend.y);
+        return history.series.get(index).map(|_| HistoryHit::Series(index));
+    }
+
+    let [_, plot, _] = view.geometry(chart);
+    if !plot.contains(at) {
+        return None;
+    }
+    let ratio = f64::from(at.x - plot.x) / f64::from(plot.width.saturating_sub(1).max(1));
+    let [start, end] = history_bounds(history);
+    let target = start + ratio * (end - start) - history_x(0, view.mark());
+    window_nearest(&view.readings, target).map(|timestamp| HistoryHit::Reading(timestamp as i64))
+}
+
+fn history_readings(history: &History) -> Vec<f64> {
+    let mut readings = history
+        .series
+        .iter()
+        .filter(|series| !history.hidden.contains(&series.id))
+        .flat_map(|series| {
+            series
+                .points
+                .iter()
+                .filter(|point| !point.3)
+                .map(|point| point.0 as f64)
+        })
+        .collect::<Vec<_>>();
+    readings.sort_unstable_by(f64::total_cmp);
+    readings.dedup();
+    readings
 }
 
 fn history_value(value: f64, unit: &str) -> String {
@@ -300,40 +420,70 @@ fn history_date(seconds: i64, zone: &TimeZone, format: &str) -> String {
     )
 }
 
-fn draw_history_legend<'a>(
+fn draw_history_legend(
     frame: &mut Frame<'_>,
     area: Rect,
-    history: &'a History,
-    selected: usize,
-) -> Vec<(usize, &'a Series)> {
-    let mut visible = Vec::new();
-    let rows = usize::from(area.height);
-    let start = selected
-        .saturating_sub(rows / 2)
-        .min(history.series.len().saturating_sub(rows));
-    for (index, series) in history.series.iter().enumerate() {
+    history: &History,
+    (selected, timestamp): (usize, Option<i64>),
+    (mark, unit): (&str, &str),
+) {
+    let start = history_legend_start(selected, history.series.len(), area.height);
+    let rows = history
+        .series
+        .iter()
+        .enumerate()
+        .skip(start)
+        .take(usize::from(area.height));
+    let values = rows
+        .clone()
+        .map(|(_, series)| {
+            history_series_value(series, timestamp, mark).map_or_else(|| "—".into(), |value| history_value(value, unit))
+        })
+        .collect::<Vec<_>>();
+    let width = values
+        .iter()
+        .map(|value| Line::raw(value.as_str()).width())
+        .max()
+        .unwrap_or(0) as u16;
+    let [labels, numbers] = Layout::horizontal([
+        Constraint::Min(area.width.min(4)),
+        Constraint::Length(width.saturating_add(1)),
+    ])
+    .areas(area);
+    for (row, ((index, series), value)) in rows.zip(values).enumerate() {
         let hidden = history.hidden.contains(&series.id);
-        if !hidden && !series.points.is_empty() {
-            visible.push((index, series));
-        }
-        if !(start..start + rows).contains(&index) {
-            continue;
-        }
         let color = history_color(index);
         let arrow = if index == selected { "›" } else { " " };
         let swatch = if hidden { "○" } else { "●" };
         let provider =
             quotaline_catalog::definition(&series.provider).map_or(series.provider.as_str(), |provider| provider.name);
         let name = format!("{provider} · {}", series.label).replace(char::is_control, "");
-        let name = name.fg(color);
-        let name = if index == selected { name.bold() } else { name };
-        let name = if hidden { name.dim() } else { name };
-        frame.render_widget(
-            Line::from(vec![Span::raw(format!("{arrow}{swatch} ")).fg(color), name]),
-            Rect::new(area.x, area.y + (index - start) as u16, area.width, 1),
-        );
+        let line = Line::from(vec![Span::raw(format!("{arrow}{swatch} ")), Span::raw(name)]).fg(color);
+        let line = if index == selected { line.bold() } else { line };
+        let line = if hidden { line.dim() } else { line };
+        let row = area.y + row as u16;
+        frame.render_widget(line, Rect::new(labels.x, row, labels.width, 1));
+        let value = Line::raw(value).fg(color).right_aligned();
+        let value = if hidden { value.dim() } else { value };
+        frame.render_widget(value, Rect::new(numbers.x, row, numbers.width, 1));
     }
-    visible
+}
+
+fn history_series_value(series: &Series, timestamp: Option<i64>, mark: &str) -> Option<f64> {
+    let Some(timestamp) = timestamp else {
+        return series.points.iter().rfind(|point| !point.3).map(|point| point.1);
+    };
+    let index = series.points.partition_point(|point| point.0 < timestamp);
+    let &(after, next_value, _, carried) = series.points.get(index)?;
+    if after == timestamp {
+        return (!(mark == "bars" && carried)).then_some(next_value);
+    }
+    let &(before, value, _, _) = series.points.get(index.checked_sub(1)?)?;
+    match mark {
+        "stepLine" => Some(value),
+        "line" => Some(value + (next_value - value) * ((timestamp - before) as f64 / (after - before) as f64)),
+        _ => None,
+    }
 }
 
 fn history_color(index: usize) -> Color {
@@ -344,61 +494,49 @@ fn draw_history_reading(
     frame: &mut Frame<'_>,
     area: Rect,
     series: &Series,
-    position: (Option<usize>, usize),
-    unit: &str,
-    time: (&TimeZone, &str),
-) -> Option<(i64, f64)> {
-    let (reading, index) = position;
-    let mut readings = series.points.iter().filter(|point| !point.3);
-    let point = match reading {
-        Some(offset) => readings.nth(offset),
-        None => readings.next_back(),
-    };
-    let Some(&(timestamp, value, _, _)) = point else {
-        frame.render_widget(Line::from("No readings for this series").dim(), area);
-        return None;
-    };
-    let value_label = history_value(value, unit);
-    let summary = if reading.is_some() {
-        let when = history_date(timestamp, time.0, time.1);
-        format!("{when} · {value_label}")
-    } else {
-        format!("Latest {value_label}")
+    (index, timestamp): (usize, Option<i64>),
+    (mark, unit, zone, reading_format): (&str, &str, &TimeZone, &str),
+    hidden: bool,
+) {
+    let value = history_series_value(series, timestamp, mark);
+    let summary = match (timestamp, hidden, value) {
+        (Some(timestamp), _, value) => {
+            let when = history_date(timestamp, zone, reading_format);
+            let value = value.map_or_else(|| "—".into(), |value| history_value(value, unit));
+            format!("{when} · {value}")
+        }
+        (None, true, _) => "Series hidden · v to show it".into(),
+        (None, false, Some(value)) => format!("Latest {}", history_value(value, unit)),
+        (None, false, None) => "No readings for this series".into(),
     };
     frame.render_widget(Line::from(summary).fg(history_color(index)).bold(), area);
-    reading.map(|_| (timestamp, value))
 }
 
 fn draw_history_chart(
     frame: &mut Frame<'_>,
     area: Rect,
-    history: &History,
+    view: &HistoryView,
     visible: &[(usize, &Series)],
-    position: (usize, Option<(i64, f64)>),
-    presentation: (Option<&MetricDefinition>, &str, &TimeZone),
+    position: (usize, Option<(i64, Option<f64>)>),
+    zone: &TimeZone,
 ) {
     let (selected, cursor) = position;
-    let (definition, unit, zone) = presentation;
-    let mark = definition.map_or("line", |definition| definition.mark.as_str());
-    let stacked = history.stacked && definition.is_some_and(|definition| definition.stackable);
-    let upper = history_upper(visible, stacked, unit);
-    let [body, timeline] = Layout::vertical([Constraint::Min(0), Constraint::Length(1)]).areas(area);
-    let ratios = [1.0, 0.75, 0.5, 0.25, 0.0];
-    let ticks = ratios.map(|ratio| history_tick(upper * ratio, unit));
-    let width = ticks.iter().map(String::len).fold(0, usize::max) as u16 + 1;
-    let [axis, plot] = Layout::horizontal([Constraint::Length(width), Constraint::Min(0)]).areas(body);
+    let history = &view.data;
+    let mark = view.mark();
+    let [axis, plot, timeline] = view.geometry(area);
+    let upper = view.upper;
+    let ratios = history_tick_ratios();
     let tick_stride = if axis.height >= 9 { 1 } else { 4 };
     let plot_rows = f64::from(axis.height.saturating_sub(1));
-    for (ratio, tick) in ratios.into_iter().zip(ticks).step_by(tick_stride) {
+    for (ratio, tick) in ratios.into_iter().zip(&view.ticks).step_by(tick_stride) {
         let row = ((1.0 - ratio) * plot_rows).round() as u16;
         frame.render_widget(
-            Line::from(tick).dim(),
+            Line::from(tick.as_str()).dim(),
             Rect::new(axis.x, axis.y + row, axis.width, axis.height.min(1)),
         );
     }
 
-    let start = history.start as f64;
-    let end = (history.end as f64).max(start + 1.0);
+    let [start, end] = history_bounds(history);
     let canvas = Canvas::default()
         .x_bounds([start, end])
         .y_bounds([0.0, upper])
@@ -421,7 +559,7 @@ fn draw_history_chart(
                 draw_history_bars(
                     context,
                     visible,
-                    (start, end, plot.width, stacked),
+                    (start, end, plot.width, view.stacked),
                     (selected, cursor.map(|(timestamp, _)| timestamp)),
                 );
             } else {
@@ -432,7 +570,7 @@ fn draw_history_chart(
                 {
                     draw_history_line(context, &series.points, history_color(index), mark == "stepLine", upper);
                 }
-                if let Some((timestamp, value)) = cursor {
+                if let Some((timestamp, Some(value))) = cursor {
                     context.print(
                         timestamp as f64,
                         value.clamp(0.0, upper),
@@ -452,6 +590,15 @@ fn draw_history_chart(
             .right_aligned(),
         last,
     );
+}
+
+fn history_tick_ratios() -> [f64; 5] {
+    [1.0, 0.75, 0.5, 0.25, 0.0]
+}
+
+fn history_bounds(history: &History) -> [f64; 2] {
+    let start = history.start as f64;
+    [start, (history.end as f64).max(start + 1.0)]
 }
 
 fn history_tick(value: f64, unit: &str) -> String {

@@ -1,13 +1,13 @@
 //! Runs the dashboard in an alternate terminal screen.
 
-use ratatui::{Terminal, backend::TermionBackend};
+use ratatui::{Terminal, backend::TermionBackend, layout::Rect};
 use rustix::{
     event::{PollFd, PollFlags, Timespec, poll},
     io::{dup, retry_on_intr},
 };
 use std::{
     fs::File,
-    io::{self, IsTerminal, Read},
+    io::{self, IsTerminal, Read, Write},
     sync::{
         Arc,
         atomic::{AtomicBool, Ordering},
@@ -20,7 +20,7 @@ use termion::{raw::IntoRawMode, screen::IntoAlternateScreen};
 
 use super::Source;
 use crate::{
-    dashboard::Dashboard,
+    dashboard::{Dashboard, HistoryMouse},
     desktop::{Backend, Command, Output, State},
     keys::{Action, Keys},
     pages::{self, Page},
@@ -47,6 +47,10 @@ pub(crate) fn run(source: Source) -> io::Result<()> {
         .into_raw_mode()?
         .into_alternate_screen()?;
     let mut terminal = Terminal::new(TermionBackend::new(output))?;
+    let mut mouse = MouseTracking {
+        output: File::from(dup(io::stdout())?),
+        active: false,
+    };
     let source_label = match &source {
         Source::Desktop => String::new(),
         Source::Local(LocalSnapshot::File(path)) => path.to_string_lossy().replace(char::is_control, ""),
@@ -82,7 +86,16 @@ pub(crate) fn run(source: Source) -> io::Result<()> {
         }
 
         let size = terminal.size()?;
-        if redraw || last_size != Some(size) {
+        let area = Rect::new(0, 0, size.width, size.height);
+        let track_mouse = dashboard.page() == Page::History && !dashboard.editing();
+        let resized = last_size != Some(size);
+        if resized || (mouse.active && !track_mouse) {
+            dashboard.history_mouse(HistoryMouse::Leave, area);
+        }
+        if track_mouse != mouse.active {
+            mouse.set(track_mouse)?;
+        }
+        if redraw || resized {
             terminal.draw(|frame| dashboard.draw(frame, &source_label))?;
             last_size = Some(size);
             redraw = false;
@@ -94,6 +107,10 @@ pub(crate) fn run(source: Source) -> io::Result<()> {
             tv_nsec: 100_000_000,
         };
         if retry_on_intr(|| poll(&mut reader, Some(&timeout)))? == 0 {
+            if keys.cancel_escape(dashboard.editing()) {
+                dashboard.edit(27);
+                redraw = true;
+            }
             continue;
         }
         let mut byte = [0];
@@ -101,8 +118,17 @@ pub(crate) fn run(source: Source) -> io::Result<()> {
         if byte[0] == 3 {
             break;
         }
+        let (action, canceled) = keys.push(byte[0], dashboard.editing());
+        if canceled {
+            dashboard.edit(27);
+            redraw = true;
+        }
+        let Some(action) = action else {
+            continue;
+        };
         if dashboard.editing() {
-            if let Some(text) = dashboard.edit(byte[0])
+            if let Action::Edit(byte) = action
+                && let Some(text) = dashboard.edit(byte)
                 && let Some(command) = dashboard.parse(&text)
             {
                 send(&jobs, &mut dashboard, command)?;
@@ -110,9 +136,6 @@ pub(crate) fn run(source: Source) -> io::Result<()> {
             redraw = true;
             continue;
         }
-        let Some(action) = keys.push(byte[0]) else {
-            continue;
-        };
         let command = match action {
             Action::Quit => break,
             Action::Reload => {
@@ -135,6 +158,8 @@ pub(crate) fn run(source: Source) -> io::Result<()> {
                 .selected_provider()
                 .map(|provider| Command::SignIn(provider.into())),
             Action::History(shift) => Some(dashboard.history_shift(shift)),
+            Action::Mouse(event) if mouse.active => dashboard.history_mouse(event, area),
+            Action::Mouse(_) | Action::Edit(_) => None,
         };
         if let Some(command) = command {
             send(&jobs, &mut dashboard, command)?;
@@ -142,6 +167,32 @@ pub(crate) fn run(source: Source) -> io::Result<()> {
         redraw = true;
     }
     Ok(())
+}
+
+struct MouseTracking {
+    output: File,
+    active: bool,
+}
+
+impl MouseTracking {
+    fn set(&mut self, active: bool) -> io::Result<()> {
+        if active {
+            self.active = true;
+            self.output.write_all(b"\x1b[?1006h\x1b[?1003h")
+        } else {
+            self.output.write_all(b"\x1b[?1003l\x1b[?1006l")?;
+            self.active = false;
+            Ok(())
+        }
+    }
+}
+
+impl Drop for MouseTracking {
+    fn drop(&mut self) {
+        if self.active {
+            let _ = self.set(false);
+        }
+    }
 }
 
 fn send(jobs: &mpsc::Sender<Job>, dashboard: &mut Dashboard, command: Command) -> io::Result<()> {
