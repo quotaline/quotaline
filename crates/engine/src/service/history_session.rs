@@ -1,24 +1,24 @@
-//! Combines Rust-owned history navigation with chart retrieval for the Shell.
+//! Combines history navigation with chart retrieval.
 
 use super::*;
+use crate::history_view::history_view;
 use quotaline_analytics::HistoryAction;
 use quotaline_settings::sync_history_settings;
 
-impl Bus {
-    pub(super) async fn history_view(&self, raw_action: &str, time_zone: &str, offset: i32) -> fdo::Result<String> {
+impl Engine {
+    pub async fn history_view(&self, raw_action: &str, time_zone: &str, offset: i32) -> Result<String, Error> {
         if !(-86_399..=86_399).contains(&offset) {
-            return Err(fdo::Error::InvalidArgs("Invalid time zone offset".into()));
+            return Err(Error::InvalidArgs("Invalid time zone offset".into()));
         }
-        let action: HistoryAction =
-            serde_json::from_str(raw_action).map_err(|error| fdo::Error::InvalidArgs(error.to_string()))?;
+        let action: HistoryAction = serde_json::from_str(raw_action).map_err(invalid)?;
         let now = (Timestamp::now().as_millisecond() as f64 / 1_000.0).ceil();
         let (view, rollup, settings, selected, changed) = {
-            let mut inner = self.0.inner.lock().await;
+            let mut inner = self.inner.lock().await;
             let mut session = inner.history_session.clone();
             session.update_zone(time_zone.into(), offset);
             action
                 .apply(&mut session, now)
-                .map_err(|error| fdo::Error::InvalidArgs(error.into()))?;
+                .map_err(|error| Error::InvalidArgs(error.into()))?;
             let mut settings = inner.settings.clone();
             let changed = sync_history_settings(&session, &mut settings);
             if changed {
@@ -31,7 +31,7 @@ impl Bus {
             (view, rollup, settings, selected, changed)
         };
         if changed {
-            self.0.emit().await;
+            self.emit().await;
         }
         let history = blocking(|| {
             if view.metric == "usage" {

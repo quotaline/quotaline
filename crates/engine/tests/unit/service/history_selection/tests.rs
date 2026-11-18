@@ -10,6 +10,6 @@ fn history_selection_returns_the_final_reading_after_queued_events() {
 #[test]
 fn history_selection_rejects_invalid_indices() {
     for (count, selected) in [(-1, -1), (3, -2), (3, 3)] {
-        assert!(matches!(step(count, selected, &[1]), Err(fdo::Error::InvalidArgs(_))));
+        assert!(matches!(step(count, selected, &[1]), Err(Error::InvalidArgs(_))));
     }
 }

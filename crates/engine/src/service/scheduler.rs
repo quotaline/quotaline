@@ -2,7 +2,7 @@
 
 use super::*;
 
-impl App {
+impl Engine {
     pub(super) async fn scheduled(&self) {
         let due = {
             let inner = self.inner.lock().await;
@@ -143,52 +143,6 @@ impl App {
             idle_threshold: self.idle_seconds as f64,
             now: epoch(),
         }
-    }
-
-    pub(super) async fn watch_power_profiles(&self) -> zbus::Result<()> {
-        let connection = zbus::Connection::system().await?;
-        let proxy = zbus::Proxy::new(
-            &connection,
-            "org.freedesktop.UPower.PowerProfiles",
-            "/org/freedesktop/UPower/PowerProfiles",
-            "org.freedesktop.UPower.PowerProfiles",
-        )
-        .await?;
-        let active = proxy.receive_property_changed::<String>("ActiveProfile").await;
-        let degraded = proxy.receive_property_changed::<String>("PerformanceDegraded").await;
-        futures_util::stream::select(
-            active.map(|change| Ok::<_, zbus::Error>((true, change))),
-            degraded.map(|change| Ok::<_, zbus::Error>((false, change))),
-        )
-        .take_until(self.power_stop.notified())
-        .try_for_each(|(is_profile, change)| async move {
-            let value = change.get().await;
-            let mut inner = self.inner.lock().await;
-            let previous = if is_profile {
-                inner.power_saver
-            } else {
-                inner.thermal_pressure
-            };
-            let throttled = value.map_or(previous, |value| {
-                if is_profile {
-                    value == "power-saver"
-                } else {
-                    value == "high-operating-temperature"
-                }
-            });
-            if previous != throttled {
-                if is_profile {
-                    inner.power_saver = throttled;
-                } else {
-                    inner.thermal_pressure = throttled;
-                }
-                self.client
-                    .set_local_scan_throttled(inner.power_saver || inner.thermal_pressure);
-                self.schedule_changed.notify_one();
-            }
-            Ok(())
-        })
-        .await
     }
 
     pub(super) async fn scan_claude(&self) {

@@ -2165,6 +2165,7 @@ name = "quotaline-engine"
 version = "0.2.0"
 dependencies = [
  "base64 0.23.1",
+ "futures-util",
  "hex",
  "iana-time-zone",
  "jiff",
@@ -2179,12 +2180,15 @@ dependencies = [
  "quotaline-credential-sources",
  "quotaline-credentials",
  "quotaline-cursor",
+ "quotaline-demo",
+ "quotaline-export",
  "quotaline-gemini",
  "quotaline-history",
  "quotaline-http",
  "quotaline-logging",
  "quotaline-notifications",
  "quotaline-quota",
+ "quotaline-refresh",
  "quotaline-settings",
  "quotaline-setup",
  "quotaline-status-bar",

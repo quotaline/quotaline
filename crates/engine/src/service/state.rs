@@ -1,10 +1,10 @@
 //! Reads the current service snapshot for the GNOME adapter.
 
 use super::*;
-use quotaline_engine::state::{StateInput, project};
+use crate::state::{StateInput, project};
 
-impl App {
-    pub(super) async fn state(&self) -> String {
+impl Engine {
+    pub async fn state(&self) -> String {
         let inner = self.inner.lock().await;
         project(StateInput {
             settings: &inner.settings,

@@ -1,13 +1,13 @@
-//! Holds planned notices until GNOME Shell is active to receive them.
+//! Holds planned notices until the front end is ready to show them.
 
 use quotaline_notifications::Event;
 use std::collections::VecDeque;
 
-pub(super) struct Planned {
-    pub(super) provider: String,
-    pub(super) event: Event,
-    pub(super) sign_in: Option<String>,
-    pub(super) fetched_at: i64,
+pub struct Planned {
+    pub provider: String,
+    pub event: Event,
+    pub sign_in: Option<String>,
+    pub fetched_at: i64,
 }
 
 pub(super) struct NotificationQueue<const CAPACITY: usize>(VecDeque<Planned>);
@@ -37,5 +37,5 @@ impl<const CAPACITY: usize> NotificationQueue<CAPACITY> {
 }
 
 #[cfg(test)]
-#[path = "../tests/unit/notification_queue/tests.rs"]
+#[path = "../../tests/unit/service/notification_queue/tests.rs"]
 mod tests;

@@ -2,8 +2,8 @@
 
 use super::*;
 
-impl App {
-    pub(super) async fn refresh(&self, requested: &str) -> bool {
+impl Engine {
+    pub async fn refresh(&self, requested: &str) -> bool {
         if requested != "all" && !IDS.contains(&requested) {
             return false;
         }
@@ -108,14 +108,8 @@ impl App {
                 ProviderFailureKind::Failed => refresh::FetchOutcome::Failed,
             },
         };
-        let connection = self.inner.lock().await.connection.clone();
-        let twelve_hour = match &connection {
-            Some(connection) if fetched == refresh::FetchOutcome::RateLimited => {
-                self.twelve_hour_clock(connection).await
-            }
-            _ => false,
-        };
-        let clock = quotaline_engine::clock::SessionClock::new(jiff::tz::TimeZone::system(), twelve_hour);
+        let twelve_hour = fetched == refresh::FetchOutcome::RateLimited && self.host.twelve_hour_clock().await;
+        let clock = crate::clock::SessionClock::new(jiff::tz::TimeZone::system(), twelve_hour);
         let (detailed, planned) = {
             let mut inner = self.inner.lock().await;
             inner.running.remove(id);
@@ -256,7 +250,7 @@ impl App {
             inner.statuses.insert(id.into(), status);
             inner.notified.trim();
             // Queued with the state change, so a reader that sees the new reading also sees its notifications.
-            let planned = (!notifications.is_empty()).then(|| inner.connection.clone().expect("service is registered"));
+            let planned = !notifications.is_empty();
             inner.pending_notifications.extend(notifications);
             (
                 inner
@@ -276,8 +270,8 @@ impl App {
         if let Some(message) = detailed {
             self.log("debug", "refresh", &message).await;
         }
-        if let Some(connection) = planned {
-            let _: zbus::Result<()> = Bus::notification_planned(&emitter(&connection)).await;
+        if planned {
+            self.host.notification_planned().await;
         }
         self.schedule_changed.notify_one();
         self.emit().await;

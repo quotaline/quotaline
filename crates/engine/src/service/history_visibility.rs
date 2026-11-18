@@ -1,14 +1,13 @@
-//! Persists shared History visibility after Shell events.
+//! Persists shared History visibility changes.
 
 use super::*;
 use quotaline_analytics::VisibilityAction;
 
-impl Bus {
-    pub(super) async fn history_visibility(&self, raw_action: &str) -> fdo::Result<String> {
-        let action: VisibilityAction =
-            serde_json::from_str(raw_action).map_err(|error| fdo::Error::InvalidArgs(error.to_string()))?;
+impl Engine {
+    pub async fn history_visibility(&self, raw_action: &str) -> Result<String, Error> {
+        let action: VisibilityAction = serde_json::from_str(raw_action).map_err(invalid)?;
         let (hidden, shown, changed) = {
-            let mut inner = self.0.inner.lock().await;
+            let mut inner = self.inner.lock().await;
             let mut visibility = inner.history_visibility.clone();
             let (changed, shown) = action.apply(&mut visibility, "global");
             let hidden = visibility.hidden("global");
@@ -22,7 +21,7 @@ impl Bus {
             (hidden, shown, changed)
         };
         if changed {
-            self.0.emit().await;
+            self.emit().await;
         }
         Ok(json!({"hidden": hidden, "shown": shown}).to_string())
     }
