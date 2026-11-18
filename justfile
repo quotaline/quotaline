@@ -287,12 +287,13 @@ ci-source: lint lint-docs lint-deps test-unit
 ci: lint lint-docs lint-deps coverage coverage-crates coverage-macos-ffi
 
 # Package the GNOME extension
+# A plain zip matches `gnome-extensions pack` for an extension without schemas or translations, so packaging needs no
+# GNOME Shell install.
 pack: extension-build
-    mkdir -p {{ tmp }}
-    rm -rf target/extension-stage
+    rm -rf target/extension-stage target/{{ uuid }}.shell-extension.zip
     cp -LR {{ extension_build }} target/extension-stage
     rm -rf target/extension-stage/tests
-    TMPDIR={{ tmp }} gnome-extensions pack target/extension-stage --out-dir target --force --extra-source=src --extra-source=icons --extra-source=privacy.html --extra-source=notices.html --extra-source=provider-setup.html
+    cd target/extension-stage && zip -qrX ../{{ uuid }}.shell-extension.zip .
 
 release-package: build pack
     rm -rf target/release-image
