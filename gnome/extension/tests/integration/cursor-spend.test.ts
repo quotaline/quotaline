@@ -1,6 +1,7 @@
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import Shell from 'gi://Shell';
+import {closeInstantly, openInstantly} from '../../src/menu-animation.js';
 import {buttonLabel, clickButton, failure, findActor, indicator as getIndicator, required} from '../support/actors.js';
 import {afterPaint, waitOrFail} from '../support/shell-events.js';
 
@@ -8,7 +9,7 @@ export async function run() {
     try {
         const indicator = getIndicator();
         if (!indicator) throw new Error('Quotaline indicator is missing');
-        indicator.menu.open(false);
+        openInstantly(indicator.menu);
         const root = findActor(indicator.menu.box, actor => actor.has_style_class_name?.('tmb-root'));
         const spend = () => findActor(root, actor => actor.has_style_class_name?.('tmb-spend'));
         if (!root) throw new Error('Cursor spend control did not reach Usage');
@@ -58,7 +59,7 @@ export async function run() {
                 );
             });
         }
-        indicator.menu.close(false);
+        closeInstantly(indicator.menu);
     } finally {
         const directory = GLib.getenv('TMB_JS_COVERAGE_DIR');
         if (directory) {

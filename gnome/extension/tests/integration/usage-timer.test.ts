@@ -1,13 +1,13 @@
 import GLib from 'gi://GLib';
-import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+import {closeInstantly, openInstantly} from '../../src/menu-animation.js';
 import {accessibleName, findActor, indicator as getIndicator, required} from '../support/actors.js';
-import {waitOrFail} from '../support/shell-events.js';
+import {hideOverview, waitOrFail} from '../support/shell-events.js';
 
 export async function run() {
     const original = GLib.timeout_add_seconds;
     const originalAge = GLib.timeout_add;
     try {
-        Main.overview.hide();
+        await hideOverview();
         const indicator = required(getIndicator());
         await waitOrFail(() => accessibleName(indicator)?.includes('CC 5h'), 'The extension did not load demo usage');
         let tick: GLib.SourceFunc | undefined;
@@ -22,7 +22,7 @@ export async function run() {
             return id;
         };
         try {
-            indicator.menu.open(false);
+            openInstantly(indicator.menu);
         } finally {
             GLib.timeout_add_seconds = original;
             GLib.timeout_add = originalAge;
@@ -44,7 +44,7 @@ export async function run() {
             () => updated.text !== 'Outdated',
             'The header age timer did not fetch the current visible age',
         );
-        indicator.menu.close(false);
+        closeInstantly(indicator.menu);
     } finally {
         GLib.timeout_add_seconds = original;
         GLib.timeout_add = originalAge;

@@ -3,6 +3,7 @@ import GLib from 'gi://GLib';
 import Shell from 'gi://Shell';
 import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+import {closeInstantly, openInstantly} from '../../src/menu-animation.js';
 import type {TestActor} from '../support/actors.js';
 import {
     buttonLabel,
@@ -83,7 +84,7 @@ export async function run() {
                 'Organization panel item did not reach the center',
             );
         }
-        indicator.menu.open(false);
+        openInstantly(indicator.menu);
         const root = required(findActor(indicator.menu.box, actor => actor.has_style_class_name?.('tmb-root')));
         if (centered)
             await waitOrFail(() => root.width >= 790, 'Centered organization card did not use the wide layout');
@@ -152,7 +153,7 @@ export async function run() {
             () => cardBadges(root)?.join() === 'Pro,profile@example.com,Example Team',
             'Restoring privacy did not restore account chips',
         );
-        indicator.menu.close(false);
+        closeInstantly(indicator.menu);
     } finally {
         const directory = GLib.getenv('TMB_JS_COVERAGE_DIR');
         if (directory) {

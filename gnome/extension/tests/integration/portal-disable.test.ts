@@ -1,11 +1,9 @@
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
-import {ExtensionState} from 'resource:///org/gnome/shell/misc/extensionUtils.js';
-import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+import {openInstantly} from '../../src/menu-animation.js';
 import {buttonLabel, clickButton, findActor, indicator as getIndicator, required} from '../support/actors.js';
-import {afterPaint, waitOrFail} from '../support/shell-events.js';
-
-const UUID = 'quotaline@bernat.tech';
+import {disableExtension} from '../support/extension.js';
+import {afterPaint, hideOverview, waitOrFail} from '../support/shell-events.js';
 
 function waitFor(check: () => unknown) {
     return waitOrFail(check, 'Pending save dialog prevented extension shutdown');
@@ -38,19 +36,17 @@ function waitForMarker(path: string) {
 
 export async function run() {
     try {
-        Main.overview.hide();
+        await hideOverview();
         const indicator = getIndicator();
         if (!indicator) throw new Error('Quotaline indicator is missing');
-        indicator.menu.open(false);
+        openInstantly(indicator.menu);
         await waitFor(() => findActor(indicator.menu.box, actor => actor.accessible_name === 'Settings'));
         clickButton(required(findActor(indicator.menu.box, actor => actor.accessible_name === 'Settings')));
         await waitFor(() => findActor(indicator.menu.box, actor => buttonLabel(actor) === 'Export all history CSV…'));
         clickButton(required(findActor(indicator.menu.box, actor => buttonLabel(actor) === 'Export all history CSV…')));
         await waitFor(() => GLib.file_test(required(GLib.getenv('TMB_PORTAL_MARKER')), GLib.FileTest.EXISTS));
         await afterPaint();
-        if (!Main.extensionManager.disableExtension(UUID))
-            throw new Error('Extension did not disable during a pending save dialog');
-        await waitFor(() => Main.extensionManager.lookup(UUID).state === ExtensionState.INACTIVE && !getIndicator());
+        await disableExtension('Extension did not disable during a pending save dialog');
         if (GLib.getenv('TMB_PORTAL_WAIT_CLOSE') === '1') {
             GLib.file_set_contents(required(GLib.getenv('TMB_PORTAL_DISABLED')), '');
             await waitForMarker(required(GLib.getenv('TMB_PORTAL_CLOSED')));

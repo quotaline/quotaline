@@ -1,6 +1,7 @@
 import Clutter from 'gi://Clutter';
 import GLib from 'gi://GLib';
 import St from 'gi://St';
+import {closeInstantly, openInstantly} from '../../src/menu-animation.js';
 import {clickButton, findActor, indicator as getIndicator, instance, optionalInstance} from '../support/actors.js';
 import {afterPaint, waitOrFail} from '../support/shell-events.js';
 
@@ -17,7 +18,7 @@ export async function run() {
     try {
         const indicator = getIndicator();
         if (!indicator) throw new Error('Quotaline indicator is missing');
-        indicator.menu.open(false);
+        openInstantly(indicator.menu);
         const settings = findActor(
             indicator.menu.box,
             actor => actor.accessible_name === 'Settings' && actor.has_style_class_name?.('tmb-tab'),
@@ -47,7 +48,7 @@ export async function run() {
             () => currentText() === 'z',
             `Ctrl+A did not pass through to the model filter: ${currentText()}`,
         );
-        indicator.menu.close(false);
+        closeInstantly(indicator.menu);
     } finally {
         const directory = GLib.getenv('TMB_JS_COVERAGE_DIR');
         if (directory) {

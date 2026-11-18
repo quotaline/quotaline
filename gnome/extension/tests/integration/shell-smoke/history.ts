@@ -3,6 +3,7 @@ import Clutter from 'gi://Clutter';
 import GLib from 'gi://GLib';
 import Pango from 'gi://Pango';
 import St from 'gi://St';
+import {closeInstantly, openInstantly} from '../../../src/menu-animation.js';
 import type {TestActor} from '../../support/actors.js';
 import {
     accessibleName,
@@ -143,7 +144,7 @@ export async function run({
         const [, scrollY] = required(root.get_children()[1]).get_transformed_position();
         if (nextY + nextReading.height > scrollY + required(root.get_children()[1]).height)
             throw new Error('History reading controls are clipped by the footer');
-        indicator.menu.close(false);
+        closeInstantly(indicator.menu);
         openWithFastClock();
         await afterPaint(() => {});
         const historyBeforeTick = findActor(root, actor => actor.has_style_class_name?.('tmb-chart'));
@@ -151,8 +152,8 @@ export async function run({
             () => findActor(root, actor => actor.has_style_class_name?.('tmb-chart')) !== historyBeforeTick,
             'Open History menu did not reload on its minute timer',
         );
-        indicator.menu.close(false);
-        indicator.menu.open(false);
+        closeInstantly(indicator.menu);
+        openInstantly(indicator.menu);
         await afterPaint(() => {});
         const page = contentOf(root.get_children()[1]);
         const chart = findActor(page, actor => actor.has_style_class_name?.('tmb-chart'));

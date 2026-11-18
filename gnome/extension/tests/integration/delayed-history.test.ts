@@ -1,6 +1,6 @@
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
-import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+import {closeInstantly, openInstantly} from '../../src/menu-animation.js';
 import {
     buttonLabel,
     clickButton,
@@ -10,7 +10,8 @@ import {
     indicator as getIndicator,
     required,
 } from '../support/actors.js';
-import {waitOrFail} from '../support/shell-events.js';
+import {disableExtension} from '../support/extension.js';
+import {hideOverview, waitOrFail} from '../support/shell-events.js';
 
 function waitFor(check: () => unknown) {
     return waitOrFail(check, 'Delayed History response did not reach the menu');
@@ -76,10 +77,10 @@ function waitForHistoryCall() {
 
 export async function run() {
     try {
-        Main.overview.hide();
+        await hideOverview();
         const indicator = getIndicator();
         if (!indicator) throw new Error('Quotaline indicator is missing');
-        indicator.menu.open(false);
+        openInstantly(indicator.menu);
         await waitFor(() => containsText(indicator.menu.box, 'Cost history error'));
         clickButton(required(findActor(indicator.menu.box, actor => actor.accessible_name === 'History')));
         await waitFor(() => containsText(indicator.menu.box, 'Loading history'));
@@ -93,10 +94,9 @@ export async function run() {
         await waitFor(() => containsText(indicator.menu.box, 'History unavailable'));
         clickButton(required(findActor(indicator.menu.box, actor => buttonLabel(actor) === 'Retry')));
         await waitForHistoryCall();
-        indicator.menu.close(false);
+        closeInstantly(indicator.menu);
         await afterPaint();
-        if (!Main.extensionManager.disableExtension('quotaline@bernat.tech') || getIndicator())
-            throw new Error('Disabling with a pending History reply left the panel item behind');
+        await disableExtension('Disabling with a pending History reply left the panel item behind');
         await releaseHistory();
         await new Promise<void>(resolve =>
             GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {

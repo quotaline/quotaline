@@ -1,10 +1,10 @@
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import Shell from 'gi://Shell';
-import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+import {closeInstantly, openInstantly} from '../../src/menu-animation.js';
 import type {TestActor} from '../support/actors.js';
 import {clickButton, containsText, failure, findActor, indicator as getIndicator, required} from '../support/actors.js';
-import {afterPaint, waitOrFail} from '../support/shell-events.js';
+import {afterPaint, hideOverview, waitOrFail} from '../support/shell-events.js';
 
 async function capture(root: TestActor) {
     const directory = GLib.getenv('TMB_SCREENSHOT_DIR');
@@ -36,10 +36,10 @@ async function capture(root: TestActor) {
 
 export async function run() {
     try {
-        Main.overview.hide();
+        await hideOverview();
         const indicator = getIndicator();
         if (!indicator) throw new Error('Quotaline indicator is missing');
-        indicator.menu.open(false);
+        openInstantly(indicator.menu);
         const root = findActor(indicator.menu.box, actor => actor.has_style_class_name?.('tmb-root'));
         if (!root) throw new Error('Claude did not explain why usage credits are off');
         await waitOrFail(
@@ -87,7 +87,7 @@ export async function run() {
         }
         await afterPaint();
         await capture(root);
-        indicator.menu.close(false);
+        closeInstantly(indicator.menu);
     } finally {
         const directory = GLib.getenv('TMB_JS_COVERAGE_DIR');
         if (directory) {

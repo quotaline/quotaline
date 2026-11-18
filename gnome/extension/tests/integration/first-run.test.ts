@@ -2,7 +2,9 @@ import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import Shell from 'gi://Shell';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+import {closeInstantly} from '../../src/menu-animation.js';
 import {buttonLabel, clickButton, failure, findActor, indicator as getIndicator, required} from '../support/actors.js';
+import {disableExtension, enableExtension} from '../support/extension.js';
 import {afterPaint, waitOrFail} from '../support/shell-events.js';
 
 export async function run() {
@@ -156,13 +158,11 @@ export async function run() {
             clickButton(required(findActor(card(), actor => buttonLabel(actor) === 'Got it')));
             await waitOrFail(() => !card(), 'Got it did not dismiss the first-run card');
         }
-        indicator.menu.close(false);
+        closeInstantly(indicator.menu);
         if (detected) {
             await waitOrFail(() => !Main.layoutManager._startingUp, 'GNOME Shell did not finish startup');
-            if (!Main.extensionManager.disableExtension('quotaline@bernat.tech'))
-                throw new Error('The first-run extension did not disable');
-            if (!Main.extensionManager.enableExtension('quotaline@bernat.tech'))
-                throw new Error('The first-run extension did not re-enable');
+            await disableExtension('The first-run extension did not disable');
+            await enableExtension('The first-run extension did not re-enable');
             const reloaded = required(getIndicator());
             await waitOrFail(
                 () =>
@@ -175,7 +175,7 @@ export async function run() {
                     ),
                 'First-run guidance did not open after Shell startup',
             );
-            reloaded.menu.close(false);
+            closeInstantly(reloaded.menu);
         }
     } finally {
         const directory = GLib.getenv('TMB_JS_COVERAGE_DIR');

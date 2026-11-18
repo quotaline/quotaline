@@ -1,6 +1,6 @@
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
-import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+import {closeInstantly, openInstantly} from '../../src/menu-animation.js';
 import {
     accessibleName,
     buttonLabel,
@@ -11,9 +11,8 @@ import {
     required,
 } from '../support/actors.js';
 import {proxyCalls, proxyFactory} from '../support/dbus.js';
-import {waitOrFail} from '../support/shell-events.js';
-
-const UUID = 'quotaline@bernat.tech';
+import {disableExtension, enableExtension} from '../support/extension.js';
+import {hideOverview, waitOrFail} from '../support/shell-events.js';
 
 export async function run() {
     const originalCreate = proxyFactory.new_for_bus;
@@ -22,7 +21,7 @@ export async function run() {
     const originalCall = proxyCalls.call;
     const originalLaunch = Gio.AppInfo.launch_default_for_uri.bind(Gio.AppInfo);
     try {
-        Main.overview.hide();
+        await hideOverview();
         await waitOrFail(() => accessibleName(getIndicator())?.includes('CC 5h'), 'The initial extension did not load');
         let pendingProxy: (() => void) | null = null;
         proxyFactory.new_for_bus = function (...args) {
@@ -37,27 +36,24 @@ export async function run() {
             }
             originalCreate.apply(this, args);
         };
-        if (!Main.extensionManager.disableExtension(UUID) || !Main.extensionManager.enableExtension(UUID))
-            throw new Error('The extension did not restart for a delayed proxy');
+        await disableExtension('The extension did not stop for a delayed proxy');
+        await enableExtension('The extension did not restart for a delayed proxy');
         await waitOrFail(() => pendingProxy, 'The proxy callback did not arrive');
-        if (!Main.extensionManager.disableExtension(UUID) || getIndicator())
-            throw new Error('The delayed proxy left its panel item installed');
+        await disableExtension('The delayed proxy left its panel item installed');
         required<() => void>(pendingProxy)();
         proxyFactory.new_for_bus = originalCreate;
-        if (!Main.extensionManager.enableExtension(UUID))
-            throw new Error('The extension did not recover after a delayed proxy');
+        await enableExtension('The extension did not recover after a delayed proxy');
         await waitOrFail(
             () => accessibleName(getIndicator())?.includes('CC 5h'),
             'The extension did not recover after a delayed proxy',
         );
-        if (!Main.extensionManager.disableExtension(UUID)) throw new Error('The extension did not disable');
+        await disableExtension('The extension did not disable');
         Gio.DBusProxy.new_for_bus_finish = () => {
             throw new Error('Fixture proxy initialization failed');
         };
-        if (!Main.extensionManager.enableExtension(UUID)) throw new Error('The extension did not enable');
-        const indicator = getIndicator();
-        if (!indicator) throw new Error('The extension did not restore its panel item');
-        indicator.menu.open(false);
+        await enableExtension('The extension did not restore its panel item');
+        const indicator = required(getIndicator());
+        openInstantly(indicator.menu);
         await waitOrFail(
             () => containsText(indicator.menu.box, 'Fixture proxy initialization failed'),
             'The proxy setup failure was not explained in the menu',
@@ -76,26 +72,23 @@ export async function run() {
         if (!decodeURIComponent(draft).includes('Quotaline service unavailable.'))
             throw new Error('Report issue did not open an offline draft after proxy failure');
         Gio.AppInfo.launch_default_for_uri = originalLaunch;
-        indicator.menu.close(false);
-        if (!Main.extensionManager.disableExtension(UUID) || getIndicator())
-            throw new Error('The failed proxy left its panel item behind after disable');
+        closeInstantly(indicator.menu);
+        await disableExtension('The failed proxy left its panel item behind after disable');
         Gio.DBusProxy.new_for_bus_finish = original;
         proxyCalls.connect = function (this: Gio.DBusProxy, signal, callback) {
             if (signal === 'g-signal' && this.g_interface_name === 'tech.bernat.Quotaline.Gnome')
                 throw new Error('Fixture signal connection failed');
             return originalConnect.call(this, signal, callback);
         };
-        if (!Main.extensionManager.enableExtension(UUID))
-            throw new Error('The extension did not enable after the proxy setup failure');
+        await enableExtension('The extension did not enable after the proxy setup failure');
         const partial = required(getIndicator());
-        partial.menu.open(false);
+        openInstantly(partial.menu);
         await waitOrFail(
             () => containsText(partial.menu.box, 'Fixture signal connection failed'),
             'The proxy signal failure was not explained in the menu',
         );
-        partial.menu.close(false);
-        if (!Main.extensionManager.disableExtension(UUID) || getIndicator())
-            throw new Error('The partial proxy setup left its panel item behind');
+        closeInstantly(partial.menu);
+        await disableExtension('The partial proxy setup left its panel item behind');
         proxyCalls.connect = originalConnect;
         let pendingPanelCall: (() => void) | null = null;
         proxyCalls.call = function (method, ...args) {
@@ -107,14 +100,12 @@ export async function run() {
             }
             originalCall.call(this, method, ...args);
         };
-        if (!Main.extensionManager.enableExtension(UUID))
-            throw new Error('The extension did not enable for the pending panel call');
+        await enableExtension('The extension did not enable for the pending panel call');
         await waitOrFail(
             () => accessibleName(getIndicator())?.includes('CC 5h'),
             'The extension did not load before its pending panel call',
         );
-        if (!Main.extensionManager.disableExtension(UUID) || getIndicator())
-            throw new Error('The pending panel call kept the panel item installed');
+        await disableExtension('The pending panel call kept the panel item installed');
         required<() => void>(pendingPanelCall)();
     } finally {
         proxyFactory.new_for_bus = originalCreate;

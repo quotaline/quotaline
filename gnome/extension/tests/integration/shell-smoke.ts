@@ -2,9 +2,9 @@ import Clutter from 'gi://Clutter';
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import St from 'gi://St';
-import * as BoxPointer from 'resource:///org/gnome/shell/ui/boxpointer.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import {QuickMenuToggle} from 'resource:///org/gnome/shell/ui/quickSettings.js';
+import {closeInstantly, openInstantly} from '../../src/menu-animation.js';
 import type {PanelState} from '../../src/service-state.js';
 import {statusIconTone} from '../../src/status-presentation.js';
 import type {TestActor} from '../support/actors.js';
@@ -54,14 +54,14 @@ async function runScenario() {
     const addSeconds = GLib.timeout_add_seconds;
     if (demoPhase !== 'settings' && demoPhase !== 'formats') {
         const quick = required(Main.panel.statusArea.quickSettings);
-        quick.menu.open(BoxPointer.PopupAnimation.NONE);
+        openInstantly(quick.menu);
         await waitOrFail(
             () => containsText(quick.menu.box, 'Quotaline'),
             'Snapshot widget is missing from Quick Settings',
         );
         const widget = findActor(quick.menu.box, actor => actor.title === 'Quotaline' && actor.menu, QuickMenuToggle);
         if (!widget) throw new Error('Snapshot widget has no Quick Settings menu');
-        widget.menu.open(BoxPointer.PopupAnimation.NONE);
+        openInstantly(widget.menu);
         await waitOrFail(
             () =>
                 widget.menu.actor.visible &&
@@ -168,7 +168,7 @@ async function runScenario() {
             await setSetting('has_custom_selection', false);
             await setSetting('show_as', 'used');
         }
-        widget.menu.close(BoxPointer.PopupAnimation.NONE);
+        closeInstantly(widget.menu);
         const icon = new Gio.FileIcon({
             file: Main.extensionManager.lookup(UUID).dir.get_child('icons').get_child('quotaline-symbolic.svg'),
         });
@@ -177,7 +177,7 @@ async function runScenario() {
             icon,
             () => {},
         );
-        probe.toggle.menu.open(BoxPointer.PopupAnimation.NONE);
+        openInstantly(probe.toggle.menu);
         await waitOrFail(
             () => containsText(probe.toggle.menu.box, 'Open Quotaline to start tracking.'),
             'Empty snapshot should invite first-time tracking',
@@ -256,14 +256,14 @@ async function runScenario() {
             !containsText(probe.toggle.menu.box, 'Claude · Current session')
         )
             throw new Error('Unknown widget size did not use a readable fallback');
-        probe.toggle.menu.close(BoxPointer.PopupAnimation.NONE);
+        closeInstantly(probe.toggle.menu);
         snapshot.settings.widget_size = 'medium';
         required(snapshot.snapshot_rows[0]).reset = new Date(Date.now() + 61000).toISOString();
         probe.update(snapshot);
         GLib.timeout_add_seconds = (priority, interval, callback) =>
             addSeconds(priority, interval === 60 ? 1 : interval, callback);
         try {
-            probe.toggle.menu.open(BoxPointer.PopupAnimation.NONE);
+            openInstantly(probe.toggle.menu);
         } finally {
             GLib.timeout_add_seconds = addSeconds;
         }
@@ -274,10 +274,10 @@ async function runScenario() {
             'Snapshot countdown did not update while Quick Settings stayed open',
         );
         probe.destroy();
-        quick.menu.close(BoxPointer.PopupAnimation.NONE);
+        closeInstantly(quick.menu);
         clickButton(widget);
     } else {
-        indicator.menu.open(false);
+        openInstantly(indicator.menu);
     }
     await waitOrFail(() => indicator.menu.isOpen, 'Quick Settings tile did not open Quotaline');
     if (!indicator.menu.isOpen) throw new Error('Quotaline menu did not open');
@@ -323,7 +323,7 @@ async function runScenario() {
         GLib.timeout_add_seconds = (priority, interval, callback) =>
             addSeconds(priority, interval === 60 ? 1 : interval, callback);
         try {
-            indicator.menu.open(false);
+            openInstantly(indicator.menu);
         } finally {
             GLib.timeout_add_seconds = addSeconds;
         }

@@ -2,8 +2,10 @@ import Clutter from 'gi://Clutter';
 import GLib from 'gi://GLib';
 import {ExtensionState} from 'resource:///org/gnome/shell/misc/extensionUtils.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+import {openInstantly} from '../../src/menu-animation.js';
 import {clickButton, findActor, indicator as getIndicator} from '../support/actors.js';
-import {waitOrFail} from '../support/shell-events.js';
+import {disableExtension, enableExtension} from '../support/extension.js';
+import {hideOverview, waitOrFail} from '../support/shell-events.js';
 
 const UUID = 'quotaline@bernat.tech';
 
@@ -13,10 +15,10 @@ function waitFor(check: () => unknown) {
 
 export async function run() {
     try {
-        Main.overview.hide();
+        await hideOverview();
         const indicator = getIndicator();
         if (!indicator) throw new Error('Quotaline indicator is missing');
-        indicator.menu.open(false);
+        openInstantly(indicator.menu);
         const quit = findActor(indicator.menu.box, actor => actor.accessible_name === 'Quit');
         if (!quit) throw new Error('Quit control is missing from the menu footer');
         if (!global.settings.get_strv('enabled-extensions').includes(UUID))
@@ -61,12 +63,8 @@ export async function run() {
             }
             await waitFor(() => Main.extensionManager.lookup(UUID).state === ExtensionState.ACTIVE);
             if (getIndicator()) throw new Error('Unlocking restarted the panel after Quit');
-            if (!Main.extensionManager.disableExtension(UUID))
-                throw new Error('GNOME Extensions could not disable the quit extension');
-            await waitFor(() => Main.extensionManager.lookup(UUID).state === ExtensionState.INACTIVE);
-            if (!Main.extensionManager.enableExtension(UUID))
-                throw new Error('GNOME Extensions could not re-enable the quit extension');
-            await waitFor(() => Main.extensionManager.lookup(UUID).state === ExtensionState.ACTIVE && getIndicator());
+            await disableExtension('GNOME Extensions could not disable the quit extension');
+            await enableExtension('GNOME Extensions could not re-enable the quit extension');
         }
     } finally {
         const directory = GLib.getenv('TMB_JS_COVERAGE_DIR');

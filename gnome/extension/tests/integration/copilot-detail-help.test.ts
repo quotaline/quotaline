@@ -3,6 +3,7 @@ import GLib from 'gi://GLib';
 import Shell from 'gi://Shell';
 import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+import {closeInstantly, openInstantly} from '../../src/menu-animation.js';
 import type {TestActor} from '../support/actors.js';
 import {
     buttonLabel,
@@ -19,7 +20,7 @@ export async function run() {
     try {
         const indicator = getIndicator();
         if (!indicator) throw new Error('Quotaline indicator is missing');
-        indicator.menu.open(false);
+        openInstantly(indicator.menu);
         const root = findActor(indicator.menu.box, actor => actor.has_style_class_name?.('tmb-root'));
         const disclosure = () => findActor(root, actor => buttonLabel(actor)?.includes('Details (1)'));
         await waitOrFail(() => disclosure(), 'Copilot provider details did not load');
@@ -83,7 +84,7 @@ export async function run() {
                 });
             });
         }
-        indicator.menu.close(false);
+        closeInstantly(indicator.menu);
         await waitOrFail(() => !tooltip(), 'Copilot detail explanation stayed visible after closing the menu');
     } finally {
         const directory = GLib.getenv('TMB_JS_COVERAGE_DIR');

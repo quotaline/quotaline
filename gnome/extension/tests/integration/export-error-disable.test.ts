@@ -1,7 +1,6 @@
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
-import {ExtensionState} from 'resource:///org/gnome/shell/misc/extensionUtils.js';
-import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+import {openInstantly} from '../../src/menu-animation.js';
 import {
     accessibleName,
     buttonLabel,
@@ -10,17 +9,16 @@ import {
     indicator as getIndicator,
     required,
 } from '../support/actors.js';
-import {afterPaint, waitOrFail} from '../support/shell-events.js';
-
-const UUID = 'quotaline@bernat.tech';
+import {disableExtension} from '../support/extension.js';
+import {afterPaint, hideOverview, waitOrFail} from '../support/shell-events.js';
 
 export async function run() {
     const subscribe = Gio.DBus.session.signal_subscribe.bind(Gio.DBus.session);
     try {
-        Main.overview.hide();
+        await hideOverview();
         await waitOrFail(() => accessibleName(getIndicator())?.includes('CC 5h'), 'The extension did not load');
         const indicator = required(getIndicator());
-        indicator.menu.open(false);
+        openInstantly(indicator.menu);
         await waitOrFail(
             () => findActor(indicator.menu.box, actor => actor.accessible_name === 'Settings'),
             'Settings did not load',
@@ -45,12 +43,7 @@ export async function run() {
         };
         clickButton(required(findActor(indicator.menu.box, actor => buttonLabel(actor) === 'Export all history CSV…')));
         if (!response.rejected) throw new Error('The save dialog did not subscribe to its response');
-        if (!Main.extensionManager.disableExtension(UUID))
-            throw new Error('The extension did not disable after the save dialog failed');
-        await waitOrFail(
-            () => Main.extensionManager.lookup(UUID).state === ExtensionState.INACTIVE && !getIndicator(),
-            'The failed save dialog kept the panel item installed',
-        );
+        await disableExtension('The failed save dialog kept the panel item installed');
     } finally {
         Gio.DBus.session.signal_subscribe = subscribe;
         const directory = GLib.getenv('TMB_JS_COVERAGE_DIR');

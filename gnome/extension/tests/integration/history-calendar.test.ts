@@ -1,6 +1,7 @@
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import St from 'gi://St';
+import {closeInstantly, openInstantly} from '../../src/menu-animation.js';
 import type {HistoryAction, HistoryView, HistoryViewResponse} from '../../src/service-state.js';
 import {
     buttonLabel,
@@ -86,7 +87,7 @@ export async function run() {
         };
         const indicator = getIndicator();
         if (!indicator) throw new Error('Quotaline indicator is missing');
-        indicator.menu.open(false);
+        openInstantly(indicator.menu);
         const root = findActor(indicator.menu.box, actor => actor.has_style_class_name?.('tmb-root'));
         if (!root) throw new Error('Quotaline menu is missing');
         clickButton(required(findActor(root, actor => actor.accessible_name === 'History')));
@@ -271,7 +272,7 @@ export async function run() {
         )
             throw new Error('Daily Today did not page to the previous UTC day');
         await click('→');
-        indicator.menu.close(false);
+        closeInstantly(indicator.menu);
     } finally {
         proxyCalls.call = original;
         const directory = GLib.getenv('TMB_JS_COVERAGE_DIR');

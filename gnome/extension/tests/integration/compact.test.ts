@@ -2,6 +2,7 @@ import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import Shell from 'gi://Shell';
 import St from 'gi://St';
+import {closeInstantly, openInstantly} from '../../src/menu-animation.js';
 import type {TestActor} from '../support/actors.js';
 import {
     buttonLabel,
@@ -84,7 +85,7 @@ export async function run() {
     try {
         const indicator = getIndicator();
         if (!indicator) throw new Error('Compact menu bar indicator is missing');
-        indicator.menu.open(false);
+        openInstantly(indicator.menu);
         await waitFor(
             () => findActor(indicator.menu.box, actor => actor.has_style_class_name?.('tmb-root')),
             'Compact menu did not open',
@@ -519,7 +520,7 @@ export async function run() {
                 throw new Error('Middle-width notification events do not wrap within the menu');
         }
         await capture('settings-compact');
-        indicator.menu.close(false);
+        closeInstantly(indicator.menu);
     } finally {
         const directory = GLib.getenv('TMB_JS_COVERAGE_DIR');
         if (directory) {

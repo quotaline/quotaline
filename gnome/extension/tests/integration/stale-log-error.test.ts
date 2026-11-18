@@ -1,6 +1,6 @@
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
-import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+import {closeInstantly, openInstantly} from '../../src/menu-animation.js';
 import {
     accessibleName,
     buttonLabel,
@@ -10,13 +10,13 @@ import {
     required,
 } from '../support/actors.js';
 import {proxyCalls} from '../support/dbus.js';
-import {afterPaint, waitOrFail} from '../support/shell-events.js';
+import {afterPaint, hideOverview, waitOrFail} from '../support/shell-events.js';
 
 export async function run() {
     const call = proxyCalls.call;
     const finish = proxyCalls.call_finish;
     try {
-        Main.overview.hide();
+        await hideOverview();
         await waitOrFail(() => accessibleName(getIndicator())?.includes('CC 5h'), 'The extension did not load');
         const indicator = required(getIndicator());
         let pendingLog: (() => void) | null = null;
@@ -29,26 +29,26 @@ export async function run() {
             }
             call.call(this, method, ...args);
         };
-        indicator.menu.open(false);
+        openInstantly(indicator.menu);
         await waitOrFail(
             () => findActor(indicator.menu.box, actor => actor.accessible_name === 'Settings'),
             'Settings did not load',
         );
         clickButton(required(findActor(indicator.menu.box, actor => actor.accessible_name === 'Settings')));
         await waitOrFail(() => pendingLog, 'Settings did not request the log');
-        indicator.menu.close(false);
+        closeInstantly(indicator.menu);
         proxyCalls.call = call;
         proxyCalls.call_finish = () => {
             throw new Error('Fixture delayed log failure');
         };
         required<() => void>(pendingLog)();
         proxyCalls.call_finish = finish;
-        indicator.menu.open(false);
+        openInstantly(indicator.menu);
         await afterPaint();
         if (findActor(indicator.menu.box, actor => actor.text?.includes('Fixture delayed log failure')))
             throw new Error('A discarded log request showed its delayed error');
-        indicator.menu.close(false);
-        indicator.menu.open(false);
+        closeInstantly(indicator.menu);
+        openInstantly(indicator.menu);
         clickButton(required(findActor(indicator.menu.box, actor => actor.accessible_name === 'Settings')));
         await waitOrFail(
             () => findActor(indicator.menu.box, actor => buttonLabel(actor) === 'Show full log'),
@@ -66,7 +66,7 @@ export async function run() {
                 args[4] = (...values) => {
                     callback(...values);
                     completed = true;
-                    indicator.menu.close(false);
+                    closeInstantly(indicator.menu);
                 };
             }
             call.call(this, method, ...args);

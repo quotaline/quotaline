@@ -2,9 +2,9 @@ import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import Shell from 'gi://Shell';
 import St from 'gi://St';
-import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+import {closeInstantly, openInstantly} from '../../src/menu-animation.js';
 import {clickButton, failure, findActor, indicator as getIndicator, instance, required} from '../support/actors.js';
-import {waitOrFail} from '../support/shell-events.js';
+import {hideOverview, waitOrFail} from '../support/shell-events.js';
 
 async function afterPaint(action = () => {}) {
     await new Promise<void>(resolve => {
@@ -42,15 +42,15 @@ async function capture(name: string) {
 
 export async function run() {
     try {
-        Main.overview.hide();
+        await hideOverview();
         const indicator = getIndicator();
         if (!indicator) throw new Error('Quotaline indicator is missing');
-        indicator.menu.open(false);
+        openInstantly(indicator.menu);
         await waitOrFail(
             () => findActor(indicator.menu.box, actor => actor.get_text?.() === 'No usage available'),
             'The provider state did not load in the menu',
         );
-        indicator.menu.close(false);
+        closeInstantly(indicator.menu);
         const proxy = Gio.DBusProxy.new_for_bus_sync(
             Gio.BusType.SESSION,
             Gio.DBusProxyFlags.NONE,
@@ -119,7 +119,7 @@ export async function run() {
         } finally {
             Gio.AppInfo.launch_default_for_uri = originalLaunch;
         }
-        indicator.menu.close(false);
+        closeInstantly(indicator.menu);
         Gio.AppInfo.launch_default_for_uri = () => true;
         try {
             for (const destination of ['Usage', null] as const) {
@@ -151,7 +151,7 @@ export async function run() {
                             ),
                         ),
                     );
-                else indicator.menu.close(false);
+                else closeInstantly(indicator.menu);
                 await afterPaint();
                 await afterPaint();
                 if (
@@ -163,7 +163,7 @@ export async function run() {
                     )
                 )
                     throw new Error('Pending provider scroll changed the selected tab');
-                indicator.menu.close(false);
+                closeInstantly(indicator.menu);
             }
         } finally {
             Gio.AppInfo.launch_default_for_uri = originalLaunch;

@@ -1,13 +1,13 @@
 import GLib from 'gi://GLib';
-import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+import {closeInstantly, openInstantly} from '../../src/menu-animation.js';
 import {accessibleName, clickButton, findActor, indicator as getIndicator, required} from '../support/actors.js';
 import {proxyCalls} from '../support/dbus.js';
-import {waitOrFail} from '../support/shell-events.js';
+import {hideOverview, waitOrFail} from '../support/shell-events.js';
 
 export async function run() {
     const call = proxyCalls.call;
     try {
-        Main.overview.hide();
+        await hideOverview();
         await waitOrFail(() => accessibleName(getIndicator())?.includes('CC 5h'), 'The extension did not load');
         const indicator = required(getIndicator());
         let releaseHistory: (() => void) | null = null;
@@ -23,7 +23,7 @@ export async function run() {
             }
             call.call(this, method, parameters, flags, timeout, cancellable, callback);
         };
-        indicator.menu.open(false);
+        openInstantly(indicator.menu);
         await waitOrFail(
             () => findActor(indicator.menu.box, actor => actor.accessible_name === 'History'),
             'The History tab did not load',
@@ -40,7 +40,7 @@ export async function run() {
             !findActor(indicator.menu.box, actor => actor.has_style_class_name?.('tmb-card'))
         )
             throw new Error('A late History reply replaced the Usage page');
-        indicator.menu.close(false);
+        closeInstantly(indicator.menu);
     } finally {
         proxyCalls.call = call;
         const directory = GLib.getenv('TMB_JS_COVERAGE_DIR');

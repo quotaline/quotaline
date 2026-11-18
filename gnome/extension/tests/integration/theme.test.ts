@@ -2,9 +2,9 @@ import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import Shell from 'gi://Shell';
 import St from 'gi://St';
-import * as BoxPointer from 'resource:///org/gnome/shell/ui/boxpointer.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import {QuickMenuToggle} from 'resource:///org/gnome/shell/ui/quickSettings.js';
+import {closeInstantly, openInstantly} from '../../src/menu-animation.js';
 import type {Indicator} from '../../src/panel.js';
 import {
     clickButton,
@@ -16,7 +16,7 @@ import {
     optionalInstance,
     required,
 } from '../support/actors.js';
-import {waitOrFail} from '../support/shell-events.js';
+import {hideOverview, waitOrFail} from '../support/shell-events.js';
 
 function luminance(color: readonly number[]) {
     return color.reduce((sum, value, index) => {
@@ -99,7 +99,7 @@ export async function run() {
     const previousScheme = interfaceSettings.get_string('color-scheme');
     const previousContrast = accessibilitySettings.get_boolean('high-contrast');
     try {
-        Main.overview.hide();
+        await hideOverview();
         const mode = GLib.getenv('TMB_THEME_MODE');
         accessibilitySettings.set_boolean('high-contrast', mode === 'high-contrast');
         interfaceSettings.set_string('color-scheme', mode === 'light' ? 'prefer-light' : 'prefer-dark');
@@ -118,7 +118,7 @@ export async function run() {
         }
         const indicator = getIndicator();
         if (!indicator) throw new Error('Quotaline indicator is missing');
-        indicator.menu.open(false);
+        openInstantly(indicator.menu);
         await waitFor(
             () =>
                 findActor(
@@ -169,8 +169,7 @@ export async function run() {
             if (luminance([foreground.red, foreground.green, foreground.blue]) > 0.18)
                 throw new Error('Selected tab text stayed light on a light background');
         }
-        Main.overview.hide();
-        await waitFor(() => !Main.overview.visible);
+        await hideOverview();
         await capture(`usage-${mode}.png`);
         clickButton(required(findActor(indicator.menu.box, actor => actor.accessible_name === 'Settings')));
         await waitFor(() =>
@@ -249,13 +248,13 @@ export async function run() {
             );
         }, 'History layout did not fit the menu width');
         await capture(`history-${mode}.png`);
-        indicator.menu.close(false);
+        closeInstantly(indicator.menu);
         const quick = required(Main.panel.statusArea.quickSettings);
-        quick.menu.open(BoxPointer.PopupAnimation.NONE);
+        openInstantly(quick.menu);
         const widget = required(
             findActor(quick.menu.box, actor => actor.title === 'Quotaline' && actor.menu, QuickMenuToggle),
         );
-        widget.menu.open(BoxPointer.PopupAnimation.NONE);
+        openInstantly(widget.menu);
         await waitFor(
             () =>
                 widget.menu.box.opacity === 255 &&
@@ -276,7 +275,7 @@ export async function run() {
         );
         if ((required(higher) + 0.05) / (required(lower) + 0.05) < 4.5)
             throw new Error(`${mode} snapshot value has low contrast on ${surface.to_string()}`);
-        quick.menu.close(BoxPointer.PopupAnimation.NONE);
+        closeInstantly(quick.menu);
     } finally {
         accessibilitySettings.set_boolean('high-contrast', previousContrast);
         interfaceSettings.set_string('color-scheme', previousScheme);

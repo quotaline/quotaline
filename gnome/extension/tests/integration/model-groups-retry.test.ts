@@ -1,6 +1,6 @@
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
-import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+import {closeInstantly, openInstantly} from '../../src/menu-animation.js';
 import {
     accessibleName,
     buttonLabel,
@@ -10,7 +10,7 @@ import {
     indicator as getIndicator,
     required,
 } from '../support/actors.js';
-import {waitOrFail} from '../support/shell-events.js';
+import {hideOverview, waitOrFail} from '../support/shell-events.js';
 
 function enableActivity() {
     return new Promise<void>((resolve, reject) => {
@@ -38,10 +38,10 @@ function enableActivity() {
 
 export async function run() {
     try {
-        Main.overview.hide();
+        await hideOverview();
         const indicator = getIndicator();
         if (!indicator) throw new Error('Quotaline indicator is missing');
-        indicator.menu.open(false);
+        openInstantly(indicator.menu);
         await waitOrFail(
             () => findActor(indicator.menu.box, actor => actor.accessible_name === 'Settings'),
             'Settings tab did not appear',
@@ -61,7 +61,7 @@ export async function run() {
         );
         if (findActor(indicator.menu.box, actor => actor.text?.startsWith('Model list unavailable:')))
             throw new Error('Model request failure remained after retry');
-        indicator.menu.close(false);
+        closeInstantly(indicator.menu);
     } finally {
         const directory = GLib.getenv('TMB_JS_COVERAGE_DIR');
         if (directory) {

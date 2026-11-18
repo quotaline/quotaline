@@ -3,6 +3,7 @@ import GLib from 'gi://GLib';
 import Shell from 'gi://Shell';
 import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+import {closeInstantly, openInstantly} from '../../../src/menu-animation.js';
 import type {Indicator} from '../../../src/panel.js';
 import type {LogEntry, ServiceState, StatusCell} from '../../../src/service-state.js';
 import {statusCells} from '../../../src/status-cells.js';
@@ -218,7 +219,7 @@ export async function captureStatus(name: string) {
     const indicator = required(getIndicator());
     const wasOpen = indicator.menu.isOpen;
     if (wasOpen) {
-        indicator.menu.close(false);
+        closeInstantly(indicator.menu);
         indicator.set_hover(false);
         await afterPaint(() => {});
     }
@@ -249,7 +250,7 @@ export async function captureStatus(name: string) {
             );
         });
     } finally {
-        if (wasOpen) indicator.menu.open(false);
+        if (wasOpen) openInstantly(indicator.menu);
     }
 }
 

@@ -2,9 +2,9 @@ import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import Shell from 'gi://Shell';
 import St from 'gi://St';
-import * as BoxPointer from 'resource:///org/gnome/shell/ui/boxpointer.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import {QuickMenuToggle} from 'resource:///org/gnome/shell/ui/quickSettings.js';
+import {closeInstantly, openInstantly} from '../../src/menu-animation.js';
 import {
     clickButton,
     failure,
@@ -14,7 +14,8 @@ import {
     optionalInstance,
     required,
 } from '../support/actors.js';
-import {waitOrFail} from '../support/shell-events.js';
+import {disableExtension} from '../support/extension.js';
+import {hideOverview, waitOrFail} from '../support/shell-events.js';
 
 async function capture(name: string) {
     const directory = GLib.getenv('TMB_SCREENSHOT_DIR');
@@ -41,8 +42,7 @@ async function capture(name: string) {
 
 export async function run() {
     try {
-        Main.overview.hide();
-        await waitOrFail(() => !Main.overview.visible, 'GNOME overview did not close');
+        await hideOverview();
         const light = GLib.getenv('TMB_THEME_MODE') === 'light';
         if (light) {
             new Gio.Settings({schema_id: 'org.gnome.desktop.interface'}).set_string('color-scheme', 'prefer-light');
@@ -54,11 +54,11 @@ export async function run() {
         const indicator = getIndicator();
         if (!indicator) throw new Error('Quotaline indicator is missing');
         const quick = required(Main.panel.statusArea.quickSettings);
-        quick.menu.open(BoxPointer.PopupAnimation.NONE);
+        openInstantly(quick.menu);
         const widget = required(
             findActor(quick.menu.box, actor => actor.title === 'Quotaline' && actor.menu, QuickMenuToggle),
         );
-        widget.menu.open(BoxPointer.PopupAnimation.NONE);
+        openInstantly(widget.menu);
         await waitOrFail(
             () =>
                 widget.menu.box.opacity === 255 &&
@@ -76,7 +76,7 @@ export async function run() {
                 ),
             'Stale snapshot values or meters are not grey',
         );
-        quick.menu.close(BoxPointer.PopupAnimation.NONE);
+        closeInstantly(quick.menu);
         instance(indicator, St.Widget).set_hover(true);
         await waitOrFail(
             () =>
@@ -93,7 +93,7 @@ export async function run() {
             'One retained limit did not get a compact panel summary',
         );
         instance(indicator, St.Widget).set_hover(false);
-        indicator.menu.open(false);
+        openInstantly(indicator.menu);
         const root = indicator.menu.box;
         const menu = required(findActor(root, actor => actor.has_style_class_name?.('tmb-root')));
         if (!indicator.has_allocation() && (menu.width < 280 || menu.width > global.stage.width - 32))
@@ -233,10 +233,9 @@ export async function run() {
                 'Claude setup action did not return with the Usage card',
             );
             clickButton(required(findActor(root, actor => actor.accessible_name === actionName)));
-            if (!Main.extensionManager.disableExtension('quotaline@bernat.tech') || getIndicator())
-                throw new Error('Disabling during setup navigation left the panel item behind');
+            await disableExtension('Disabling during setup navigation left the panel item behind');
         } else {
-            indicator.menu.close(false);
+            closeInstantly(indicator.menu);
         }
     } finally {
         const directory = GLib.getenv('TMB_JS_COVERAGE_DIR');

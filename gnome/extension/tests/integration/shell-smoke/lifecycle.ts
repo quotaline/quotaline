@@ -1,12 +1,12 @@
 import Clutter from 'gi://Clutter';
 import Gio from 'gi://Gio';
 import St from 'gi://St';
-import {ExtensionState} from 'resource:///org/gnome/shell/misc/extensionUtils.js';
-import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+import {openInstantly} from '../../../src/menu-animation.js';
 import type {TestActor} from '../../support/actors.js';
 import {clickButton, contentOf, indicator as getIndicator, optionalInstance, required} from '../../support/actors.js';
+import {disableExtension, enableExtension} from '../../support/extension.js';
 import type {SmokeContext} from './helpers.js';
-import {afterPaint, capture, findActor, serviceSettings, UUID, waitOrFail} from './helpers.js';
+import {afterPaint, capture, findActor, serviceSettings, waitOrFail} from './helpers.js';
 
 export async function run({root, press, indicator}: Pick<SmokeContext, 'root' | 'press' | 'indicator'>) {
     clickButton(
@@ -60,25 +60,15 @@ export async function run({root, press, indicator}: Pick<SmokeContext, 'root' | 
     await press(Clutter.KEY_Escape);
     await waitOrFail(() => !indicator.menu.isOpen, 'Escape did not close the menu');
     await afterPaint(() => {
-        indicator.menu.open(false);
+        openInstantly(indicator.menu);
     });
-    if (!Main.extensionManager.disableExtension(UUID))
-        throw new Error('Disabling the extension left its panel item behind');
-    await waitOrFail(
-        () => Main.extensionManager.lookup(UUID).state === ExtensionState.INACTIVE && !getIndicator(),
-        'Disabling the extension left its panel item behind',
-    );
-    if (!Main.extensionManager.enableExtension(UUID))
-        throw new Error('Re-enabling the extension did not restore its panel item');
-    await waitOrFail(
-        () => Main.extensionManager.lookup(UUID).state === ExtensionState.ACTIVE && getIndicator(),
-        'Re-enabling the extension did not restore its panel item',
-    );
+    await disableExtension('Disabling the extension left its panel item behind');
+    await enableExtension('Re-enabling the extension did not restore its panel item');
     await afterPaint(() => {});
     for (let cycle = 0; cycle < 2; cycle++) {
         const item = required(getIndicator());
         await afterPaint(() => {
-            item.menu.open(false);
+            openInstantly(item.menu);
         });
         await waitOrFail(
             () =>
@@ -92,23 +82,13 @@ export async function run({root, press, indicator}: Pick<SmokeContext, 'root' | 
             const left = menuRoot.get_transformed_position()[0];
             return menuRoot.width >= 440 && left >= 0 && left + menuRoot.width <= global.stage.width;
         }, `Extension cycle ${cycle} lost the menu layout`);
-        if (!Main.extensionManager.disableExtension(UUID))
-            throw new Error(`Extension cycle ${cycle} left its panel item behind`);
-        await waitOrFail(
-            () => Main.extensionManager.lookup(UUID).state === ExtensionState.INACTIVE && !getIndicator(),
-            `Extension cycle ${cycle} left its panel item behind`,
-        );
-        if (!Main.extensionManager.enableExtension(UUID))
-            throw new Error(`Extension cycle ${cycle} did not restore its panel item`);
-        await waitOrFail(
-            () => Main.extensionManager.lookup(UUID).state === ExtensionState.ACTIVE && getIndicator(),
-            `Extension cycle ${cycle} did not restore its panel item`,
-        );
+        await disableExtension(`Extension cycle ${cycle} left its panel item behind`);
+        await enableExtension(`Extension cycle ${cycle} did not restore its panel item`);
         await afterPaint(() => {});
     }
     const layoutItem = required(getIndicator());
     await afterPaint(() => {
-        layoutItem.menu.open(false);
+        openInstantly(layoutItem.menu);
     });
     clickButton(
         required(
@@ -118,22 +98,7 @@ export async function run({root, press, indicator}: Pick<SmokeContext, 'root' | 
             ),
         ),
     );
-    if (!Main.extensionManager.disableExtension(UUID))
-        throw new Error('Disabling after a tab change left its panel item behind');
-    await waitOrFail(
-        () => Main.extensionManager.lookup(UUID).state === ExtensionState.INACTIVE && !getIndicator(),
-        'Disabling after a tab change left its panel item behind',
-    );
-    if (!Main.extensionManager.enableExtension(UUID))
-        throw new Error('Re-enabling after rapid shutdown did not restore the panel item');
-    await waitOrFail(
-        () => Main.extensionManager.lookup(UUID).state === ExtensionState.ACTIVE && getIndicator(),
-        'Re-enabling after rapid shutdown did not restore the panel item',
-    );
-    if (!Main.extensionManager.disableExtension(UUID))
-        throw new Error('Final extension shutdown left its panel item behind');
-    await waitOrFail(
-        () => Main.extensionManager.lookup(UUID).state === ExtensionState.INACTIVE && !getIndicator(),
-        'Final extension shutdown left its panel item behind',
-    );
+    await disableExtension('Disabling after a tab change left its panel item behind');
+    await enableExtension('Re-enabling after rapid shutdown did not restore the panel item');
+    await disableExtension('Final extension shutdown left its panel item behind');
 }

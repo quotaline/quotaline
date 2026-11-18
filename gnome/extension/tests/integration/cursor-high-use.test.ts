@@ -2,6 +2,7 @@ import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import Shell from 'gi://Shell';
 import St from 'gi://St';
+import {closeInstantly, openInstantly} from '../../src/menu-animation.js';
 import {failure, findActor, indicator as getIndicator, optionalInstance, required} from '../support/actors.js';
 import {waitOrFail} from '../support/shell-events.js';
 
@@ -9,7 +10,7 @@ export async function run() {
     try {
         const indicator = getIndicator();
         if (!indicator) throw new Error('Quotaline indicator is missing');
-        indicator.menu.open(false);
+        openInstantly(indicator.menu);
         const root = findActor(indicator.menu.box, actor => actor.has_style_class_name?.('tmb-root'));
         const quota = () => findActor(root, actor => actor.has_style_class_name?.('tmb-window'));
         if (!root) throw new Error('The exhausted Cursor quota did not reach Usage');
@@ -78,7 +79,7 @@ export async function run() {
                 );
             });
         }
-        indicator.menu.close(false);
+        closeInstantly(indicator.menu);
     } finally {
         const directory = GLib.getenv('TMB_JS_COVERAGE_DIR');
         if (directory) {

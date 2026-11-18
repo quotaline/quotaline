@@ -1,8 +1,9 @@
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
-import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+import {openInstantly} from '../../src/menu-animation.js';
 import type {LogEntry} from '../../src/service-state.js';
 import {clickButton, failure, findActor, indicator as getIndicator} from '../support/actors.js';
+import {hideOverview} from '../support/shell-events.js';
 
 const BUS = 'tech.bernat.Quotaline.Gnome';
 const PATH = '/tech/bernat/Quotaline/Gnome';
@@ -60,10 +61,10 @@ function waitForLog(check: (entries: LogEntry[]) => unknown, action: () => void)
 
 export async function run() {
     try {
-        Main.overview.hide();
+        await hideOverview();
         const indicator = getIndicator();
         if (!indicator) throw new Error('Quotaline indicator is missing');
-        indicator.menu.open(false);
+        openInstantly(indicator.menu);
         await waitForLog(
             entries =>
                 entries.some(

@@ -1,8 +1,8 @@
 import GLib from 'gi://GLib';
-import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+import {closeInstantly, openInstantly} from '../../src/menu-animation.js';
 import type {TestActor} from '../support/actors.js';
 import {clickButton, findActor, indicator as getIndicator, required} from '../support/actors.js';
-import {waitOrFail} from '../support/shell-events.js';
+import {hideOverview, waitOrFail} from '../support/shell-events.js';
 
 function waitFor(check: () => unknown) {
     return waitOrFail(check, 'Metric picker did not reach the menu');
@@ -10,10 +10,10 @@ function waitFor(check: () => unknown) {
 
 export async function run() {
     try {
-        Main.overview.hide();
+        await hideOverview();
         const indicator = getIndicator();
         if (!indicator) throw new Error('Quotaline indicator is missing');
-        indicator.menu.open(false);
+        openInstantly(indicator.menu);
         await waitFor(() => findActor(indicator.menu.box, actor => actor.accessible_name === 'History'));
         clickButton(required(findActor(indicator.menu.box, actor => actor.accessible_name === 'History')));
         await waitFor(() => findActor(indicator.menu.box, actor => actor.accessible_name === 'Metric'));
@@ -32,7 +32,7 @@ export async function run() {
             !findActor(picker, actor => actor.accessible_name === 'Choose metric: usage')
         )
             throw new Error(`Unavailable analytics metrics remained in the picker: ${JSON.stringify(groups)}`);
-        indicator.menu.close(false);
+        closeInstantly(indicator.menu);
     } finally {
         const directory = GLib.getenv('TMB_JS_COVERAGE_DIR');
         if (directory) {

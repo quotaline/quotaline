@@ -1,7 +1,7 @@
 import GLib from 'gi://GLib';
-import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+import {closeInstantly, openInstantly} from '../../src/menu-animation.js';
 import {buttonLabel, clickButton, findActor, indicator as getIndicator, required} from '../support/actors.js';
-import {waitOrFail} from '../support/shell-events.js';
+import {hideOverview, waitOrFail} from '../support/shell-events.js';
 
 function waitFor(check: () => unknown) {
     return waitOrFail(check, 'Selected period export did not finish');
@@ -9,10 +9,10 @@ function waitFor(check: () => unknown) {
 
 export async function run() {
     try {
-        Main.overview.hide();
+        await hideOverview();
         const indicator = getIndicator();
         if (!indicator) throw new Error('Quotaline indicator is missing');
-        indicator.menu.open(false);
+        openInstantly(indicator.menu);
         await waitFor(() => findActor(indicator.menu.box, actor => actor.accessible_name === 'History'));
         clickButton(required(findActor(indicator.menu.box, actor => actor.accessible_name === 'History')));
         await waitFor(() =>
@@ -30,7 +30,7 @@ export async function run() {
             !String.fromCharCode(...bytes.slice(0, 80)).startsWith('timestamp,key,label,used_percent,resets_at')
         )
             throw new Error('Selected period export did not contain usage history');
-        indicator.menu.close(false);
+        closeInstantly(indicator.menu);
     } finally {
         const directory = GLib.getenv('TMB_JS_COVERAGE_DIR');
         if (directory) {

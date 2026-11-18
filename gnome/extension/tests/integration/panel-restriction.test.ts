@@ -5,7 +5,7 @@ import Shell from 'gi://Shell';
 import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import {failure, findActor, indicator as getIndicator, instance, required} from '../support/actors.js';
-import {afterPaint, waitOrFail} from '../support/shell-events.js';
+import {afterPaint, hideOverview, waitOrFail} from '../support/shell-events.js';
 
 function setSetting(key: string, value: unknown) {
     Gio.DBus.session.call_sync(
@@ -50,7 +50,7 @@ export async function run() {
             await orientationScenario();
             return;
         }
-        Main.overview.hide();
+        await hideOverview();
         const indicator = getIndicator();
         if (!indicator) throw new Error('Quotaline indicator is missing');
         const panelCells = required(findActor(indicator, actor => actor.has_style_class_name?.('tmb-panel-cells')));

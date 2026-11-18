@@ -3,6 +3,7 @@ import GLib from 'gi://GLib';
 import Shell from 'gi://Shell';
 import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+import {closeInstantly, openInstantly} from '../../src/menu-animation.js';
 import type {TestActor} from '../support/actors.js';
 import {
     accessibleName,
@@ -14,7 +15,7 @@ import {
     instance,
     required,
 } from '../support/actors.js';
-import {waitOrFail} from '../support/shell-events.js';
+import {hideOverview, waitOrFail} from '../support/shell-events.js';
 
 function waitFor(check: () => unknown, failure: string | (() => string) = 'Settings help did not update') {
     return waitOrFail(check, failure);
@@ -22,10 +23,10 @@ function waitFor(check: () => unknown, failure: string | (() => string) = 'Setti
 
 export async function run() {
     try {
-        Main.overview.hide();
+        await hideOverview();
         const indicator = getIndicator();
         if (!indicator) throw new Error('Quotaline indicator is missing');
-        indicator.menu.open(false);
+        openInstantly(indicator.menu);
         await waitFor(() => findActor(indicator.menu.box, actor => actor.accessible_name === 'Settings'));
         clickButton(required(findActor(indicator.menu.box, actor => actor.accessible_name === 'Settings')));
         const mode = GLib.getenv('TMB_HELP_TARGET') ?? '';
@@ -279,7 +280,7 @@ export async function run() {
                 });
             });
         }
-        indicator.menu.close(false);
+        closeInstantly(indicator.menu);
         await waitFor(
             () =>
                 !findActor(

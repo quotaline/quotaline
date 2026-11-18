@@ -1,8 +1,8 @@
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
-import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+import {closeInstantly, openInstantly} from '../../src/menu-animation.js';
 import {buttonLabel, clickButton, findActor, indicator as getIndicator, required} from '../support/actors.js';
-import {waitOrFail} from '../support/shell-events.js';
+import {hideOverview, waitOrFail} from '../support/shell-events.js';
 
 function waitFor(check: () => unknown) {
     return waitOrFail(check, 'Save dialog control did not reach Settings');
@@ -10,10 +10,10 @@ function waitFor(check: () => unknown) {
 
 export async function run() {
     try {
-        Main.overview.hide();
+        await hideOverview();
         const indicator = getIndicator();
         if (!indicator) throw new Error('Quotaline indicator is missing');
-        indicator.menu.open(false);
+        openInstantly(indicator.menu);
         await waitFor(() => findActor(indicator.menu.box, actor => actor.accessible_name === 'Settings'));
         clickButton(required(findActor(indicator.menu.box, actor => actor.accessible_name === 'Settings')));
         await waitFor(() => findActor(indicator.menu.box, actor => buttonLabel(actor) === 'Export all history CSV…'));
@@ -46,7 +46,7 @@ export async function run() {
             findActor(indicator.menu.box, actor => actor.has_style_class_name?.('tmb-notice'))
         )
             throw new Error('Cancelled save dialog changed the menu or wrote a file');
-        indicator.menu.close(false);
+        closeInstantly(indicator.menu);
     } finally {
         const directory = GLib.getenv('TMB_JS_COVERAGE_DIR');
         if (directory) {

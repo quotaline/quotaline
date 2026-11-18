@@ -1,8 +1,8 @@
 import GLib from 'gi://GLib';
-import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+import {closeInstantly, openInstantly} from '../../src/menu-animation.js';
 import {buttonLabel, clickButton, findActor, indicator as getIndicator, required} from '../support/actors.js';
 import {sessionCalls} from '../support/dbus.js';
-import {waitOrFail} from '../support/shell-events.js';
+import {hideOverview, waitOrFail} from '../support/shell-events.js';
 
 function waitFor(check: () => unknown) {
     return waitOrFail(check, 'Save dialog error did not reach Settings');
@@ -11,10 +11,10 @@ function waitFor(check: () => unknown) {
 export async function run() {
     const call = sessionCalls.call;
     try {
-        Main.overview.hide();
+        await hideOverview();
         const indicator = getIndicator();
         if (!indicator) throw new Error('Quotaline indicator is missing');
-        indicator.menu.open(false);
+        openInstantly(indicator.menu);
         await waitFor(() => findActor(indicator.menu.box, actor => actor.accessible_name === 'Settings'));
         clickButton(required(findActor(indicator.menu.box, actor => actor.accessible_name === 'Settings')));
         await waitFor(() => findActor(indicator.menu.box, actor => buttonLabel(actor) === 'Export all history CSV…'));
@@ -41,7 +41,7 @@ export async function run() {
         );
         if (GLib.file_test(required(GLib.getenv('TMB_EXPORT_PATH')), GLib.FileTest.EXISTS))
             throw new Error('Failed save dialog still wrote an export');
-        indicator.menu.close(false);
+        closeInstantly(indicator.menu);
     } finally {
         sessionCalls.call = call;
         const directory = GLib.getenv('TMB_JS_COVERAGE_DIR');

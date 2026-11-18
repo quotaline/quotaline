@@ -2,6 +2,7 @@ import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import Shell from 'gi://Shell';
 import St from 'gi://St';
+import {closeInstantly, openInstantly} from '../../src/menu-animation.js';
 import {clickButton, failure, findActor, indicator as getIndicator, instance, required} from '../support/actors.js';
 import {readProvider, readProviderSettings, readState} from '../support/dbus.js';
 import {afterPaint, waitOrFail} from '../support/shell-events.js';
@@ -14,7 +15,7 @@ export async function run() {
     try {
         const indicator = getIndicator();
         if (!indicator) throw new Error('Quotaline indicator is missing');
-        indicator.menu.open(false);
+        openInstantly(indicator.menu);
         const root = indicator.menu.box;
         const toggle = () => findActor(root, actor => actor.accessible_name === 'Enable GitHub Copilot');
         const status = () => {
@@ -84,7 +85,7 @@ export async function run() {
                 toggle()?.checked && status() === 'Not configured' && readProviderSettings('copilot').enabled === true,
             'Copilot could not be re-enabled',
         );
-        indicator.menu.close(false);
+        closeInstantly(indicator.menu);
     } finally {
         const directory = GLib.getenv('TMB_JS_COVERAGE_DIR');
         if (directory) {

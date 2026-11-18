@@ -1,5 +1,6 @@
 import GLib from 'gi://GLib';
 import St from 'gi://St';
+import {closeInstantly, openInstantly} from '../../src/menu-animation.js';
 import {findActor, indicator as getIndicator} from '../support/actors.js';
 import {waitOrFail} from '../support/shell-events.js';
 
@@ -7,7 +8,7 @@ export async function run() {
     try {
         const indicator = getIndicator();
         if (!indicator) throw new Error('Quotaline indicator is missing');
-        indicator.menu.open(false);
+        openInstantly(indicator.menu);
         const section = () => findActor(indicator.menu.box, actor => actor.has_style_class_name?.('tmb-cloud-credits'));
         await waitOrFail(() => section(), 'Claude cloud credits did not reach Usage');
         const summary = findActor(section(), actor => actor.has_style_class_name?.('tmb-spend-summary'))?.text;
@@ -22,7 +23,7 @@ export async function run() {
         const fill = findActor(section(), actor => actor.has_style_class_name?.('tmb-meter-fill'), St.Widget);
         if (!fill?.get_style()?.includes('#808080'))
             throw new Error(`Unavailable cloud credit meter is not muted: ${fill?.get_style()}`);
-        indicator.menu.close(false);
+        closeInstantly(indicator.menu);
     } finally {
         const directory = GLib.getenv('TMB_JS_COVERAGE_DIR');
         if (directory) {

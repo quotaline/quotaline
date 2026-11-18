@@ -1,11 +1,10 @@
 import GLib from 'gi://GLib';
 import St from 'gi://St';
-import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import {disableHelperAutoExit} from 'resource:///org/gnome/shell/ui/scripting.js';
+import {closeInstantly} from '../../src/menu-animation.js';
 import {accessibleName, indicator as getIndicator, instance, required} from '../support/actors.js';
+import {disableExtension, enableExtension} from '../support/extension.js';
 import {afterPaint, waitOrFail} from '../support/shell-events.js';
-
-const UUID = 'quotaline@bernat.tech';
 
 export async function run() {
     await disableHelperAutoExit();
@@ -21,10 +20,8 @@ export async function run() {
             for (const key of keys) GLib.unsetenv(key);
             for (const [key, value] of Object.entries(variables)) GLib.setenv(key, value, true);
             if (index === resetBefore) {
-                if (getIndicator() && !Main.extensionManager.disableExtension(UUID))
-                    throw new Error(`Could not disable the extension before ${script}`);
-                if (!Main.extensionManager.enableExtension(UUID))
-                    throw new Error(`Could not enable the extension before ${script}`);
+                if (getIndicator()) await disableExtension(`Could not disable the extension before ${script}`);
+                await enableExtension(`Could not enable the extension before ${script}`);
             }
             const indicator = getIndicator();
             if (!indicator) throw new Error(`Missing extension before ${script}`);
@@ -33,7 +30,7 @@ export async function run() {
                     () => accessibleName(indicator)?.includes(readyText),
                     `Extension status did not reach ${readyText} before ${script}`,
                 );
-            indicator.menu.close(false);
+            closeInstantly(indicator.menu);
             instance(indicator, St.Widget).set_hover(false);
             global.stage.set_key_focus(null);
             await afterPaint();
@@ -51,7 +48,7 @@ export async function run() {
         }
     } finally {
         const indicator = getIndicator();
-        indicator?.menu.close(false);
+        if (indicator) closeInstantly(indicator.menu);
         indicator?.set_hover(false);
         global.stage.set_key_focus(null);
         await afterPaint();

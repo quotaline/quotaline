@@ -1,6 +1,7 @@
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import St from 'gi://St';
+import {closeInstantly, openInstantly} from '../../../src/menu-animation.js';
 import type {HistoryAction, HistoryViewResponse, Window} from '../../../src/service-state.js';
 import type {TestActor} from '../../support/actors.js';
 import {
@@ -48,7 +49,7 @@ export async function run({
     | 'usageStatusColor'
 >) {
     const statusCells = () => panelCells.get_children().filter(actor => actor.has_style_class_name?.('tmb-panel-cell'));
-    indicator.menu.close(false);
+    closeInstantly(indicator.menu);
     openWithFastClock();
     await afterPaint(() => {});
     const usageBeforeTick = findActor(root, actor => actor.has_style_class_name?.('tmb-card'));
@@ -56,8 +57,8 @@ export async function run({
         () => findActor(root, actor => actor.has_style_class_name?.('tmb-card')) !== usageBeforeTick,
         'Open Usage menu did not update on its minute timer',
     );
-    indicator.menu.close(false);
-    indicator.menu.open(false);
+    closeInstantly(indicator.menu);
+    openInstantly(indicator.menu);
     const scroll = instance(required(findActor(root, actor => actor instanceof St.ScrollView)), St.ScrollView);
     const scrollbar = instance(
         required(scroll.get_children().find(actor => actor instanceof St.ScrollBar)),

@@ -1,9 +1,9 @@
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
-import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+import {closeInstantly, openInstantly} from '../../src/menu-animation.js';
 import {buttonLabel, clickButton, findActor, indicator as getIndicator, required} from '../support/actors.js';
 import {sessionCalls} from '../support/dbus.js';
-import {waitOrFail} from '../support/shell-events.js';
+import {hideOverview, waitOrFail} from '../support/shell-events.js';
 
 function waitFor(check: () => unknown) {
     return waitOrFail(check, 'Full history export did not finish');
@@ -15,10 +15,10 @@ export async function run() {
     const sessionCall = sessionCalls.call;
     const signalSubscribe = Gio.DBus.session.signal_subscribe.bind(Gio.DBus.session);
     try {
-        Main.overview.hide();
+        await hideOverview();
         const indicator = getIndicator();
         if (!indicator) throw new Error('Quotaline indicator is missing');
-        indicator.menu.open(false);
+        openInstantly(indicator.menu);
         await waitFor(() => findActor(indicator.menu.box, actor => actor.accessible_name === 'Settings'));
         clickButton(required(findActor(indicator.menu.box, actor => actor.accessible_name === 'Settings')));
         await waitFor(() => findActor(indicator.menu.box, actor => buttonLabel(actor) === 'Export all history CSV…'));
@@ -53,7 +53,7 @@ export async function run() {
         const [loaded, bytes] = GLib.file_get_contents(path);
         if (!loaded || !String.fromCharCode(...bytes.slice(0, 80)).startsWith('kind,timestamp,key,label,used_percent,'))
             throw new Error('Settings export did not write the full history header');
-        indicator.menu.close(false);
+        closeInstantly(indicator.menu);
     } finally {
         sessionCalls.call = sessionCall;
         Gio.DBus.session.signal_subscribe = signalSubscribe;

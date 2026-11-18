@@ -3,9 +3,8 @@ import GLib from 'gi://GLib';
 import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import {failure, findActor, indicator as getIndicator, instance, required} from '../support/actors.js';
-import {afterPaint, waitOrFail} from '../support/shell-events.js';
-
-const UUID = 'quotaline@bernat.tech';
+import {disableExtension} from '../support/extension.js';
+import {afterPaint, hideOverview, waitOrFail} from '../support/shell-events.js';
 
 function call(method: string) {
     return new Promise<void>((resolve, reject) => {
@@ -33,7 +32,7 @@ function call(method: string) {
 
 export async function run() {
     try {
-        Main.overview.hide();
+        await hideOverview();
         const indicator = getIndicator();
         if (!indicator) throw new Error('Quotaline indicator is missing');
         await call('WaitForStateCall');
@@ -49,8 +48,7 @@ export async function run() {
                 ),
             'The panel item did not explain its pending first reading',
         );
-        if (!Main.extensionManager.disableExtension(UUID) || getIndicator())
-            throw new Error('Disabling with a pending state reply left the panel item behind');
+        await disableExtension('Disabling with a pending state reply left the panel item behind');
         await call('ReleaseState');
         await afterPaint();
     } finally {

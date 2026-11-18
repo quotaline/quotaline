@@ -1,7 +1,7 @@
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import Shell from 'gi://Shell';
-import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+import {closeInstantly, openInstantly} from '../../src/menu-animation.js';
 import type {Indicator} from '../../src/panel.js';
 import {
     accessibleName,
@@ -14,7 +14,7 @@ import {
     required,
 } from '../support/actors.js';
 import {proxyCalls} from '../support/dbus.js';
-import {waitOrFail} from '../support/shell-events.js';
+import {hideOverview, waitOrFail} from '../support/shell-events.js';
 
 async function captureMenu(name: string, indicator: Indicator) {
     const directory = GLib.getenv('TMB_SCREENSHOT_DIR');
@@ -67,7 +67,7 @@ export async function run() {
     const call = proxyCalls.call;
     const launchUri = Gio.AppInfo.launch_default_for_uri.bind(Gio.AppInfo);
     try {
-        Main.overview.hide();
+        await hideOverview();
         await waitOrFail(
             () => accessibleName(getIndicator())?.includes('CC 5h'),
             'The extension did not load before service restart',
@@ -94,7 +94,7 @@ export async function run() {
             }
             call.call(this, method, ...args);
         };
-        indicator.menu.open(false);
+        openInstantly(indicator.menu);
         await waitOrFail(
             () => containsText(indicator.menu.box, 'Current session'),
             'The initial provider state did not load',
@@ -129,8 +129,8 @@ export async function run() {
             'Refresh did not explain the disconnected service',
         );
         const beforeReopen = stateRequests;
-        indicator.menu.close(false);
-        indicator.menu.open(false);
+        closeInstantly(indicator.menu);
+        openInstantly(indicator.menu);
         await waitOrFail(
             () => stateRequests > beforeReopen && containsText(indicator.menu.box, 'ServiceUnknown'),
             'Reopening the menu did not preserve the disconnected state',
@@ -156,7 +156,7 @@ export async function run() {
             );
         }, 'The wider provider panel pushed the open menu off screen');
         await captureMenu('service-reconnected', indicator);
-        indicator.menu.close(false);
+        closeInstantly(indicator.menu);
     } finally {
         proxyCalls.call = call;
         Gio.AppInfo.launch_default_for_uri = launchUri;

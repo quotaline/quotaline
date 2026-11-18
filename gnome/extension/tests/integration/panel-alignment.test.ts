@@ -3,6 +3,7 @@ import GLib from 'gi://GLib';
 import Shell from 'gi://Shell';
 import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+import {closeInstantly, openInstantly} from '../../src/menu-animation.js';
 import {
     buttonLabel,
     clickButton,
@@ -12,7 +13,7 @@ import {
     instance,
     required,
 } from '../support/actors.js';
-import {waitOrFail} from '../support/shell-events.js';
+import {hideOverview, waitOrFail} from '../support/shell-events.js';
 
 function afterPaint(action: () => void) {
     return new Promise<void>(resolve => {
@@ -56,7 +57,7 @@ async function capture(name: string) {
 }
 
 async function runScenario() {
-    Main.overview.hide();
+    await hideOverview();
     const indicator = getIndicator();
     if (!indicator) throw new Error('Quotaline indicator is missing');
     const container = indicator.container;
@@ -69,7 +70,7 @@ async function runScenario() {
             centerBox.insert_child_at_index(container, 0);
         });
         await afterPaint(() => {
-            indicator.menu.open(false);
+            openInstantly(indicator.menu);
         });
         const root = required(indicator.menu.box.get_children()[0]);
         if (GLib.getenv('TMB_CENTERED_COMPACT')) {
@@ -267,15 +268,15 @@ async function runScenario() {
         } finally {
             Main.layoutManager.primaryMonitor = monitor;
         }
-        indicator.menu.close(false);
+        closeInstantly(indicator.menu);
     } finally {
         required(Main.panel.statusArea.dateMenu).container.show();
         if (container.get_parent()) required(container.get_parent()).remove_child(container);
         rightBox.insert_child_at_index(container, position);
-        indicator.menu.close(false);
+        closeInstantly(indicator.menu);
     }
     await afterPaint(() => {
-        indicator.menu.open(false);
+        openInstantly(indicator.menu);
     });
     const root = required(indicator.menu.box.get_children()[0]);
     await afterPaint(() => {
@@ -334,7 +335,7 @@ async function runScenario() {
             await capture('menubar-right-settings-bottom-popover');
         }
     }
-    indicator.menu.close(false);
+    closeInstantly(indicator.menu);
     Main.layoutManager.emit('monitors-changed');
     if (indicator.menu.isOpen || getIndicator() !== indicator)
         throw new Error('Monitor update reopened or removed a closed menu');

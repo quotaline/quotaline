@@ -1,13 +1,14 @@
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import Shell from 'gi://Shell';
+import {closeInstantly, openInstantly} from '../../src/menu-animation.js';
 import {failure, findActor, indicator as getIndicator, required} from '../support/actors.js';
 
 export async function run() {
     try {
         const indicator = getIndicator();
         if (!indicator) throw new Error('Quotaline indicator is missing');
-        indicator.menu.open(false);
+        openInstantly(indicator.menu);
         const reset = findActor(indicator.menu.box, actor => actor.has_style_class_name?.('tmb-quota-reset'));
         const expected = GLib.getenv('TMB_EXPECT_RESET_TEXT');
         if (reset?.text !== expected)
@@ -30,7 +31,7 @@ export async function run() {
                 });
             });
         }
-        indicator.menu.close(false);
+        closeInstantly(indicator.menu);
     } finally {
         const directory = GLib.getenv('TMB_JS_COVERAGE_DIR');
         if (directory) {

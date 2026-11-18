@@ -3,6 +3,7 @@ import GLib from 'gi://GLib';
 import Shell from 'gi://Shell';
 import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+import {closeInstantly, openInstantly} from '../../src/menu-animation.js';
 import {
     buttonLabel,
     clickButton,
@@ -13,7 +14,7 @@ import {
     instance,
     required,
 } from '../support/actors.js';
-import {afterPaint, waitOrFail} from '../support/shell-events.js';
+import {afterPaint, hideOverview, waitOrFail} from '../support/shell-events.js';
 
 function waitFor(check: () => unknown) {
     return waitOrFail(check, 'Codex cost history did not reach Usage');
@@ -21,10 +22,10 @@ function waitFor(check: () => unknown) {
 
 export async function run() {
     try {
-        Main.overview.hide();
+        await hideOverview();
         const indicator = getIndicator();
         if (!indicator) throw new Error('Quotaline indicator is missing');
-        indicator.menu.open(false);
+        openInstantly(indicator.menu);
         await waitFor(() => {
             const codex = findActor(
                 indicator.menu.box,
@@ -110,7 +111,7 @@ export async function run() {
         if (!disclosure) throw new Error('Codex model costs are missing');
         clickButton(disclosure);
         await waitFor(() => containsText(currentCodex(), 'gpt-5'));
-        indicator.menu.close(false);
+        closeInstantly(indicator.menu);
     } finally {
         const directory = GLib.getenv('TMB_JS_COVERAGE_DIR');
         if (directory) {

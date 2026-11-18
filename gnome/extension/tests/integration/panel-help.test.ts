@@ -3,8 +3,9 @@ import GLib from 'gi://GLib';
 import Shell from 'gi://Shell';
 import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+import {closeInstantly, openInstantly} from '../../src/menu-animation.js';
 import {failure, findActor, indicator as getIndicator, instance, required} from '../support/actors.js';
-import {waitOrFail} from '../support/shell-events.js';
+import {hideOverview, waitOrFail} from '../support/shell-events.js';
 
 function waitFor(check: () => unknown, description: string | (() => string)) {
     return waitOrFail(
@@ -16,7 +17,7 @@ function waitFor(check: () => unknown, description: string | (() => string)) {
 
 export async function run() {
     try {
-        Main.overview.hide();
+        await hideOverview();
         const indicator = getIndicator();
         if (!indicator) throw new Error('Quotaline indicator is missing');
         const empty = GLib.getenv('TMB_PANEL_EMPTY') === '1';
@@ -90,7 +91,7 @@ export async function run() {
             )
                 throw new Error('Panel help closed while the pointer remained');
         }
-        indicator.menu.open(false);
+        openInstantly(indicator.menu);
         await waitFor(
             () =>
                 !findActor(
@@ -99,7 +100,7 @@ export async function run() {
                 ),
             'Panel help did not close',
         );
-        indicator.menu.close(false);
+        closeInstantly(indicator.menu);
     } finally {
         const directory = GLib.getenv('TMB_JS_COVERAGE_DIR');
         if (directory) {

@@ -1,5 +1,6 @@
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
+import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
 // Waits as long as it takes: on a busy machine a deadline fails correct code, and the test runner stops real hangs.
 export function waitFor(check: () => unknown) {
@@ -56,4 +57,10 @@ export function afterPaint() {
         });
         global.stage.queue_redraw();
     });
+}
+
+// GNOME 51 can still be finishing its startup overview, and hiding it later moves key focus off the extension.
+export async function hideOverview() {
+    Main.overview.hide();
+    await waitOrFail(() => !Main.overview.visible, 'GNOME overview did not close');
 }

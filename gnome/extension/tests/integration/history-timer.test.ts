@@ -1,5 +1,5 @@
 import GLib from 'gi://GLib';
-import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+import {closeInstantly, openInstantly} from '../../src/menu-animation.js';
 import {
     accessibleName,
     buttonLabel,
@@ -9,13 +9,13 @@ import {
     required,
 } from '../support/actors.js';
 import {proxyCalls} from '../support/dbus.js';
-import {waitOrFail} from '../support/shell-events.js';
+import {hideOverview, waitOrFail} from '../support/shell-events.js';
 
 export async function run() {
     const call = proxyCalls.call;
     const addSeconds = GLib.timeout_add_seconds;
     try {
-        Main.overview.hide();
+        await hideOverview();
         await waitOrFail(() => accessibleName(getIndicator())?.includes('CC 5h'), 'The extension did not load');
         const indicator = required(getIndicator());
         let requests = 0;
@@ -24,21 +24,21 @@ export async function run() {
             if (method === 'GetHistoryView') requests++;
             call.call(this, method, ...args);
         };
-        indicator.menu.open(false);
+        openInstantly(indicator.menu);
         await waitOrFail(
             () => findActor(indicator.menu.box, actor => actor.accessible_name === 'History'),
             'The History tab did not load',
         );
         clickButton(required(findActor(indicator.menu.box, actor => actor.accessible_name === 'History')));
         await waitOrFail(() => requests > 0, 'History did not load');
-        indicator.menu.close(false);
+        closeInstantly(indicator.menu);
         requests = 0;
         GLib.timeout_add_seconds = (priority, interval, callback) => {
             if (interval === 60) tick = callback;
             return addSeconds(priority, interval, callback);
         };
         try {
-            indicator.menu.open(false);
+            openInstantly(indicator.menu);
         } finally {
             GLib.timeout_add_seconds = addSeconds;
         }
@@ -68,7 +68,7 @@ export async function run() {
         required(tick)(null);
         if (requests !== pagedRequests)
             throw new Error(`The History minute timer refreshed a fixed date range: ${pagedRequests} → ${requests}`);
-        indicator.menu.close(false);
+        closeInstantly(indicator.menu);
     } finally {
         proxyCalls.call = call;
         GLib.timeout_add_seconds = addSeconds;

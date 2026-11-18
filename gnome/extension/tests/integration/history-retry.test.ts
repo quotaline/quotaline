@@ -1,6 +1,7 @@
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import Shell from 'gi://Shell';
+import {closeInstantly, openInstantly} from '../../src/menu-animation.js';
 import {
     accessibleName,
     buttonLabel,
@@ -17,7 +18,7 @@ export async function run() {
     try {
         const indicator = getIndicator();
         if (!indicator) throw new Error('Quotaline indicator is missing');
-        indicator.menu.open(false);
+        openInstantly(indicator.menu);
         clickButton(required(findActor(indicator.menu.box, actor => actor.accessible_name === 'History')));
         await waitOrFail(() => containsText(indicator.menu.box, '32%'), 'Initial History chart did not load');
         clickButton(required(findActor(indicator.menu.box, actor => buttonLabel(actor) === 'Now')));
@@ -54,7 +55,7 @@ export async function run() {
         await waitOrFail(() => containsText(indicator.menu.box, '52%'), 'Retry did not refresh the History chart');
         if (containsText(indicator.menu.box, 'Update failed'))
             throw new Error('Retry did not refresh the History chart');
-        indicator.menu.close(false);
+        closeInstantly(indicator.menu);
     } finally {
         const directory = GLib.getenv('TMB_JS_COVERAGE_DIR');
         if (directory) {

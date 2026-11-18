@@ -3,16 +3,16 @@ import GLib from 'gi://GLib';
 import Pango from 'gi://Pango';
 import Shell from 'gi://Shell';
 import St from 'gi://St';
-import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+import {closeInstantly, openInstantly} from '../../src/menu-animation.js';
 import {clickButton, failure, findActor, indicator as getIndicator, instance, required} from '../support/actors.js';
-import {afterPaint, waitOrFail} from '../support/shell-events.js';
+import {afterPaint, hideOverview, waitOrFail} from '../support/shell-events.js';
 
 export async function run() {
     try {
-        Main.overview.hide();
+        await hideOverview();
         const indicator = getIndicator();
         if (!indicator) throw new Error('Quotaline indicator is missing');
-        indicator.menu.open(false);
+        openInstantly(indicator.menu);
         const root = findActor(indicator.menu.box, actor => actor.has_style_class_name?.('tmb-root'));
         if (!root) throw new Error('Unsupported Gemini account did not show setup guidance');
         await waitOrFail(
@@ -72,7 +72,7 @@ export async function run() {
                 ) && findActor(root, actor => actor.accessible_name === 'Connection details for Gemini'),
             'Gemini setup action did not open provider settings',
         );
-        indicator.menu.close(false);
+        closeInstantly(indicator.menu);
     } finally {
         const directory = GLib.getenv('TMB_JS_COVERAGE_DIR');
         if (directory) {

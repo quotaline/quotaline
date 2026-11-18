@@ -1,6 +1,6 @@
 import Clutter from 'gi://Clutter';
 import GLib from 'gi://GLib';
-import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+import {closeInstantly, openInstantly} from '../../src/menu-animation.js';
 import {
     accessibleName,
     buttonLabel,
@@ -10,14 +10,14 @@ import {
     required,
 } from '../support/actors.js';
 import {proxyCalls} from '../support/dbus.js';
-import {afterPaint, waitOrFail} from '../support/shell-events.js';
+import {afterPaint, hideOverview, waitOrFail} from '../support/shell-events.js';
 
 export async function run() {
     try {
-        Main.overview.hide();
+        await hideOverview();
         const indicator = getIndicator();
         if (!indicator) throw new Error('Quotaline indicator is missing');
-        indicator.menu.open(false);
+        openInstantly(indicator.menu);
         await waitOrFail(
             () => findActor(indicator.menu.box, actor => actor.accessible_name === 'History'),
             'History tab is missing',
@@ -58,7 +58,7 @@ export async function run() {
             () => findActor(indicator.menu.box, actor => buttonLabel(actor) === 'Previous reading'),
             'Restored series did not restore reading navigation',
         );
-        indicator.menu.close(false);
+        closeInstantly(indicator.menu);
     } finally {
         const directory = GLib.getenv('TMB_JS_COVERAGE_DIR');
         if (directory) {
