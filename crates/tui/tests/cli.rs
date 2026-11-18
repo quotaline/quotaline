@@ -11,7 +11,7 @@ use rustix::{
 use std::{
     fs::{self, File},
     io::{Read, Write},
-    path::{Path, PathBuf},
+    num::NonZeroU16,
     process::{Child, Command, Stdio},
     time::{Duration, Instant},
 };
@@ -66,54 +66,42 @@ fn rejects_redirected_input_or_output_before_opening_an_alternate_screen() {
     }
 }
 
-#[test]
-fn reports_how_to_select_an_export_without_a_home_directory() {
-    let output = command()
-        .env_remove("HOME")
-        .env_remove("XDG_DATA_HOME")
-        .output()
-        .unwrap();
-    assert!(!output.status.success());
-    assert!(
-        String::from_utf8(output.stderr)
-            .unwrap()
-            .contains("could not locate the desktop usage.json export")
-    );
-}
-
-#[test]
-fn reads_the_default_export_without_an_explicit_path() {
-    let home = tempdir().unwrap();
-    let export = home_export(home.path());
-    fs::create_dir_all(export.parent().unwrap()).unwrap();
-    fs::write(export, r#"{"providers":[]}"#).unwrap();
-
-    let mut cli = Interactive::start(command().env("HOME", home.path()).env_remove("XDG_DATA_HOME"));
-    cli.read_until("No providers in snapshot");
-    cli.quit(b"q");
-}
+#[cfg(target_os = "linux")]
+#[path = "support/gnome.rs"]
+mod gnome;
 
 #[cfg(target_os = "macos")]
-fn home_export(home: &Path) -> PathBuf {
-    home.join("Library/Application Support/Quotaline/usage.json")
-}
+#[path = "support/macos.rs"]
+mod macos;
 
-#[cfg(target_os = "linux")]
-fn home_export(home: &Path) -> PathBuf {
-    home.join(".local/share/quotaline/usage.json")
-}
-
-#[cfg(target_os = "linux")]
 #[test]
-fn finds_the_export_in_the_xdg_data_directory() {
-    let directory = tempdir().unwrap();
-    let export = directory.path().join("quotaline/usage.json");
-    fs::create_dir_all(export.parent().unwrap()).unwrap();
-    fs::write(export, r#"{"providers":[]}"#).unwrap();
-
-    let mut cli = Interactive::start(command().env("XDG_DATA_HOME", directory.path()).env_remove("HOME"));
-    cli.read_until("No providers in snapshot");
+fn command_editor_in_demo_mode_keeps_live_actions_disabled() {
+    let mut cli = Interactive::start(command().arg("--demo"));
+    cli.read_until("Antigravity");
+    cli.write(b"?");
+    cli.read_until("Enter a command");
+    cli.write(b"3");
+    cli.read_until("Open the desktop source");
+    cli.write(b"\r\x1b[C");
+    cli.write(b":set invalid\x1b:unknown\r");
+    cli.read_until("Unknown command");
+    cli.write(b":metrics\r");
+    cli.read_until("Quota usage");
+    cli.write(b":logs full\r");
+    cli.read_until("This action requires the desktop source");
     cli.quit(b"\x03");
+}
+
+#[test]
+fn provider_commands_handle_a_snapshot_with_no_visible_providers() {
+    let directory = tempdir().unwrap();
+    let path = directory.path().join("usage.json");
+    fs::write(&path, r#"{"providers":[]}"#).unwrap();
+    let mut cli = Interactive::start(command().arg("--file").arg(path));
+    cli.read_until("No providers in snapshot");
+    cli.write(b"1\rsviR");
+    cli.read_until("This action requires the desktop source");
+    cli.quit(b"q");
 }
 
 #[test]
@@ -126,11 +114,11 @@ fn redraws_and_reloads_an_explicit_snapshot_in_a_terminal() {
     let mut cli = Interactive::start(command().arg("--file").arg(export.as_os_str()));
     cli.read_until("Antigravity");
     cli.write(b"\x1b[B");
-    cli.read_until("Max 20x");
+    cli.read_until("› Gemini 5-hour");
     cli.resize(30, 20);
     cli.read_until("Resize to at least 34");
     cli.resize(60, 20);
-    cli.read_until("Quota windows");
+    cli.read_until("Quota used");
 
     fs::write(&export, "{").unwrap();
     cli.read_until("Stale");
@@ -157,6 +145,7 @@ struct Interactive {
     master: File,
     slave: File,
     original_modes: LocalModes,
+    screen: vt100::Parser,
 }
 
 impl Interactive {
@@ -184,18 +173,19 @@ impl Interactive {
             master,
             slave,
             original_modes,
+            screen: vt100::Parser::new(NonZeroU16::new(24).unwrap(), NonZeroU16::new(80).unwrap(), 0),
         }
     }
 
     fn read_until(&mut self, text: &str) {
         let deadline = Instant::now() + Duration::from_secs(5);
         let mut bytes = Vec::new();
-        while !String::from_utf8_lossy(&bytes).contains(text) {
-            assert!(
-                Instant::now() < deadline,
-                "did not read {text:?} in {:?}",
-                String::from_utf8_lossy(&bytes)
-            );
+        loop {
+            let output = self.screen.screen().contents();
+            if output.contains(text) || String::from_utf8_lossy(&bytes).contains(text) {
+                break;
+            }
+            assert!(Instant::now() < deadline, "did not read {text:?} in {output:?}");
             if poll(
                 &mut [PollFd::new(&self.master, PollFlags::IN)],
                 Some(&Timespec {
@@ -208,6 +198,7 @@ impl Interactive {
             {
                 let mut chunk = [0; 2048];
                 let read = self.master.read(&mut chunk).unwrap();
+                self.screen.process(&chunk[..read]);
                 bytes.extend_from_slice(&chunk[..read]);
             }
         }
@@ -217,7 +208,9 @@ impl Interactive {
         self.master.write_all(bytes).unwrap();
     }
 
-    fn resize(&self, width: u16, height: u16) {
+    fn resize(&mut self, width: u16, height: u16) {
+        self.screen
+            .set_size(NonZeroU16::new(height).unwrap(), NonZeroU16::new(width).unwrap());
         tcsetwinsize(
             &self.slave,
             Winsize {

@@ -505,3 +505,50 @@ fn analytics_scope_skips_expired_days_and_combines_matching_series() {
         6.0
     );
 }
+
+#[test]
+fn read_only_store_queries_and_rejects_writes() {
+    let directory = tempfile::tempdir().unwrap();
+    let path = directory.path().join("history.sqlite");
+    let writer = Store::open(Some(&path), 60).unwrap();
+    writer.seed(&[sample(1000.0, 24.0, None)]).unwrap();
+    let reader = Store::open_read_only(&path, 60).unwrap();
+    assert_eq!(
+        reader.samples(query(900.0, 1100.0, None)).unwrap(),
+        [sample(1000.0, 24.0, None).sample]
+    );
+    assert!(reader.seed(&[sample(1060.0, 50.0, None)]).is_err());
+    assert_eq!(writer.stats().unwrap().sample_count, 1);
+}
+
+#[test]
+fn read_only_store_does_not_create_or_migrate_history() {
+    let directory = tempfile::tempdir().unwrap();
+    let path = directory.path().join("history.sqlite");
+    assert!(matches!(
+        Store::open_read_only(&path, 60),
+        Err(HistoryError::Database(_))
+    ));
+    assert!(!path.exists());
+    let db = Connection::open(&path).unwrap();
+    assert!(matches!(Store::open_read_only(&path, 60), Err(HistoryError::Schema(0))));
+    let version: i32 = db.pragma_query_value(None, "user_version", |row| row.get(0)).unwrap();
+    assert_eq!(version, 0);
+}
+
+#[test]
+fn read_only_store_can_read_pre_archive_history() {
+    let directory = tempfile::tempdir().unwrap();
+    let path = directory.path().join("history.sqlite");
+    Store::open(Some(&path), 60)
+        .unwrap()
+        .seed(&[sample(1000.0, 24.0, None)])
+        .unwrap();
+    let db = Connection::open(&path).unwrap();
+    db.execute_batch("DROP TABLE archived_samples; DROP TABLE archived_analytics; PRAGMA user_version=1;")
+        .unwrap();
+    let reader = Store::open_read_only(&path, 60).unwrap();
+    assert_eq!(reader.stats().unwrap().sample_count, 1);
+    let version: i32 = db.pragma_query_value(None, "user_version", |row| row.get(0)).unwrap();
+    assert_eq!(version, 1);
+}

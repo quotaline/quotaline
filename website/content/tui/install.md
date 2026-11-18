@@ -1,10 +1,10 @@
 ---
 title: Install the terminal dashboard
-description: Build the dashboard from source and open a demo or a desktop quota snapshot.
+description: Build the dashboard from source and connect to the desktop frontend.
 weight: 1
 ---
 
-Build from source on Linux or macOS with [Rust](https://rustup.rs/).
+Build on Linux or macOS with [Rust](https://rustup.rs/).
 
 ```sh
 git clone https://github.com/quotaline/quotaline
@@ -13,20 +13,18 @@ cargo install --locked --path crates/tui
 quotaline-tui --demo
 ```
 
-Demo mode uses sample quota readings and needs only a terminal. To see your desktop readings, turn on **Settings > Data
-\> Collection > Write usage.json** in Quotaline and wait for the next provider refresh. Run `quotaline-tui` to open the
-export from that install.
+Run `quotaline-tui` without arguments to use the desktop data.
 
-| Desktop app               | Default file                                         |
-| ------------------------- | ---------------------------------------------------- |
-| macOS Direct or Homebrew  | `~/Library/Application Support/Quotaline/usage.json` |
-| GNOME Shell               | `~/.local/share/quotaline/usage.json`                |
-| GNOME Shell with XDG data | `$XDG_DATA_HOME/quotaline/usage.json`                |
+- **Linux** uses Quotaline’s session service. The terminal and the [GNOME extension](/gnome/install/) are clients of the
+  same service. Run the dashboard in that desktop session with the extension enabled.
+- **macOS** reads the app's local snapshots, settings, history, and logs. Launch Quotaline to collect a reading first.
+  The dashboard uses the Direct or Homebrew support directory when present and checks the App Store container as well.
 
-Pass `--file PATH` for a copy of the export or for the macOS App Store build. Quote paths that contain spaces.
+Run `quotaline-tui --file PATH` to inspect a standalone [usage export](/reference/scripting/). For example:
 
 ```sh
-quotaline-tui --file "$HOME/Library/Containers/tech.bernat.quotaline/Data/Library/Application Support/Quotaline/usage.json"
+quotaline-tui --file "$HOME/Downloads/usage.json"
 ```
 
-The dashboard reads only the redacted file. Provider sign-in and refreshes run in the desktop app.
+The default desktop mode works with **Write usage.json** turned off. Demo mode and explicit file mode show current quota
+snapshots and leave desktop actions disabled.

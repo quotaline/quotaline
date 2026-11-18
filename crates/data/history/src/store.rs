@@ -10,7 +10,7 @@ mod write;
 
 use std::{path::Path, rc::Rc, sync::Mutex, time::Duration};
 
-use rusqlite::{Connection, types::Value, vtab::array::Array};
+use rusqlite::{Connection, OpenFlags, types::Value, vtab::array::Array};
 use thiserror::Error;
 
 pub use demo::DEMO_DAYS;
@@ -118,15 +118,30 @@ impl Store {
         rusqlite::vtab::array::load_module(&db)?;
         db.execute_batch("PRAGMA auto_vacuum=INCREMENTAL; PRAGMA journal_mode=WAL")?;
         schema::migrate(&mut db)?;
+        Ok(Self::from_connection(db, retention_days))
+    }
+
+    pub fn open_read_only(path: &Path, retention_days: u32) -> Result<Self> {
+        let db = Connection::open_with_flags(path, OpenFlags::SQLITE_OPEN_READ_ONLY)?;
+        db.busy_timeout(Duration::from_secs(2))?;
+        rusqlite::vtab::array::load_module(&db)?;
+        let version = db.pragma_query_value(None, "user_version", |row| row.get(0))?;
+        if !(1..=SCHEMA_VERSION).contains(&version) {
+            return Err(HistoryError::Schema(version));
+        }
+        Ok(Self::from_connection(db, retention_days))
+    }
+
+    fn from_connection(db: Connection, retention_days: u32) -> Self {
         let interrupt = db.get_interrupt_handle();
-        Ok(Self {
+        Self {
             state: Mutex::new(State {
                 db,
                 retention_days: quotaline_settings::normalize_history_retention_days(retention_days),
                 last_prune: None,
             }),
             interrupt,
-        })
+        }
     }
 
     pub fn interrupt(&self) {

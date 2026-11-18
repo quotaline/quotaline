@@ -1,24 +1,51 @@
 ---
 title: Terminal dashboard
-description: View the desktop quota snapshot in a terminal on Linux or macOS.
+description: Use Quotaline in a terminal on Linux or macOS.
 weight: 5
 layout: platform
 ---
 
-The terminal dashboard reads the [desktop usage export](/reference/scripting/) on Linux and macOS. Start with
-[installation and demo mode](/tui/install/) or open the dashboard once Quotaline has written `usage.json`.
+[Install the dashboard](/tui/install/) to see the desktop app's quota readings, history, settings, and logs. The
+dashboard updates as the desktop backend updates and keeps the last readable quota snapshot if a reload fails.
 
-The provider panel shows the highest reported usage percentage and its quota window for each provider. The detail panel
-shows each quota window, its usage, and its reset time if one is available. The **Observed** time is when the desktop
-app collected the provider reading. Times are shown in UTC.
+## Keyboard controls
 
-| Key       | Action                       |
-| --------- | ---------------------------- |
-| ↑/↓, j/k  | Move within the active panel |
-| Tab       | Switch between panels        |
-| r         | Reload the snapshot          |
-| q, Ctrl+C | Quit                         |
+| Key        | Action                                                        |
+| ---------- | ------------------------------------------------------------- |
+| 1, 2, 3, 4 | Open Usage, History, Settings, or Logs                        |
+| ↑/↓, j/k   | Move through providers, quota windows, series, or text rows   |
+| Tab        | Jump to the next provider or settings group                   |
+| ←/→        | Adjust a setting, inspect a history reading, or pan long text |
+| d          | Show details for the selected provider                        |
+| r          | Reload from the current source                                |
+| R, s       | Request a refresh or sign-in for the selected GNOME provider  |
+| [ / ], n   | Page through history ranges or return to the current range    |
+| v, i       | Toggle or isolate the selected history series                 |
+| Enter      | Toggle or edit the selected GNOME setting                     |
+| :, ?       | Enter a command or open the command reference                 |
+| q, Ctrl+C  | Quit                                                          |
 
-The panels stack in narrower terminals. The dashboard checks the file every two seconds. If a read fails, it keeps the
-previous readings on screen with a **Stale** warning until it can read the file again. Check the observed time when the
-desktop app is closed or has stopped writing the export.
+## Usage and History
+
+Usage groups the desktop's selected quota windows by provider in one scrolling list. Each window shows its meter,
+percentage, and reset time at the precision the provider reports. **Observed** is the last reading time. Press **d** for
+provider status, notices, credits, and account details as available. Identity visibility follows the desktop setting.
+
+History charts the visible series together. Use the legend to choose a series and its readings, hide it, or isolate it.
+Turn on **Stack compatible history series** in Settings for stacked daily charts. Use `:period 7` for a week,
+`:metric ID` to change metrics, or `:range YYYY-MM-DD YYYY-MM-DD` for a custom interval. `:metrics` lists the metric
+IDs. The arrow keys select a series or inspect its readings. Use `:export /absolute/path.csv` to export the current
+metric and range, or `:export-all /absolute/path.csv` to export all history. Choose a new filename.
+
+## Settings and diagnostics
+
+Settings groups provider collection, display options, notifications, data, and diagnostics. On GNOME, use the arrows to
+adjust an option or press **Enter** to toggle a switch or edit a text field. Changes apply to the GNOME service and
+appear in both frontends. **Esc** cancels text entry. Use **?** for additional model and support commands.
+
+Press **4** for recent service logs. `:logs full` shows retained logs, `:diagnostics` displays the diagnostic report,
+and `:issue` displays the issue report link. Use the left and right arrows to pan long lines.
+
+The macOS app owns settings changes, sign-in, and refreshes. The terminal can view its settings and logs and work with
+the history it has collected. Desktop menu-bar and widget layout, notification delivery, OS credential dialogs, and
+permission prompts remain in the desktop frontend.
