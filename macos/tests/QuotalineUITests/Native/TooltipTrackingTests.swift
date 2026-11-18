@@ -243,6 +243,16 @@ struct TooltipTrackingTests {
     tearDownHoverFixture(presenter, view, window)
   }
 
+  @Test @MainActor func tooltipPresenterFindsTheWindowUnderThePointer() throws {
+    let window = try showInvisibleWindow(containing: NSView())
+    window.alphaValue = 1
+    let presenter = TooltipPresenter()
+
+    #expect(presenter.topWindowNumber(CGPoint(x: window.frame.midX, y: window.frame.midY)) == window.windowNumber)
+    presenter.tearDown()
+    window.orderOut(nil)
+  }
+
   @Test @MainActor func tooltipPresenterKeepsHoverRecoveryAcrossTeardown() throws {
     let (presenter, view, window) = try hoverFixture(applicationIsActive: true)
 
