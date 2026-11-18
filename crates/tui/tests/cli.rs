@@ -261,21 +261,25 @@ impl Interactive {
                 break;
             }
             assert!(Instant::now() < deadline, "did not read {text:?} in {output:?}");
-            if poll(
-                &mut [PollFd::new(&self.master, PollFlags::IN)],
-                Some(&Timespec {
-                    tv_sec: 0,
-                    tv_nsec: 100_000_000,
-                }),
-            )
-            .unwrap()
-                != 0
-            {
-                let mut chunk = [0; 2048];
-                let read = self.master.read(&mut chunk).unwrap();
-                self.screen.process(&chunk[..read]);
-                self.output.extend_from_slice(&chunk[..read]);
-            }
+            self.read_output();
+        }
+    }
+
+    fn read_output(&mut self) {
+        if poll(
+            &mut [PollFd::new(&self.master, PollFlags::IN)],
+            Some(&Timespec {
+                tv_sec: 0,
+                tv_nsec: 100_000_000,
+            }),
+        )
+        .unwrap()
+            != 0
+        {
+            let mut chunk = [0; 2048];
+            let read = self.master.read(&mut chunk).unwrap();
+            self.screen.process(&chunk[..read]);
+            self.output.extend_from_slice(&chunk[..read]);
         }
     }
 

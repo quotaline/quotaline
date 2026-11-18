@@ -29,7 +29,7 @@ fn displays_desktop_state_history_settings_and_logs_without_an_export() {
     cli.click(22, 23);
     cli.read_until("Write usage.json");
     cli.click(2, 3);
-    service.wait_for("SetSetting");
+    service.wait_for("SetSetting", &mut cli);
     cli.read_until("Settings saved");
     cli.write(b"j\x1b[D\x1b[C");
     cli.read_until("Settings saved");
@@ -86,16 +86,16 @@ fn sends_desktop_controls_to_the_service() {
         (&b"r"[..], "GetHistoryView"),
     ] {
         cli.write(keys);
-        service.wait_for(method);
+        service.wait_for(method, &mut cli);
     }
     cli.read_until("Latest 78.00");
     let directory = tempdir().unwrap();
     let metric_path = directory.path().join("metric file.csv");
     let all_path = directory.path().join("all file.csv");
     cli.write(format!(":export {}\r", metric_path.display()).as_bytes());
-    service.wait_for("ExportMetricHistory");
+    service.wait_for("ExportMetricHistory", &mut cli);
     cli.write(format!(":export-all {}\r", all_path.display()).as_bytes());
-    service.wait_for("ExportAllHistory");
+    service.wait_for("ExportAllHistory", &mut cli);
     cli.read_until("History exported");
     cli.write(b":export-all /\r");
     cli.read_until("Choose a filename for the export");
@@ -142,7 +142,7 @@ fn quitting_does_not_wait_for_a_blocked_desktop_request() {
     let mut cli = bus.cli();
     cli.read_until("108.5%");
     cli.write(b":models stall\r");
-    service.wait_for("GetModelGroups");
+    service.wait_for("GetModelGroups", &mut cli);
     cli.quit(b"q");
 }
 
@@ -287,8 +287,12 @@ impl Fixture {
         }
     }
 
-    fn wait_for(&self, expected: &str) {
-        while self.calls.recv_timeout(Duration::from_secs(5)).unwrap() != expected {}
+    fn wait_for(&self, expected: &str, cli: &mut Interactive) {
+        let deadline = Instant::now() + Duration::from_secs(5);
+        while !self.calls.try_iter().any(|method| method == expected) {
+            assert!(Instant::now() < deadline, "desktop service did not receive {expected}");
+            cli.read_output();
+        }
     }
 }
 
