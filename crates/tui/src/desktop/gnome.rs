@@ -1,6 +1,7 @@
 //! Uses the GNOME Shell extension's service on the current session bus.
 
 use jiff::{Timestamp, tz::TimeZone};
+use quotaline_quota::{CloudCredits, CreditExpiry, Detail, Notice, ResetCredits, SpendControl, UsageCredits};
 use serde::Deserialize;
 use serde_json::Value;
 use std::{
@@ -14,7 +15,7 @@ use zbus::{Connection, DynamicType, Proxy, connection::Builder, proxy::MethodFla
 
 use crate::{
     desktop::{Command, History, Output, State},
-    snapshot::{Provider, Window},
+    snapshot::{OverviewFacts, Provider, Window},
 };
 
 #[derive(Default)]
@@ -28,6 +29,7 @@ impl Backend {
     pub(crate) fn usage(&mut self) -> io::Result<State> {
         let state = serde_json::from_str::<ServiceState>(&self.request::<String, _>("GetState", &())?)?;
         let mut providers = state.providers;
+        let now = Timestamp::now().as_second();
         self.stacked = state.settings["history_stacked"] == true;
         self.hidden = serde_json::from_value(state.settings["history_hidden_keys"].clone()).unwrap_or_default();
         Ok(State {
@@ -37,56 +39,54 @@ impl Backend {
                 .into_iter()
                 .filter_map(|id| {
                     let provider = providers.remove(&id)?;
-                    provider.show_in_usage.then(|| Provider {
-                        plan: (!provider.plan.is_empty()).then_some(provider.plan),
-                        fetched_at: provider.updated.and_then(|at| Timestamp::from_second(at).ok()),
-                        status: provider.status,
-                        details: provider
-                            .details
-                            .into_iter()
-                            .map(|detail| format!("{}  {}", detail.title, detail.value))
-                            .chain(provider.notices.into_iter().map(|notice| notice.text))
-                            .chain(provider.warnings)
-                            .chain(
-                                provider
-                                    .credit_balance
-                                    .map(|balance| format!("Credit balance  {balance:.2}")),
-                            )
-                            .chain(
-                                provider.cloud_credits.map(|cloud| {
-                                    format!("Cloud credits  {:.2} of {:.2}", cloud.remaining, cloud.limit)
-                                }),
-                            )
-                            .chain(
-                                provider
-                                    .reset_credits
-                                    .map(|reset| format!("Reset credits  {} available", reset.available)),
-                            )
-                            .chain(
-                                provider.spend.and_then(|spend| {
-                                    spend.percent.map(|value| format!("Spend limit  {value:.1}% used"))
-                                }),
-                            )
-                            .chain(provider.organization.filter(|_| provider.show_organization))
-                            .chain((!provider.identity.is_empty()).then_some(provider.identity))
-                            .collect(),
-                        windows: provider
-                            .windows
-                            .into_iter()
-                            .filter(|window| state.selected_window_keys.contains(&format!("{id}:{}", window.id)))
-                            .map(|window| Window {
-                                label: window.label,
-                                used_percent: window.used,
-                                resets_at: window.reset.and_then(|reset| reset.parse().ok()),
-                                reset_by_day: window.reset_precision == "day",
-                                pace: window.pace.and_then(|pace| {
-                                    pace.expected_percent.map(|percent| {
-                                        format!("Expected {percent:.0}% · {}", pace.status.replace('_', " "))
-                                    })
-                                }),
-                            })
-                            .collect(),
-                        id,
+                    provider.show_in_usage.then(|| {
+                        let selected = |window: &str| state.selected_window_keys.contains(&format!("{id}:{window}"));
+                        let overview = OverviewFacts {
+                            id: &id,
+                            status: &provider.status,
+                            credit_balance: provider.credit_balance,
+                            usage_credits: provider.usage_credits.as_ref(),
+                            reset_credits: provider.reset_credits.as_ref(),
+                            reset_credit_expiries: &provider.reset_credit_expiries,
+                            cloud_credits: provider.cloud_credits.as_ref(),
+                            spend: provider.spend.as_ref(),
+                            details: &provider.details,
+                            notices: &provider.notices,
+                            warnings: &provider.warnings,
+                        }
+                        .project(selected, now);
+                        Provider {
+                            plan: (!provider.plan.is_empty()).then_some(provider.plan),
+                            fetched_at: provider.updated.and_then(|at| Timestamp::from_second(at).ok()),
+                            status: provider.status,
+                            overview,
+                            details: provider
+                                .details
+                                .into_iter()
+                                .map(|detail| format!("{}  {}", detail.title, detail.value))
+                                .chain(provider.notices.into_iter().map(|notice| notice.text))
+                                .chain(provider.warnings)
+                                .chain(provider.organization.filter(|_| provider.show_organization))
+                                .chain((!provider.identity.is_empty()).then_some(provider.identity))
+                                .collect(),
+                            windows: provider
+                                .windows
+                                .into_iter()
+                                .filter(|window| selected(&window.id))
+                                .map(|window| Window {
+                                    label: window.label,
+                                    used_percent: window.used,
+                                    resets_at: window.reset.and_then(|reset| reset.parse().ok()),
+                                    reset_by_day: window.reset_precision == "day",
+                                    pace: window.pace.and_then(|pace| {
+                                        pace.expected_percent.map(|percent| {
+                                            format!("Expected {percent:.0}% · {}", pace.status.replace('_', " "))
+                                        })
+                                    }),
+                                })
+                                .collect(),
+                            id,
+                        }
                     })
                 })
                 .collect(),
@@ -280,36 +280,12 @@ struct ServiceProvider {
     show_organization: bool,
     identity: String,
     credit_balance: Option<f64>,
-    cloud_credits: Option<Cloud>,
-    reset_credits: Option<Credits>,
-    spend: Option<Spend>,
-}
-
-#[derive(Deserialize)]
-struct Cloud {
-    remaining: f64,
-    limit: f64,
-}
-
-#[derive(Deserialize)]
-struct Credits {
-    available: u64,
-}
-
-#[derive(Deserialize)]
-struct Spend {
-    percent: Option<f64>,
-}
-
-#[derive(Deserialize)]
-struct Detail {
-    title: String,
-    value: String,
-}
-
-#[derive(Deserialize)]
-struct Notice {
-    text: String,
+    usage_credits: Option<UsageCredits>,
+    reset_credits: Option<ResetCredits>,
+    #[serde(default)]
+    reset_credit_expiries: Vec<CreditExpiry>,
+    cloud_credits: Option<CloudCredits>,
+    spend: Option<SpendControl>,
 }
 
 #[derive(Deserialize)]

@@ -11,6 +11,11 @@ use std::{
 
 use crate::desktop::State;
 
+mod overview;
+#[cfg(all(not(test), target_os = "linux"))]
+pub(crate) use overview::OverviewFacts;
+pub(crate) use overview::provider_overview;
+
 pub(crate) enum LocalSnapshot {
     File(PathBuf),
     Demo,
@@ -30,8 +35,15 @@ impl LocalSnapshot {
                 }
                 Ok(serde_json::from_reader(BufReader::new(file))?)
             }
-            Self::Demo => serde_json::from_slice(&quotaline_export::UsageExport::from(&quotaline_demo::demo()).json())
-                .map_err(io::Error::from),
+            Self::Demo => {
+                let now = Timestamp::now();
+                let providers = quotaline_demo::demo_at(now);
+                let mut state: State = serde_json::from_slice(&quotaline_export::UsageExport::from(&providers).json())?;
+                for provider in &mut state.providers {
+                    provider.overview = provider_overview(&providers[&provider.id], |_| true, now.as_second());
+                }
+                Ok(state)
+            }
         }
     }
 }
@@ -41,7 +53,7 @@ impl State {
         for provider in &mut self.providers {
             provider.status.retain(|character| !character.is_control());
             provider.id.retain(|character| !character.is_control());
-            for detail in &mut provider.details {
+            for detail in provider.details.iter_mut().chain(&mut provider.overview) {
                 detail.retain(|character| !character.is_control());
             }
             if let Some(plan) = &mut provider.plan {
@@ -68,6 +80,8 @@ pub(crate) struct Provider {
     pub(crate) status: String,
     #[serde(skip)]
     pub(crate) details: Vec<String>,
+    #[serde(skip)]
+    pub(crate) overview: Vec<String>,
     pub(crate) windows: Vec<Window>,
 }
 

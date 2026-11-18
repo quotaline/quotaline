@@ -15,6 +15,7 @@ fn reads_mutates_session_and_recovers_using_the_native_mac_data() {
     fixture.cache(62.5);
     let mut cli = Interactive::start(&mut fixture.command());
     cli.read_until("62.5%");
+    cli.read_until("Credits · $0.00 remaining");
     cli.click(2, 2);
     cli.read_until("workspace");
     assert!(!cli.screen.screen().contents().contains("Example Org"));
@@ -22,8 +23,8 @@ fn reads_mutates_session_and_recovers_using_the_native_mac_data() {
     cli.click(22, 23);
     cli.read_until("Settings · read only");
     cli.read_until("Codex collection");
-    cli.write(b":set decimals 2\r");
     assert!(!cli.screen.screen().contents().contains('‹'));
+    cli.write(b":set decimals 2\r");
     cli.read_until("Change decimals in the Quotaline menu bar app");
 
     cli.write(b"2");
@@ -207,6 +208,7 @@ impl MacFixture {
     fn cache(&self, used: f64) {
         let mut provider = Provider::empty("codex", "connected");
         provider.organization = "Example Org".into();
+        provider.credit_balance = Some(0.0);
         provider.windows = vec![
             Window::new("session", "Native session", used, None, ""),
             Window::new("weekly", "Native week", 44.0, None, ""),

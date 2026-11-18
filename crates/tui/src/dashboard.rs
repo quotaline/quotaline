@@ -16,7 +16,7 @@ use crate::{
     pages::{self, HistoryHit, HistoryView, Page},
     preferences::{self, Control, SettingsHit},
     snapshot::Provider,
-    usage,
+    usage::{self, UsageRow},
 };
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -64,7 +64,7 @@ pub(crate) struct Dashboard {
     command: Option<Vec<u8>>,
     message: Option<String>,
     provider: usize,
-    window: usize,
+    usage_row: UsageRow,
 }
 
 impl Dashboard {
@@ -85,7 +85,7 @@ impl Dashboard {
             command: None,
             message: None,
             provider: 0,
-            window: 0,
+            usage_row: UsageRow::Provider,
         }
     }
 
@@ -104,32 +104,48 @@ impl Dashboard {
         };
         self.warning = None;
         state.sanitize();
-        let selected = self.providers.get(self.provider).map(|provider| provider.id.clone());
+        let selected = self.providers.get(self.provider);
+        let selected_id = selected.map(|provider| provider.id.clone());
+        let selected_window = selected
+            .and_then(|provider| self.selected_window(provider))
+            .map(|window| window.label.clone());
         self.providers = state.providers;
         self.settings = state.settings;
         self.controls = preferences::controls(&self.settings, self.settings_editable);
         if self.page == Page::Settings {
             self.scroll = self.scroll.min(self.controls.len().saturating_sub(1));
         }
-        self.provider = selected
+        self.provider = selected_id
             .as_ref()
             .and_then(|id| self.providers.iter().position(|provider| provider.id == *id))
             .unwrap_or_else(|| self.provider.min(self.providers.len().saturating_sub(1)));
-        let provider = self.providers.get(self.provider);
-        if provider.map(|provider| &provider.id) != selected.as_ref() {
-            self.window = 0;
-        }
-        if let Some(provider) = provider {
-            self.window = self.window.min(provider.windows.len());
+        self.usage_row = self
+            .providers
+            .get(self.provider)
+            .filter(|provider| Some(&provider.id) == selected_id.as_ref())
+            .map_or(UsageRow::Provider, |provider| match self.usage_row {
+                UsageRow::Window(_) => selected_window
+                    .as_ref()
+                    .and_then(|label| provider.windows.iter().position(|window| window.label == *label))
+                    .map_or(UsageRow::Provider, UsageRow::Window),
+                UsageRow::Overview(fact, _) if fact >= provider.overview.len() => UsageRow::Provider,
+                row => row,
+            });
+    }
+
+    fn selected_window<'a>(&self, provider: &'a Provider) -> Option<&'a crate::snapshot::Window> {
+        match self.usage_row {
+            UsageRow::Window(index) => provider.windows.get(index),
+            _ => None,
         }
     }
 
-    pub(crate) fn navigate(&mut self, action: Navigation) -> Option<Command> {
+    pub(crate) fn navigate(&mut self, action: Navigation, area: Rect) -> Option<Command> {
         match action {
             Navigation::Left => return self.move_horizontal(false),
             Navigation::Right => return self.move_horizontal(true),
             Navigation::NextGroup => self.next_group(),
-            Navigation::Up | Navigation::Down => self.move_vertical(action),
+            Navigation::Up | Navigation::Down => self.move_vertical(action, dashboard_sections(area)[1]),
         }
         None
     }
@@ -138,7 +154,7 @@ impl Dashboard {
         match self.page {
             Page::Usage => {
                 self.provider = (self.provider + 1) % self.providers.len().max(1);
-                self.window = 0;
+                self.usage_row = UsageRow::Provider;
             }
             Page::Settings => {
                 if let Some(current) = self.controls.get(self.scroll) {
@@ -155,17 +171,14 @@ impl Dashboard {
         }
     }
 
-    fn move_vertical(&mut self, action: Navigation) {
+    fn move_vertical(&mut self, action: Navigation, content: Rect) {
         if self.page == Page::Usage {
-            let rows = usage::positions(&self.providers).collect::<Vec<_>>();
-            let current = rows
-                .iter()
-                .position(|&pair| pair == (self.provider, self.window))
-                .unwrap_or(0);
-            if let Some(&(provider, window)) = rows.get(next_index(current, rows.len(), action)) {
-                self.provider = provider;
-                self.window = window;
-            }
+            (self.provider, self.usage_row) = usage::step(
+                content,
+                &self.providers,
+                (self.provider, self.usage_row),
+                action == Navigation::Down,
+            );
         } else {
             self.reading = None;
             let length = match self.page {
@@ -237,7 +250,7 @@ impl Dashboard {
         }
         match event {
             MouseEvent::Scroll(.., navigation) => {
-                self.scroll_mouse(navigation);
+                self.scroll_mouse(navigation, content);
                 None
             }
             MouseEvent::Click(..) if footer.contains(at) => self.click_footer(footer, at),
@@ -260,9 +273,9 @@ impl Dashboard {
         None
     }
 
-    fn scroll_mouse(&mut self, navigation: Navigation) {
+    fn scroll_mouse(&mut self, navigation: Navigation, content: Rect) {
         match navigation {
-            Navigation::Up | Navigation::Down => self.move_vertical(navigation),
+            Navigation::Up | Navigation::Down => self.move_vertical(navigation, content),
             Navigation::Left | Navigation::Right
                 if matches!(self.page, Page::Logs | Page::Help | Page::Detail | Page::Result) =>
             {
@@ -288,7 +301,8 @@ impl Dashboard {
     fn click_content(&mut self, content: Rect, at: Position) -> Option<MouseAction> {
         match self.page {
             Page::Usage => {
-                (self.provider, self.window) = usage::hit(content, &self.providers, (self.provider, self.window), at)?;
+                (self.provider, self.usage_row) =
+                    usage::hit(content, &self.providers, (self.provider, self.usage_row), at)?;
                 Some(MouseAction::Show(Page::Detail))
             }
             Page::Settings if self.settings_editable => {
@@ -474,7 +488,7 @@ impl Dashboard {
             Page::Logs => self.logs.clone(),
             Page::Result => self.response.clone(),
             Page::Detail => self.providers.get(self.provider).map_or_else(Vec::new, |provider| {
-                let window = self.window.checked_sub(1).and_then(|index| provider.windows.get(index));
+                let window = self.selected_window(provider);
                 std::iter::once(format!("{} · {}", provider.name(), provider.status))
                     .chain(
                         window
@@ -514,7 +528,7 @@ impl Dashboard {
                 frame,
                 content,
                 &self.providers,
-                (self.provider, self.window),
+                (self.provider, self.usage_row),
                 &self.settings,
                 self.warning.is_some(),
             ),

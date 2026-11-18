@@ -33,8 +33,9 @@ shortcut to select text while mouse reporting is active.
 
 Usage groups the desktop's selected quota windows by provider. **Observed** shows how long ago the provider last
 reported a reading. Each window shows its quota meter, percentage, and time until the next reset. When a provider
-reports only a reset date, Usage counts calendar days. Click a quota row or press **d** for provider status, notices,
-credits, and account details as available. Identity visibility follows the desktop setting.
+reports only a reset date, Usage counts calendar days. Available credit balances, spending, and quota alerts appear
+below each provider's windows. Use the wheel or arrow keys to scroll the list. Click a row or press **d** for secondary
+details. Identity visibility follows the desktop setting.
 
 History charts the visible series together. The legend starts at each series' latest reading. Hover over the plot to
 inspect all series at the same time, and move the pointer out of the plot to return to their latest readings. Click a

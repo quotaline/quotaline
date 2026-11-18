@@ -147,7 +147,7 @@ fn window_navigation_scrolls_to_the_last_row() {
     let mut dashboard = Dashboard::new(true);
     dashboard.refresh(&Source::File(path));
     for _ in 0..15 {
-        dashboard.navigate(Navigation::Down);
+        dashboard.navigate(Navigation::Down, Rect::new(0, 0, 80, 24));
     }
     let screen = render(&dashboard, 80, 24);
     assert!(screen.contains("› Window 12"));
@@ -159,16 +159,16 @@ fn provider_navigation_scrolls_to_keep_selection_visible() {
     let mut dashboard = Dashboard::new(true);
     dashboard.refresh(&Source::Demo);
     for _ in 0..5 {
-        dashboard.navigate(Navigation::NextGroup);
+        dashboard.navigate(Navigation::NextGroup, Rect::new(0, 0, 80, 24));
     }
     assert!(render(&dashboard, 40, 16).contains("› Gemini"));
-    dashboard.navigate(Navigation::Left);
+    dashboard.navigate(Navigation::Left, Rect::new(0, 0, 80, 24));
     assert!(render(&dashboard, 40, 16).contains("› Gemini"));
-    dashboard.navigate(Navigation::Down);
+    dashboard.navigate(Navigation::Down, Rect::new(0, 0, 80, 24));
     assert!(render(&dashboard, 40, 16).contains("› Gemini 2.5 Pro"));
-    dashboard.navigate(Navigation::Up);
+    dashboard.navigate(Navigation::Up, Rect::new(0, 0, 80, 24));
     assert!(render(&dashboard, 40, 16).contains("› Gemini"));
-    dashboard.navigate(Navigation::NextGroup);
+    dashboard.navigate(Navigation::NextGroup, Rect::new(0, 0, 80, 24));
     assert!(render(&dashboard, 40, 16).contains("› Antigravity"));
 }
 
@@ -183,7 +183,7 @@ fn preserves_selection_by_provider_id_when_the_export_is_reordered() {
     let source = Source::File(path.clone());
     let mut dashboard = Dashboard::new(true);
     dashboard.refresh(&source);
-    dashboard.navigate(Navigation::Down);
+    dashboard.navigate(Navigation::Down, Rect::new(0, 0, 80, 24));
     let mut export: serde_json::Value = serde_json::from_slice(&fs::read(&path).unwrap()).unwrap();
     export["providers"].as_array_mut().unwrap().reverse();
     fs::write(path, export.to_string()).unwrap();
@@ -196,8 +196,8 @@ fn reports_an_absent_snapshot_with_instructions() {
     let directory = tempdir().unwrap();
     let mut dashboard = Dashboard::new(true);
     dashboard.refresh(&Source::File(directory.path().join("usage.json")));
-    dashboard.navigate(Navigation::NextGroup);
-    dashboard.navigate(Navigation::Down);
+    dashboard.navigate(Navigation::NextGroup, Rect::new(0, 0, 80, 24));
+    dashboard.navigate(Navigation::Down, Rect::new(0, 0, 80, 24));
     let screen = render(&dashboard, 80, 24);
     assert!(screen.contains("Read failed"));
     assert!(screen.contains("Check the source"));
@@ -329,7 +329,8 @@ fn uses_desktop_meter_preferences_and_provider_precision() {
             plan: None,
             fetched_at: None,
             status: "Cached".into(),
-            details: vec!["Credit balance  25.00".into()],
+            details: vec!["Secondary account detail".into()],
+            overview: vec!["Credits · $25.00 remaining".into()],
             windows: vec![crate::snapshot::Window {
                 label: "Weekly".into(),
                 used_percent: Some(28.75),
@@ -347,7 +348,7 @@ fn uses_desktop_meter_preferences_and_provider_precision() {
     assert!(render(&dashboard, 140, 24).contains("days ago · Expected 35% · on pace"));
     dashboard.show(Page::Detail);
     let screen = render(&dashboard, 100, 24);
-    assert!(screen.contains("Credit balance  25.00"));
+    assert!(screen.contains("Secondary account detail"));
     assert!(screen.contains("Weekly  Expected 35% · on pace"));
 }
 
@@ -356,17 +357,17 @@ fn history_navigation_inspects_actual_readings_and_retains_hidden_series() {
     let mut dashboard = Dashboard::new(true);
     assert!(dashboard.visibility(false).is_none());
     dashboard.show(Page::History);
-    dashboard.navigate(Navigation::Right);
+    dashboard.navigate(Navigation::Right, Rect::new(0, 0, 80, 24));
     assert!(dashboard.visibility(false).is_none());
 
     dashboard.apply_output(Page::History, Ok(Output::History(history_fixture())));
     assert!(render(&dashboard, 100, 24).contains("Latest 78.00"));
-    dashboard.navigate(Navigation::Right);
+    dashboard.navigate(Navigation::Right, Rect::new(0, 0, 80, 24));
     assert!(render(&dashboard, 100, 24).contains("2026-05-28T20:26:45Z · 78.00"));
     dashboard.show(Page::History);
-    dashboard.navigate(Navigation::Left);
+    dashboard.navigate(Navigation::Left, Rect::new(0, 0, 80, 24));
     assert!(render(&dashboard, 100, 24).contains("2026-05-28T20:26:40Z · 33.00"));
-    dashboard.navigate(Navigation::Right);
+    dashboard.navigate(Navigation::Right, Rect::new(0, 0, 80, 24));
     assert!(render(&dashboard, 100, 24).contains("2026-05-28T20:26:45Z · 78.00"));
 
     assert_eq!(
@@ -381,7 +382,7 @@ fn history_navigation_inspects_actual_readings_and_retains_hidden_series() {
         Some(visibility_command("isolate_undo", "weekly"))
     );
 
-    dashboard.navigate(Navigation::Down);
+    dashboard.navigate(Navigation::Down, Rect::new(0, 0, 80, 24));
     assert!(render(&dashboard, 100, 24).contains("Series hidden"));
     assert_eq!(dashboard.visibility(false), Some(visibility_command("toggle", "daily")));
     assert_eq!(dashboard.visibility(true), Some(visibility_command("isolate", "daily")));
@@ -415,7 +416,7 @@ fn settings_keyboard_activates_controls_and_keeps_the_command_editor() {
 fn late_history_response_preserves_the_active_log_position() {
     let mut dashboard = Dashboard::new(true);
     dashboard.show(Page::Logs);
-    dashboard.navigate(Navigation::NextGroup);
+    dashboard.navigate(Navigation::NextGroup, Rect::new(0, 0, 80, 24));
     dashboard.apply_output(
         Page::Logs,
         Ok(Output::Text(
@@ -423,7 +424,7 @@ fn late_history_response_preserves_the_active_log_position() {
         )),
     );
     for _ in 0..35 {
-        dashboard.navigate(Navigation::Down);
+        dashboard.navigate(Navigation::Down, Rect::new(0, 0, 80, 24));
     }
     dashboard.apply_output(Page::History, Ok(Output::History(history_fixture())));
     dashboard.apply_output(Page::History, Err(std::io::Error::other("Old error")));
@@ -431,9 +432,9 @@ fn late_history_response_preserves_the_active_log_position() {
     assert!(render(&dashboard, 80, 24).contains("Log message 35"));
     assert!(!render(&dashboard, 80, 24).contains("Old error"));
     assert!(!render(&dashboard, 80, 24).contains("Old response"));
-    dashboard.navigate(Navigation::Right);
+    dashboard.navigate(Navigation::Right, Rect::new(0, 0, 80, 24));
     assert!(!render(&dashboard, 80, 24).contains("Log message 35"));
-    dashboard.navigate(Navigation::Left);
+    dashboard.navigate(Navigation::Left, Rect::new(0, 0, 80, 24));
     assert!(render(&dashboard, 80, 24).contains("Log message 35"));
 }
 
@@ -472,7 +473,7 @@ fn visibility_command(kind: &str, id: &str) -> Command {
 fn settings_navigation_changes_numbers_choices_and_provider_intervals() {
     let mut dashboard = Dashboard::new(true);
     dashboard.show(Page::Settings);
-    dashboard.navigate(Navigation::NextGroup);
+    dashboard.navigate(Navigation::NextGroup, Rect::new(0, 0, 80, 24));
     assert!(dashboard.edit_setting().is_none());
     dashboard.apply_snapshot(Ok(State {
         settings: json!({
@@ -482,29 +483,29 @@ fn settings_navigation_changes_numbers_choices_and_provider_intervals() {
         providers: Vec::new(),
     }));
     assert_eq!(
-        dashboard.navigate(Navigation::Right),
+        dashboard.navigate(Navigation::Right, Rect::new(0, 0, 80, 24)),
         Some(Command::StepInterval("codex".into(), 1))
     );
     assert!(!render(&dashboard, 80, 24).contains("Cursor refresh interval"));
 
-    dashboard.navigate(Navigation::NextGroup);
+    dashboard.navigate(Navigation::NextGroup, Rect::new(0, 0, 80, 24));
     assert_eq!(
-        dashboard.navigate(Navigation::Left),
+        dashboard.navigate(Navigation::Left, Rect::new(0, 0, 80, 24)),
         Some(Command::Set("show_as".into(), r#""remaining""#.into()))
     );
-    dashboard.navigate(Navigation::Down);
+    dashboard.navigate(Navigation::Down, Rect::new(0, 0, 80, 24));
     assert_eq!(
-        dashboard.navigate(Navigation::Right),
+        dashboard.navigate(Navigation::Right, Rect::new(0, 0, 80, 24)),
         Some(Command::Set("decimals".into(), "1".into()))
     );
     assert_eq!(
-        dashboard.navigate(Navigation::Left),
+        dashboard.navigate(Navigation::Left, Rect::new(0, 0, 80, 24)),
         Some(Command::Set("decimals".into(), "0".into()))
     );
     assert!(!render(&dashboard, 80, 24).contains("Notification sound"));
-    dashboard.navigate(Navigation::NextGroup);
+    dashboard.navigate(Navigation::NextGroup, Rect::new(0, 0, 80, 24));
     assert!(render(&dashboard, 80, 24).contains("› Stack compatible history series"));
-    dashboard.navigate(Navigation::NextGroup);
+    dashboard.navigate(Navigation::NextGroup, Rect::new(0, 0, 80, 24));
     assert!(render(&dashboard, 80, 24).contains("› Codex refresh interval"));
 
     dashboard.apply_snapshot(Ok(State {
@@ -522,7 +523,7 @@ fn read_only_settings_show_values_without_editing() {
         providers: Vec::new(),
     }));
     dashboard.show(Page::Settings);
-    assert!(dashboard.navigate(Navigation::Right).is_none());
+    assert!(dashboard.navigate(Navigation::Right, Rect::new(0, 0, 80, 24)).is_none());
     assert!(dashboard.edit_setting().is_none());
     let screen = render(&dashboard, 80, 24);
     assert!(screen.contains("Settings · read only"));
@@ -549,6 +550,7 @@ fn provider_status_survives_without_an_observation_or_window() {
             fetched_at: None,
             status: "Sign-in needed".into(),
             details: Vec::new(),
+            overview: Vec::new(),
             windows: Vec::new(),
         }],
     }));
@@ -675,7 +677,7 @@ fn history_mouse_leave_preserves_keyboard_reading() {
     let mut history = history_fixture();
     history.series[1].points.insert(0, (1_780_000_003, 45.0, None, false));
     dashboard.apply_output(Page::History, Ok(Output::History(history)));
-    dashboard.navigate(Navigation::Left);
+    dashboard.navigate(Navigation::Left, Rect::new(0, 0, 80, 24));
     let area = Rect::new(0, 0, 100, 24);
     assert!(dashboard.mouse(MouseEvent::Leave, area).is_none());
     let screen = render(&dashboard, 100, 24);
@@ -704,7 +706,7 @@ fn history_mouse_uses_the_scrolled_legend_after_resize() {
         .collect();
     dashboard.apply_output(Page::History, Ok(Output::History(history)));
     for _ in 0..8 {
-        dashboard.navigate(Navigation::Down);
+        dashboard.navigate(Navigation::Down, Rect::new(0, 0, 80, 24));
     }
     for (width, column, row, expected) in [(34, 26, 7, "model-6"), (80, 77, 4, "model-3")] {
         let command = dashboard.mouse(MouseEvent::Click(column, row), Rect::new(0, 0, width, 14));
@@ -724,7 +726,7 @@ fn history_reload_drops_selection_when_the_reading_disappears() {
     let mut dashboard = Dashboard::new(true);
     dashboard.show(Page::History);
     dashboard.apply_output(Page::History, Ok(Output::History(history_fixture())));
-    dashboard.navigate(Navigation::Left);
+    dashboard.navigate(Navigation::Left, Rect::new(0, 0, 80, 24));
     assert!(render(&dashboard, 100, 24).contains("2026-05-28T20:26:40Z"));
     let mut history = history_fixture();
     history.series[0].points.remove(0);
@@ -851,6 +853,7 @@ fn mouse_usage_opens_the_detail_for_the_clicked_provider_or_window() {
                 fetched_at: None,
                 status: "Cached".into(),
                 details: vec!["Codex account".into()],
+                overview: Vec::new(),
                 windows: vec![
                     crate::snapshot::Window {
                         label: "Weekly".into(),
@@ -874,6 +877,7 @@ fn mouse_usage_opens_the_detail_for_the_clicked_provider_or_window() {
                 fetched_at: None,
                 status: "Ready".into(),
                 details: vec!["Gemini account".into()],
+                overview: Vec::new(),
                 windows: vec![],
             },
         ],
@@ -968,6 +972,7 @@ fn mouse_vertical_wheel_moves_through_every_page_and_horizontal_wheel_only_pans_
             fetched_at: None,
             status: "Ready".into(),
             details: vec!["Account detail".into()],
+            overview: Vec::new(),
             windows: vec![crate::snapshot::Window {
                 label: "Session".into(),
                 used_percent: None,
@@ -1094,4 +1099,132 @@ fn mouse_command_editor_runs_and_cancels_drafts_at_minimum_width() {
     dashboard.edit(b'x');
     assert!(click_label(&mut dashboard, size, "Cancel").is_none());
     assert!(!render(&dashboard, size.0, size.1).contains(":x"));
+}
+
+#[test]
+fn usage_packs_provider_facts_and_keeps_narrow_values_visible() {
+    let mut dashboard = Dashboard::new(true);
+    dashboard.apply_snapshot(Ok(State {
+        providers: vec![crate::snapshot::Provider {
+            id: "codex".into(),
+            plan: None,
+            fetched_at: None,
+            status: String::new(),
+            details: vec!["Private account detail".into()],
+            overview: vec![
+                "Credits · $42.50 remaining".into(),
+                "Limit resets · 1 available".into(),
+                "Spend control · $27.00 of $120.00".into(),
+                " ".into(),
+                "Quota limit reached".into(),
+            ],
+            windows: Vec::new(),
+        }],
+        settings: Value::Null,
+    }));
+    let wide = render(&dashboard, 112, 14);
+    let fact = wide.lines().find(|line| line.contains("$42.50")).unwrap();
+    assert!(fact.contains("Limit resets · 1 available"));
+    for label in ["$27.00", "$120.00", "Quota limit reached"] {
+        assert!(wide.contains(label));
+    }
+    assert!(!wide.contains("Private account detail"));
+    assert!(!wide.contains("No quota windows reported"));
+
+    let narrow = render(&dashboard, 34, 14);
+    assert!(narrow.contains("Credits · $42.50 remaining"));
+    assert!(narrow.contains("Limit resets · 1 available"));
+    assert!(narrow.contains("$120.00"));
+    assert_eq!(
+        click_label(&mut dashboard, (34, 14), "$120.00"),
+        Some(MouseAction::Show(Page::Detail))
+    );
+    dashboard.show(Page::Detail);
+    assert!(render(&dashboard, 34, 14).contains("Private account detail"));
+}
+
+#[test]
+fn usage_scrolls_a_single_long_overview_and_keeps_fact_hits_aligned() {
+    let mut dashboard = Dashboard::new(true);
+    let narrow = Rect::new(0, 0, 34, 14);
+    let wide = Rect::new(0, 0, 112, 14);
+    dashboard.apply_snapshot(Ok(State {
+        providers: vec![crate::snapshot::Provider {
+            id: "codex".into(),
+            plan: None,
+            fetched_at: None,
+            status: "Cache ready".into(),
+            details: vec!["Secondary detail".into()],
+            overview: vec![
+                "Credits · $300.00".into(),
+                "Limit resets · 2 available".into(),
+                format!("Provider notice · {} LAST-FACT", "quota warning ".repeat(30)),
+            ],
+            windows: Vec::new(),
+        }],
+        settings: Value::Null,
+    }));
+    assert!(!render(&dashboard, 34, 14).contains("LAST-FACT"));
+    for _ in 0..22 {
+        dashboard.navigate(Navigation::Down, narrow);
+    }
+    let screen = render(&dashboard, 34, 14);
+    assert!(screen.contains("LAST-FACT"), "{screen}");
+    dashboard.mouse(MouseEvent::Scroll(4, 6, Navigation::Up), wide);
+    assert!(render(&dashboard, 112, 14).contains("LAST-FACT"));
+    assert_eq!(
+        click_label(&mut dashboard, (112, 14), "LAST-FACT"),
+        Some(MouseAction::Show(Page::Detail))
+    );
+    dashboard.show(Page::Detail);
+    assert!(render(&dashboard, 112, 14).contains("Secondary detail"));
+}
+
+#[test]
+fn usage_refresh_preserves_the_selected_window_when_windows_reorder() {
+    let mut dashboard = Dashboard::new(true);
+    let area = Rect::new(0, 0, 80, 24);
+    let state = |windows: [&str; 2]| State {
+        providers: vec![
+            serde_json::from_value(json!({
+                "id":"codex",
+                "windows":windows.map(|label| json!({"label":label,"usedPercent":31.0}))
+            }))
+            .unwrap(),
+        ],
+        settings: Value::Null,
+    };
+    dashboard.apply_snapshot(Ok(state(["Weekly", "Session"])));
+    dashboard.navigate(Navigation::Down, area);
+    assert!(render(&dashboard, 80, 24).contains("› Weekly"));
+    dashboard.apply_snapshot(Ok(state(["Session", "Weekly"])));
+    assert!(render(&dashboard, 80, 24).contains("› Weekly"));
+    dashboard.show(Page::Detail);
+    assert!(render(&dashboard, 80, 24).contains("Weekly · 31.0% used"));
+}
+
+#[test]
+fn usage_refresh_returns_to_provider_when_its_last_overview_fact_disappears() {
+    let mut dashboard = Dashboard::new(true);
+    let area = Rect::new(0, 0, 80, 24);
+    let state = |overview: Vec<String>| State {
+        providers: vec![crate::snapshot::Provider {
+            id: "codex".into(),
+            plan: None,
+            fetched_at: None,
+            status: String::new(),
+            details: Vec::new(),
+            overview,
+            windows: Vec::new(),
+        }],
+        settings: Value::Null,
+    };
+    dashboard.apply_snapshot(Ok(state(vec!["Credits · $25.00".into()])));
+    dashboard.navigate(Navigation::Down, area);
+    assert!(render(&dashboard, 80, 24).contains("› Credits · $25.00"));
+    dashboard.apply_snapshot(Ok(state(vec!["Credits · $20.00".into()])));
+    assert!(render(&dashboard, 80, 24).contains("› Credits · $20.00"));
+    dashboard.apply_snapshot(Ok(state(Vec::new())));
+    assert!(render(&dashboard, 80, 24).contains("› Codex"));
+    assert!(render(&dashboard, 80, 24).contains("No quota windows reported"));
 }

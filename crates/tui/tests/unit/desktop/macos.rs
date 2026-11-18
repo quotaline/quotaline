@@ -6,7 +6,8 @@ use quotaline_macos_ffi::{
     reading_cache::encode_reading_cache,
 };
 use quotaline_quota::{
-    CloudCredits, Detail, Notice, NoticeKind, Provider as QuotaProvider, ResetPrecision, Window as QuotaWindow,
+    CloudCredits, Detail, Notice, NoticeKind, Provider as QuotaProvider, ResetCredits, ResetPrecision, UsageCredits,
+    Window as QuotaWindow,
 };
 use serde_json::json;
 use std::fs;
@@ -119,7 +120,11 @@ impl Fixture {
             window
         })
         .collect();
-        let readings = [codex, QuotaProvider::empty("cursor", "connected")]
+        self.write_readings(demo, vec![codex, QuotaProvider::empty("cursor", "connected")]);
+    }
+
+    fn write_readings(&self, demo: bool, providers: Vec<QuotaProvider>) {
+        let readings = providers
             .into_iter()
             .map(|provider| ProviderReadingRecord {
                 provider: provider.into(),
@@ -264,7 +269,89 @@ fn loads_native_cache_with_preferences() {
                 "Cloud session credits · $10.00 of $20.00 left"
             ]
         );
+        assert_eq!(
+            provider.overview,
+            [
+                "Credits · $12.50 remaining",
+                "Cloud session credits · $10.00 of $20.00 remaining"
+            ]
+        );
     }
+}
+
+#[test]
+fn native_overview_preserves_selected_quota_and_credit_facts() {
+    let fixture = Fixture::new(false);
+    fixture.settings(
+        &Settings {
+            demo_choice: Some(false),
+            hide_identity: false,
+            has_custom_selection: Some(true),
+            selected_windows: vec!["copilot:premium_interactions".into()],
+            ..Settings::default()
+        },
+        true,
+    );
+    let mut copilot = QuotaProvider::empty("copilot", "connected");
+    copilot.identity = "example@example.com".into();
+    copilot.warnings.push("Quota reporting delayed".into());
+    copilot.windows.push(QuotaWindow::new(
+        "premium_interactions",
+        "Premium requests",
+        60.0,
+        None,
+        "",
+    ));
+    for (id, title, value) in [
+        (
+            "quota:premium_interactions",
+            "Premium requests",
+            "Remaining: 120 · Included: 300 · Credits used: 180",
+        ),
+        ("quota:chat", "Chat", "Unlimited"),
+    ] {
+        copilot.details.push(Detail {
+            id: id.into(),
+            title: title.into(),
+            value: value.into(),
+            explanation: String::new(),
+        });
+    }
+    let mut codex = QuotaProvider::empty("codex", "connected");
+    codex.usage_credits = Some(UsageCredits {
+        unlimited: true,
+        has_credits: Some(true),
+        overage_limit_reached: false,
+        local_messages: None,
+        cloud_messages: None,
+    });
+    codex.reset_credits = Some(ResetCredits {
+        available: 2,
+        applicable: 1,
+        total_earned: None,
+        purchase_eligible: false,
+        details: Vec::new(),
+    });
+    fixture.write_readings(false, vec![codex, copilot]);
+    let providers = fixture.backend().usage().unwrap().providers;
+    assert_eq!(
+        providers[0].overview,
+        ["Credits · Unlimited", "Limit resets · 2 available (1 applicable now)",]
+    );
+    assert_eq!(
+        providers[1].overview,
+        [
+            "Premium requests · Remaining: 120 · Included: 300 · Credits used: 180",
+            "Provider warnings · See details"
+        ]
+    );
+    assert_eq!(providers[1].details[0], "example@example.com");
+    assert!(
+        providers[1]
+            .details
+            .iter()
+            .any(|detail| detail == "Quota reporting delayed")
+    );
 }
 
 #[test]

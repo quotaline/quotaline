@@ -139,7 +139,7 @@ pub(crate) fn run(source: Source) -> io::Result<()> {
                 snapshots.reload(Instant::now());
                 dashboard.page().command()
             }
-            Action::Navigate(navigation) => dashboard.navigate(navigation),
+            Action::Navigate(navigation) => dashboard.navigate(navigation, area),
             Action::Show(page) => show(&mut dashboard, page),
             Action::StartCommand => {
                 dashboard.start_command();

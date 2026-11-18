@@ -47,11 +47,21 @@ fn old_service_quota_reports_usage_without_the_epoch_reset() {
     let bus = Bus::start();
     let _service = Fixture::serve(&bus.address, false);
     let mut cli = bus.cli();
-    cli.read_until("Reset unavailable");
+    cli.resize(130, 30);
+    cli.read_until("Remaining: 300 credits");
     let screen = cli.screen.screen().contents();
     let premium = screen.lines().find(|line| line.contains("Premium requests")).unwrap();
     assert!(premium.contains("40.0%"));
     assert!(premium.contains("Reset unavailable"));
+    assert!(screen.contains("Included: 500 credits"));
+    assert!(screen.contains("Spend credit balance · 0.125 EUR"));
+    assert!(screen.contains("Credits · Unlimited"));
+    assert!(screen.contains("Reset credit expired"));
+    assert!(screen.contains("Credits used: 200 credits"));
+    assert!(!screen.contains("Chat"));
+    assert!(screen.contains("Completions · Unlimited"));
+    assert!(!screen.contains("Private account"));
+    assert!(!screen.contains("Example workspace"));
     cli.quit(b"q");
 }
 
@@ -318,11 +328,13 @@ impl Service {
                     "show_in_usage":true,
                     "identity":"Private account","organization":"Example workspace","show_organization":true,
                     "details":[{"title":"Seats","value":"5"}],
-                    "notices":[{"text":"Plan renewal"}],"warnings":["Backoff"],
+                    "notices":[{"kind":"promotion","text":"Plan renewal"}],"warnings":["Backoff"],
                     "credit_balance":25.0,
                     "cloud_credits":{"remaining":15.0,"limit":50.0},
-                    "reset_credits":{"available":3},
-                    "spend":{"percent":40.0},
+                    "usage_credits":{"unlimited":true,"has_credits":true,"overage_limit_reached":false},
+                    "reset_credits":{"available":3,"applicable":2,"purchase_eligible":false,"details":[]},
+                    "reset_credit_expiries":[{"id":"pending-refresh","at":1780003600}],
+                    "spend":{"percent":40.0,"limit_reached":false,"balance_money":{"currency":"EUR","amount_minor":125,"exponent":3}},
                     "windows":[
                         {"id":"weekly","label":"Weekly","used":108.5,"reset":"2026-11-20T15:00:00Z",
                          "reset_precision":"day","pace":{"status":"on_track","expected_percent":80}},
@@ -339,13 +351,19 @@ impl Service {
                 },
                 "copilot":{
                     "plan":"Pro","updated":1780000000,"status":"ready","show_in_usage":true,
-                    "identity":"","show_organization":false,"details":[],"notices":[],"warnings":[],
+                    "identity":"","show_organization":false,"details":[
+                        {"id":"quota:premium_interactions","title":"Premium credits",
+                         "value":"Included: 500 credits · Remaining: 300 credits · Credits used: 200 credits · Overage used: 0 credits"},
+                        {"id":"quota:chat","title":"Chat","value":"Unlimited · Included: 0 credits"},
+                        {"id":"quota:completions","title":"Completions","value":"Unlimited"}
+                    ],"notices":[],"warnings":[],
                     "windows":[{"id":"premium_interactions","label":"Premium requests","used":40.0,
-                                "reset":"1970-01-01T00:00:00+00:00"}]
+                                "reset":"1970-01-01T00:00:00+00:00"},
+                               {"id":"completions","label":"Completions","used":null}]
                 }
             },
             "ordering":{"providers":["notCached","codex","cursor","gemini","copilot"]},
-            "selected_window_keys":["codex:weekly","copilot:premium_interactions"],
+            "selected_window_keys":["codex:weekly","copilot:premium_interactions","copilot:completions"],
             "settings":{"write_usage_json":false,"hide_identity":true,"history_stacked":self.stacked}
         })
         .to_string()

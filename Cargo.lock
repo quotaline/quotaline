@@ -2505,6 +2505,7 @@ dependencies = [
  "signal-hook",
  "tempfile",
  "termion",
+ "textwrap",
  "tokio",
  "vt100",
  "zbus",

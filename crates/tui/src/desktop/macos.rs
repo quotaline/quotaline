@@ -32,7 +32,7 @@ use quotaline_status_bar::default_window_ids;
 use serde::Deserialize;
 
 use super::{Command, History, Output, Series, State};
-use crate::snapshot::{Provider, Window};
+use crate::snapshot::{Provider, Window, provider_overview};
 
 pub(crate) struct Backend {
     home: Option<PathBuf>,
@@ -228,18 +228,32 @@ impl<'home> Desktop<'home> {
         let mut providers = readings
             .into_iter()
             .map(|reading| {
-                let provider = reading.provider;
+                let provider: quotaline_quota::Provider = reading.provider.into();
                 let identity = usage_identity_presentation(
                     nonempty(&provider.identity),
                     nonempty(&provider.organization),
                     self.settings.hide_identity,
                 );
+                let redact = |mut detail: String| {
+                    if self.settings.hide_identity {
+                        for replacement in &identity.replacements {
+                            detail = detail.replace(&replacement.value, &replacement.replacement);
+                        }
+                    }
+                    self.redact(detail, Vec::new())
+                };
+                let overview =
+                    provider_overview(&provider, |id| selected.contains(&format!("{}:{id}", provider.id)), now)
+                        .into_iter()
+                        .map(&redact)
+                        .collect();
                 let provider_details = provider
                     .details
                     .iter()
                     .filter(|detail| detail.id != "oauth-availability" && !detail.value.trim().is_empty())
                     .map(|detail| format!("{} · {}", detail.title, detail.value))
                     .chain(provider.notices.into_iter().map(|notice| notice.text))
+                    .chain(provider.warnings)
                     .chain(provider.credit_balance.map(|balance| format!("Credits · {balance:.2}")))
                     .chain(provider.cloud_credits.map(|credits| {
                         format!(
@@ -247,14 +261,7 @@ impl<'home> Desktop<'home> {
                             credits.remaining, credits.limit
                         )
                     }))
-                    .map(|mut detail| {
-                        if self.settings.hide_identity {
-                            for replacement in &identity.replacements {
-                                detail = detail.replace(&replacement.value, &replacement.replacement);
-                            }
-                        }
-                        self.redact(detail, Vec::new())
-                    });
+                    .map(redact);
                 let details = identity
                     .email
                     .into_iter()
@@ -265,6 +272,7 @@ impl<'home> Desktop<'home> {
                     plan: (!provider.plan.is_empty()).then_some(provider.plan),
                     fetched_at: Timestamp::from_second(reading.fetched_at as i64).ok(),
                     status: "Cached".into(),
+                    overview,
                     details,
                     windows: provider
                         .windows
@@ -272,8 +280,7 @@ impl<'home> Desktop<'home> {
                         .filter_map(|window| {
                             let key = format!("{}:{}", provider.id, window.id);
                             selected.contains(&key).then(|| {
-                                let reset_by_day = window.reset_by_day;
-                                let window: quotaline_quota::Window = window.into();
+                                let reset_by_day = window.reset_precision == quotaline_quota::ResetPrecision::Day;
                                 let pace = PaceEstimate::estimate(
                                     &window,
                                     samples.get(&key).map_or(&[], Vec::as_slice),

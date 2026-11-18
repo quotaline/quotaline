@@ -1,4 +1,4 @@
-//! Shows every visible provider and quota window in one scrolling table.
+//! Shows providers, quota windows, and account usage in one scrolling table.
 
 use jiff::{
     Timestamp,
@@ -17,18 +17,33 @@ use serde_json::Value;
 
 use crate::snapshot::{Provider, Window};
 
-pub(crate) fn positions(providers: &[Provider]) -> impl Iterator<Item = (usize, usize)> + '_ {
-    providers
-        .iter()
-        .enumerate()
-        .flat_map(|(provider, data)| (0..=data.windows.len()).map(move |window| (provider, window)))
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(crate) enum UsageRow {
+    Provider,
+    Window(usize),
+    Overview(usize, usize),
+}
+
+pub(crate) type UsagePosition = (usize, UsageRow);
+
+pub(crate) fn step(area: Rect, providers: &[Provider], selected: UsagePosition, forward: bool) -> UsagePosition {
+    let entries = entries(Block::bordered().inner(area).width, providers);
+    let current = active_row(&entries, selected);
+    let next = if forward {
+        current + 1
+    } else {
+        current.saturating_sub(1)
+    };
+    entries
+        .get(next.min(entries.len().saturating_sub(1)))
+        .map_or(selected, Entry::position)
 }
 
 pub(crate) fn draw(
     frame: &mut Frame<'_>,
     area: Rect,
     providers: &[Provider],
-    selected: (usize, usize),
+    selected: UsagePosition,
     settings: &Value,
     read_failed: bool,
 ) {
@@ -52,49 +67,206 @@ pub(crate) fn draw(
 
     let decimals = settings["decimals"].as_u64().unwrap_or(1).min(2) as usize;
     let clock = ReadingTime::at(Timestamp::now());
-    for (row, index @ (provider, window)) in visible_rows(inner, providers, selected) {
-        let active = index == selected;
-        let data = &providers[provider];
-        if let Some(window) = window.checked_sub(1).and_then(|index| data.windows.get(index)) {
-            draw_window(frame, row, window, active, (remaining, decimals), clock);
-        } else {
-            draw_provider(frame, row, data, active, clock);
+    for (area, entry, active) in visible_rows(inner, providers, selected) {
+        let provider = &providers[entry.provider];
+        match entry.row {
+            Row::Provider => draw_provider(frame, area, provider, active, clock),
+            Row::Window(index) => draw_window(
+                frame,
+                area,
+                &provider.windows[index],
+                active,
+                (remaining, decimals),
+                clock,
+            ),
+            Row::Overview { text, .. } => {
+                let marker = if active { "  › " } else { "    " };
+                let line = Line::from(format!("{marker}{text}"));
+                frame.render_widget(if active { line.cyan().bold() } else { line }, area);
+            }
         }
     }
 }
 
-pub(crate) fn hit(
-    area: Rect,
-    providers: &[Provider],
-    selected: (usize, usize),
-    at: Position,
-) -> Option<(usize, usize)> {
+pub(crate) fn hit(area: Rect, providers: &[Provider], selected: UsagePosition, at: Position) -> Option<UsagePosition> {
     visible_rows(Block::bordered().inner(area), providers, selected)
-        .find_map(|(row, index)| row.contains(at).then_some(index))
+        .find_map(|(row, entry, _)| row.contains(at).then(|| entry.position()))
 }
 
 fn visible_rows(
     inner: Rect,
     providers: &[Provider],
-    selected: (usize, usize),
-) -> impl Iterator<Item = (Rect, (usize, usize))> {
-    let line_height = if inner.width < 73 { 2 } else { 1 };
-    let visible = usize::from(inner.height / line_height);
-    let rows = positions(providers).collect::<Vec<_>>();
-    let selected = rows.iter().position(|&row| row == selected).unwrap_or(0);
-    let start = selected
-        .saturating_sub(visible / 2)
-        .min(rows.len().saturating_sub(visible));
-    rows.into_iter()
-        .skip(start)
-        .take(visible)
-        .enumerate()
-        .map(move |(offset, index)| {
-            (
-                Rect::new(inner.x, inner.y + offset as u16 * line_height, inner.width, line_height),
-                index,
-            )
+    selected: UsagePosition,
+) -> impl Iterator<Item = (Rect, Entry, bool)> {
+    let entries = entries(inner.width, providers);
+    let active = active_row(&entries, selected);
+    let height = usize::from(inner.height);
+    let total = entries.iter().map(|entry| entry.height).sum::<usize>();
+    let focus = entries[..active].iter().map(|entry| entry.height).sum::<usize>();
+    let top = focus.saturating_sub(height / 2).min(total.saturating_sub(height));
+    let start = entries
+        .iter()
+        .scan(0, |offset, entry| {
+            let before = *offset;
+            *offset += entry.height;
+            Some(before)
         })
+        .position(|offset| offset >= top)
+        .unwrap_or(0);
+    entries
+        .into_iter()
+        .enumerate()
+        .skip(start)
+        .scan(0, move |offset, (index, entry)| {
+            let before = *offset;
+            *offset += entry.height;
+            (*offset <= height).then(|| {
+                (
+                    Rect::new(inner.x, inner.y + before as u16, inner.width, entry.height as u16),
+                    entry,
+                    index == active,
+                )
+            })
+        })
+}
+
+struct Entry {
+    provider: usize,
+    height: usize,
+    row: Row,
+}
+
+enum Row {
+    Provider,
+    Window(usize),
+    Overview {
+        first: usize,
+        last: usize,
+        fragment: usize,
+        text: String,
+    },
+}
+
+impl Entry {
+    fn position(&self) -> UsagePosition {
+        let row = match &self.row {
+            Row::Provider => UsageRow::Provider,
+            Row::Window(index) => UsageRow::Window(*index),
+            Row::Overview { first, fragment, .. } => UsageRow::Overview(*first, *fragment),
+        };
+        (self.provider, row)
+    }
+}
+
+fn entries(width: u16, providers: &[Provider]) -> Vec<Entry> {
+    let window_height = if width < 73 { 2 } else { 1 };
+    let mut entries = Vec::new();
+    for (provider, data) in providers.iter().enumerate() {
+        entries.push(Entry {
+            provider,
+            height: if provider_subtitle(data).is_some() {
+                window_height
+            } else {
+                1
+            },
+            row: Row::Provider,
+        });
+        entries.extend((0..data.windows.len()).map(|index| Entry {
+            provider,
+            height: window_height,
+            row: Row::Window(index),
+        }));
+        append_overview(
+            &mut entries,
+            provider,
+            &data.overview,
+            usize::from(width.saturating_sub(4).max(1)),
+        );
+    }
+    entries
+}
+
+fn append_overview(entries: &mut Vec<Entry>, provider: usize, facts: &[String], width: usize) {
+    let wrapping = textwrap::Options::new(width).word_splitter(textwrap::WordSplitter::NoHyphenation);
+    for (index, fact) in facts.iter().enumerate() {
+        if fact.trim().is_empty() {
+            continue;
+        }
+        let lines = textwrap::wrap(fact, &wrapping);
+        if let [line] = lines.as_slice()
+            && let Some(Entry {
+                row:
+                    Row::Overview {
+                        last,
+                        fragment: 0,
+                        text,
+                        ..
+                    },
+                ..
+            }) = entries.last_mut()
+            && Line::raw(text.as_str()).width() + 3 + Line::raw(line.as_ref()).width() <= width
+        {
+            text.push_str("   ");
+            text.push_str(line);
+            *last = index;
+            continue;
+        }
+        entries.extend(lines.into_iter().enumerate().map(|(fragment, text)| Entry {
+            provider,
+            height: 1,
+            row: Row::Overview {
+                first: index,
+                last: index,
+                fragment,
+                text: text.into_owned(),
+            },
+        }));
+    }
+}
+
+fn active_row(entries: &[Entry], (provider, selected): UsagePosition) -> usize {
+    let mut fallback = 0;
+    for (index, entry) in entries.iter().enumerate() {
+        if entry.provider != provider {
+            continue;
+        }
+        match (&entry.row, selected) {
+            (Row::Provider, _) => fallback = index,
+            (
+                Row::Overview {
+                    first, last, fragment, ..
+                },
+                UsageRow::Overview(fact, selected_fragment),
+            ) if (*first..=*last).contains(&fact) => {
+                fallback = index;
+                if *fragment == selected_fragment {
+                    return index;
+                }
+            }
+            _ => {}
+        }
+        if entry.position() == (provider, selected) {
+            return index;
+        }
+    }
+    fallback
+}
+
+enum ProviderSubtitle<'a> {
+    Observed(Timestamp),
+    Status(&'a str),
+}
+
+fn provider_subtitle(provider: &Provider) -> Option<ProviderSubtitle<'_>> {
+    if let Some(stamp) = provider.fetched_at {
+        Some(ProviderSubtitle::Observed(stamp))
+    } else if !provider.status.is_empty() {
+        Some(ProviderSubtitle::Status(&provider.status))
+    } else if provider.windows.is_empty() && provider.overview.is_empty() {
+        Some(ProviderSubtitle::Status("No quota windows reported"))
+    } else {
+        None
+    }
 }
 
 pub(crate) fn window_details(window: &Window, settings: &Value) -> [String; 2] {
@@ -114,18 +286,18 @@ pub(crate) fn window_details(window: &Window, settings: &Value) -> [String; 2] {
 }
 
 fn draw_provider(frame: &mut Frame<'_>, area: Rect, provider: &Provider, active: bool, clock: ReadingTime) {
-    let source = provider
-        .fetched_at
-        .map_or_else(|| provider.status.clone(), |stamp| clock.observed(stamp));
-    let secondary = if provider.windows.is_empty() && provider.status.is_empty() {
-        "No quota windows reported".into()
-    } else {
-        source
-    };
     let mut title = Line::from(Span::raw(format!("{} {}", if active { "›" } else { " " }, provider.name())).bold());
     if let Some(plan) = &provider.plan {
         title.push_span(format!(" · {plan}").dim());
     }
+    let Some(subtitle) = provider_subtitle(provider) else {
+        frame.render_widget(title.cyan(), area);
+        return;
+    };
+    let secondary = match subtitle {
+        ProviderSubtitle::Observed(stamp) => clock.observed(stamp),
+        ProviderSubtitle::Status(text) => text.to_owned(),
+    };
     let [name, status] = if area.height == 1 {
         Layout::horizontal([Constraint::Fill(1), Constraint::Length(32)]).areas(area)
     } else {
