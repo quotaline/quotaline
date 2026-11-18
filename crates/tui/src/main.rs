@@ -13,6 +13,8 @@ mod preferences;
 #[cfg(any(target_os = "linux", target_os = "macos"))]
 mod snapshot;
 #[cfg(any(target_os = "linux", target_os = "macos"))]
+mod snapshot_schedule;
+#[cfg(any(target_os = "linux", target_os = "macos"))]
 mod usage;
 
 #[cfg(not(test))]

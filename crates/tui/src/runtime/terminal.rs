@@ -14,7 +14,7 @@ use std::{
         mpsc,
     },
     thread,
-    time::{Duration, Instant},
+    time::Instant,
 };
 use termion::{raw::IntoRawMode, screen::IntoAlternateScreen};
 
@@ -25,6 +25,7 @@ use crate::{
     keys::{Action, Keys},
     pages::{self, Page},
     snapshot::LocalSnapshot,
+    snapshot_schedule::SnapshotSchedule,
 };
 
 pub(crate) fn run(source: Source) -> io::Result<()> {
@@ -51,12 +52,15 @@ pub(crate) fn run(source: Source) -> io::Result<()> {
         Source::Local(LocalSnapshot::File(path)) => path.to_string_lossy().replace(char::is_control, ""),
         Source::Local(LocalSnapshot::Demo) => "Demo data".into(),
     };
-    let mut dashboard = Dashboard::new(cfg!(target_os = "linux") && matches!(source, Source::Desktop));
+    #[cfg(target_os = "linux")]
+    let settings_editable = matches!(source, Source::Desktop);
+    #[cfg(target_os = "macos")]
+    let settings_editable = false;
+    let mut dashboard = Dashboard::new(settings_editable);
     let mut keys = Keys::default();
     let (jobs, responses) = worker(source);
-    let mut pending_snapshot = false;
+    let mut snapshots = SnapshotSchedule::new(Instant::now());
     let mut last_size = None;
-    let mut refresh_at = Instant::now();
     let mut redraw = true;
 
     while !interrupted.load(Ordering::Relaxed) {
@@ -64,19 +68,17 @@ pub(crate) fn run(source: Source) -> io::Result<()> {
             match response {
                 Response::Snapshot(snapshot) => {
                     dashboard.apply_snapshot(snapshot);
-                    pending_snapshot = false;
+                    snapshots.finish();
                 }
                 Response::Command(page, output) => {
                     dashboard.apply_output(page, output);
-                    refresh_at = Instant::now();
+                    snapshots.reload(Instant::now());
                 }
             }
             redraw = true;
         }
-        if !pending_snapshot && Instant::now() >= refresh_at {
+        if snapshots.start(Instant::now()) {
             jobs.send(Job::Snapshot).map_err(io::Error::other)?;
-            pending_snapshot = true;
-            refresh_at = Instant::now() + Duration::from_secs(2);
         }
 
         let size = terminal.size()?;
@@ -114,7 +116,7 @@ pub(crate) fn run(source: Source) -> io::Result<()> {
         let command = match action {
             Action::Quit => break,
             Action::Reload => {
-                refresh_at = Instant::now();
+                snapshots.reload(Instant::now());
                 dashboard.page().command()
             }
             Action::Navigate(navigation) => dashboard.navigate(navigation),

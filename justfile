@@ -178,10 +178,17 @@ coverage-tui: _tmp
 
 # Storage, history, and credential sources reach full coverage through the platform suites that `coverage` runs.
 coverage-crates:
+    #!/bin/sh
+    set -eu
     cargo llvm-cov clean --workspace
     mkdir -p {{ tmp }}
     TMPDIR={{ tmp }} NEXTEST_STATUS_LEVEL=fail NEXTEST_SHOW_PROGRESS=none RUSTC_BOOTSTRAP=1 cargo llvm-cov nextest --locked $(for manifest in crates/*/Cargo.toml crates/*/*/Cargo.toml; do crate=$(dirname "$manifest"); case "$(basename "$crate")" in credential-sources|history|storage) ;; *) printf -- '-p quotaline-%s ' "$(basename "$crate")" ;; esac; done) --branch --json --no-default-ignore-filename-regex --ignore-filename-regex '{{ rust_coverage_ignore }}' --profile {{ nextest_profile }} --output-path target/crates-coverage-detailed.json
-    jq -e '[.data[0].files[] | select(.filename | test("/crates/([^/]+/)?[^/]+/src/") and (test("/crates/[^/]+/(credential-sources|history|storage)/") | not))] | length > 0 and all(.[]; .summary.lines.count > 0 and .summary.lines.covered == .summary.lines.count and .summary.branches.covered == .summary.branches.count)' target/crates-coverage-detailed.json
+    jq -er '
+      [.data[0].files[] | select(.filename | test("/crates/([^/]+/)?[^/]+/src/") and (test("/crates/[^/]+/(credential-sources|history|storage)/") | not))] as $files |
+      [$files[] | select(.summary | .lines.count == 0 or .lines.covered != .lines.count or .branches.covered != .branches.count)] as $uncovered |
+      ($uncovered[] | "\(.filename): lines \(.summary.lines.covered)/\(.summary.lines.count), branches \(.summary.branches.covered)/\(.summary.branches.count)"),
+      (($files | length > 0) and ($uncovered | length == 0))
+    ' target/crates-coverage-detailed.json
 
 coverage-macos-ffi:
     # UniFFI emits an unused Rust deserializer for the Swift callback; its ABI is exercised by the callback test.
