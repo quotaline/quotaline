@@ -10,20 +10,20 @@ dashboard updates as the desktop backend updates and keeps the last readable quo
 
 ## Keyboard controls
 
-| Key        | Action                                                        |
-| ---------- | ------------------------------------------------------------- |
-| 1, 2, 3, 4 | Open Usage, History, Settings, or Logs                        |
-| ↑/↓, j/k   | Move through providers, quota windows, series, or text rows   |
-| Tab        | Jump to the next provider or settings group                   |
-| ←/→        | Adjust a setting, inspect a history reading, or pan long text |
-| d          | Show details for the selected provider                        |
-| r          | Reload from the current source                                |
-| R, s       | Request a refresh or sign-in for the selected GNOME provider  |
-| [ / ], n   | Page through history ranges or return to the current range    |
-| v, i       | Toggle or isolate the selected history series                 |
-| Enter      | Toggle or edit the selected GNOME setting                     |
-| :, ?       | Enter a command or open the command reference                 |
-| q, Ctrl+C  | Quit                                                          |
+| Key        | Action                                                         |
+| ---------- | -------------------------------------------------------------- |
+| 1, 2, 3, 4 | Open Usage, History, Settings, or Logs                         |
+| ↑/↓, j/k   | Move through providers, quota windows, series, or text rows    |
+| Tab        | Jump to the next provider or settings group                    |
+| ←/→        | Adjust a setting, inspect a history reading, or pan long text  |
+| d          | Show details for the selected provider                         |
+| r          | Reload from the current source                                 |
+| R, s       | Request a refresh or sign-in for the selected provider (Linux) |
+| [ / ], n   | Page through history ranges or return to the current range     |
+| v, i       | Toggle or isolate the selected history series                  |
+| Enter      | Toggle or edit the selected setting on Linux                   |
+| :, ?       | Enter a command or open the command reference                  |
+| q, Ctrl+C  | Quit                                                           |
 
 ## Usage and History
 
@@ -39,11 +39,11 @@ metric and range, or `:export-all /absolute/path.csv` to export all history. Cho
 
 ## Settings and diagnostics
 
-Settings groups provider collection, display options, notifications, data, and diagnostics. On GNOME, use the arrows to
-adjust an option or press **Enter** to toggle a switch or edit a text field. Changes apply to the GNOME service and
-appear in both frontends. **Esc** cancels text entry. Use **?** for additional model and support commands.
+Settings groups provider collection, display options, notifications, data, and diagnostics. On Linux, use the arrows to
+adjust an option or press **Enter** to toggle a switch or edit a text field. The terminal and desktop app share these
+settings. **Esc** cancels text entry. Use **?** for additional model and support commands.
 
-Press **4** for recent service logs. `:logs full` shows retained logs, `:diagnostics` displays the diagnostic report,
+Press **4** for recent desktop logs. `:logs full` shows retained logs, `:diagnostics` displays the diagnostic report,
 and `:issue` displays the issue report link. Use the left and right arrows to pan long lines.
 
 The macOS app owns settings changes, sign-in, and refreshes. The terminal can view its settings and logs and work with
