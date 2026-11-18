@@ -47,6 +47,12 @@ workflows:
         - 'jdx/mise-action@v5.2.7'
         - 'tox-dev/github-workflows@6.8.3'
     '.github/workflows/scorecard.yaml': []
+    '.github/workflows/tui-ci.yml':
+        - 'actions-rust-lang/setup-rust-toolchain@v2.0.1'
+        - 'actions/checkout@v7.0.1'
+        - 'actions/upload-artifact@v7.0.2'
+        - 'jdx/mise-action@v5.2.7'
+        - 'swatinem/rust-cache@v2.9.3'
     '.github/workflows/upgrade-release-tools.yml': []
 dependencies:
     'actions-rust-lang/setup-rust-toolchain@v2.0.1':
