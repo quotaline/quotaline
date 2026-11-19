@@ -433,3 +433,20 @@ async fn a_rate_limit_and_its_backoff_reach_the_other_engines() {
     tokio::time::sleep(Duration::from_millis(500)).await;
     assert_eq!(fetches.load(Ordering::SeqCst), 2, "taking over ignored the rate limit");
 }
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn a_provider_turned_off_is_not_fetched_even_when_named() {
+    let (_root, _server, fetches) = machine(&[42]).await;
+    // Not running, so no poller takes the signal a cycle gives when it ends.
+    let engine = Engine::new(false, recorder()).unwrap();
+    assert!(engine.contest().await);
+    let off = json!({"claude": false, "codex": false, "gemini": false, "antigravity": false, "cursor": false, "copilot": false});
+    engine.apply_setting("providers", &off.to_string()).await.unwrap();
+    engine.schedule_changed.notified().await;
+
+    assert!(engine.refresh("claude").await);
+    tokio::time::timeout(Duration::from_secs(30), engine.schedule_changed.notified())
+        .await
+        .unwrap();
+    assert_eq!(fetches.load(Ordering::SeqCst), 0);
+}

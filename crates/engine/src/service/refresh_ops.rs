@@ -56,7 +56,11 @@ impl Engine {
                     break;
                 };
                 let schedules = self.schedules(&inner);
-                let plans = inner.session.plan(&cycle, &self.schedule_inputs(&inner, &schedules));
+                let mut plans = inner.session.plan(&cycle, &self.schedule_inputs(&inner, &schedules));
+                // A refresh the user asks for reaches an inactive provider, but not one turned off since it was queued.
+                plans
+                    .fetches
+                    .retain(|fetch| inner.settings.providers.get(&fetch.provider) != Some(&false));
                 if plans.fetches.is_empty() {
                     inner.session.finish(&cycle);
                 }
