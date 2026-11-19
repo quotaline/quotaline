@@ -330,15 +330,38 @@ jobs:
     env:
       TMB_RUST_SCOPE: ${{ (needs.changes.outputs.crates == 'true' || needs.changes.outputs.shared == 'true' || contains(fromJSON('["workflow_dispatch","schedule"]'), github.event_name)) && 'workspace' || 'gnome' }}
       LIBGL_ALWAYS_SOFTWARE: "1"
+      GNOME_PACKAGES: gnome-shell gnome-keyring libsecret-tools dbus-bin dbus-daemon
     steps:
       - name: 📥 Check out code
         uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
+      # A slow mirror once spent the whole job downloading these 130 MB, and apt moves to another mirror only when one
+      # fails. Keying on the exact versions apt resolves keeps a hit complete; a miss still reuses unchanged packages.
+      - name: 🏷️ Resolve GNOME Shell packages
+        id: apt-cache
+        shell: bash
+        run: |
+          read -ra packages <<< "$GNOME_PACKAGES"
+          sudo apt-get -o Acquire::Retries=5 -o Acquire::http::Timeout=30 update
+          versions=$(apt-get install --print-uris --yes --no-install-recommends "${packages[@]}" | sha256sum | cut -c1-16)
+          echo "prefix=apt-$ImageOS-$ImageVersion-" >> "$GITHUB_OUTPUT"
+          echo "key=apt-$ImageOS-$ImageVersion-$versions" >> "$GITHUB_OUTPUT"
+      - name: 💾 Restore GNOME Shell packages
+        uses: actions/cache@v6.1.0
+        with:
+          path: ~/apt-archives
+          key: ${{ steps.apt-cache.outputs.key }}
+          restore-keys: ${{ steps.apt-cache.outputs.prefix }}
       - name: 📦 Install GNOME Shell test dependencies
         run: |
-          sudo apt-get -o Acquire::Retries=5 -o Acquire::http::Timeout=30 update
-          sudo apt-get -o Acquire::Retries=5 -o Acquire::http::Timeout=30 install --yes --no-install-recommends gnome-shell gnome-keyring libsecret-tools dbus-bin dbus-daemon
+          read -ra packages <<< "$GNOME_PACKAGES"
+          mkdir -p ~/apt-archives
+          find ~/apt-archives -name '*.deb' -exec sudo cp -t /var/cache/apt/archives/ {} +
+          sudo apt-get -o Acquire::Retries=5 -o Acquire::http::Timeout=30 -o APT::Keep-Downloaded-Packages=true \
+            install --yes --no-install-recommends "${packages[@]}"
+          rm -f ~/apt-archives/*.deb
+          cp /var/cache/apt/archives/*.deb ~/apt-archives/
       - name: 🔍 Verify GNOME Shell version
         run: gnome-shell --version | grep '^GNOME Shell 50[.]'
         shell: bash

@@ -14,7 +14,6 @@ import {
     instance,
     required,
 } from '../support/actors.js';
-import {readProvider} from '../support/dbus.js';
 import {waitOrFail} from '../support/shell-events.js';
 
 function afterPaint() {
@@ -148,14 +147,12 @@ export async function run() {
         const rows = required(antigravityBody)
             .get_children()
             .filter((actor: TestActor) => actor.has_style_class_name?.('tmb-window'));
-        const antigravity = readProvider('antigravity').windows;
-        const paceTitle = {
-            on_track: 'On pace',
-            ahead: 'Ahead',
-            behind: 'Under pace',
-            unknown: 'Learning pace',
-            exhausted: 'Limit reached',
-        };
+        // The service recomputes pace on every read, so a row rendered a moment earlier can show a status that has
+        // since moved on; the layout only needs a pace line.
+        const paced = (text: string | null | undefined) =>
+            ['On pace', 'Ahead', 'Under pace', 'Learning pace', 'Limit reached'].some(title =>
+                required(text).startsWith(title),
+            );
         const group = required(antigravityBody)
             .get_children()
             .find((actor: TestActor) => actor.has_style_class_name?.('tmb-quota-group-reset'));
@@ -170,7 +167,7 @@ export async function run() {
                 required(meterColumn).get_x() >= required(value).get_x() ||
                 required(value).get_x() >= required(reset).get_x() ||
                 required(pace).get_y() <= required(track).get_y() ||
-                !required(required(pace).text).startsWith(paceTitle[required(antigravity[0]).pace.status]) ||
+                !paced(required(pace).text) ||
                 !required(required(reset).text).includes('Resets in')
             )
                 throw new Error('Medium quota rows or resets do not fit');
@@ -186,10 +183,8 @@ export async function run() {
                 required(track).get_transformed_position()[1] <
                     required(title).get_transformed_position()[1] + required(title).height + 2 ||
                 required(pace).get_y() <= required(track).get_y() ||
-                !required(required(pace).text).startsWith(paceTitle[required(antigravity[0]).pace.status]) ||
-                !required(required(required(rows[1]).get_children()[2]).text).startsWith(
-                    paceTitle[required(antigravity[1]).pace.status],
-                ) ||
+                !paced(required(pace).text) ||
+                !paced(required(required(rows[1]).get_children()[2]).text) ||
                 rows.some(
                     (actor: TestActor) =>
                         !findActor(
