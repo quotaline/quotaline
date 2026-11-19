@@ -18,7 +18,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-26.04, macos-26]
+        os: [ubuntu-26.04, macos-26, windows-2025]
     steps:
       - name: 📥 Check out code
         uses: actions/checkout@v7.0.1
@@ -29,6 +29,7 @@ jobs:
         with:
           cache: false
       - name: 🧰 Install mise tools
+        if: runner.os != 'Windows'
         uses: jdx/mise-action@v5.2.7
         with:
           version: 2026.10.24
@@ -43,13 +44,12 @@ jobs:
           cargo fmt --check -p quotaline-tui
           cargo check --locked -p quotaline-tui --all-targets --all-features
           cargo clippy --locked -p quotaline-tui --all-targets --all-features -- -D warnings
-      - name: 📦 Install D-Bus test dependency
-        if: runner.os == 'Linux'
-        run: |
-          sudo apt-get -o Acquire::Retries=5 -o Acquire::http::Timeout=30 update
-          sudo apt-get -o Acquire::Retries=5 -o Acquire::http::Timeout=30 install \
-            --yes --no-install-recommends dbus-daemon
+      # The terminal tests drive a Unix pseudoterminal, so Windows runs the unit tests and coverage comes from Unix.
+      - name: 🧪 Run TUI unit tests
+        if: runner.os == 'Windows'
+        run: cargo test --locked -p quotaline-tui
       - name: 📊 Require full TUI line and branch coverage
+        if: runner.os != 'Windows'
         run: just coverage-tui
         env:
           TMB_TMPDIR: ${{ runner.temp }}/tui

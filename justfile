@@ -331,6 +331,18 @@ release-package: build pack
     cd target && sha256sum quotaline-gnome-linux-x86_64.tar.gz > quotaline-gnome-linux-x86_64.tar.gz.sha256
     just verify-release-package
 
+# Package the terminal dashboard for Linux; macOS and Windows package theirs in the release workflow
+tui-release-package:
+    cargo build --locked --release -p quotaline-tui
+    rm -rf target/tui-image
+    mkdir -p target/tui-image
+    install -m755 target/release/quotaline-tui target/tui-image/quotaline-tui
+    install -m644 README.md LICENSE target/tui-image
+    tar -C target/tui-image --sort=name --mtime='@0' --owner=0 --group=0 --numeric-owner -cf - LICENSE README.md quotaline-tui | gzip -n > target/quotaline-tui-linux-x86_64.tar.gz
+    cd target && sha256sum quotaline-tui-linux-x86_64.tar.gz > quotaline-tui-linux-x86_64.tar.gz.sha256
+    tar -tzf target/quotaline-tui-linux-x86_64.tar.gz
+    cd target && sha256sum --check quotaline-tui-linux-x86_64.tar.gz.sha256
+
 verify-release-package:
     test -s target/quotaline-gnome-linux-x86_64.tar.gz
     tar -tzf target/quotaline-gnome-linux-x86_64.tar.gz

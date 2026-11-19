@@ -2,7 +2,7 @@
 set -euo pipefail
 
 (("$#" > 0)) || {
-  echo "usage: notarize.sh <app-or-dmg> [...]" >&2
+  echo "usage: notarize.sh <app-dmg-or-zip> [...]" >&2
   exit 1
 }
 : "${APP_STORE_CONNECT_KEY_ID:?}"
@@ -36,6 +36,14 @@ for artifact in "$@"; do
       }
       notarize "$artifact"
       xcrun stapler staple "$artifact"
+      ;;
+    *.zip)
+      [[ -f "$artifact" ]] || {
+        echo "missing archive: $artifact" >&2
+        exit 1
+      }
+      # A ticket cannot be stapled to a zip or a bare command-line tool; Gatekeeper fetches it online instead.
+      notarize "$artifact"
       ;;
     *)
       echo "unsupported notarization artifact: $artifact" >&2
