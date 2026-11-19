@@ -50,17 +50,23 @@
 - id: tui
   name: Terminal
   navIcon: M3 5h18v14H3zM7 9l3 3-3 3m5 0h5
-  label: Linux and macOS
-  requires: Linux or macOS for the terminal dashboard
+  label: Linux, macOS and Windows
+  requires: Linux, macOS or Windows
   title: Terminal dashboard
-  summary: Provider quotas, history and settings from the desktop backend.
+  summary: Provider quotas, history and settings in any terminal, no desktop app needed.
   startTitle: Install the terminal dashboard
-  startSummary: Build from source and try the demo or connect to the desktop backend.
+  startSummary: Download one binary for Linux, macOS or Windows.
   action: Install the dashboard
   install: tui/install/
+  cardImage: images/tui-bar.webp
+  cardAlt: The quotaline-tui command in a terminal
+  cardScale: 1
+  cardClass: shot-bar
   cardUsageImage: images/tui-usage.webp
   cardUsageAlt: Grouped provider quotas in the Quotaline terminal dashboard
   cardUsageScale: 1
   overviewImage: images/tui-usage.webp
   overviewAlt: Grouped provider quotas in the Quotaline terminal dashboard
   overviewScale: 1
+  gallery: [Usage, History, Settings]
+  galleryImage: images/tui-%s.webp

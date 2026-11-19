@@ -44,7 +44,7 @@ flowchart LR
 ```
 
 The cask job opens a pull request with the new version and checksum after the GitHub Release exists. Merging that PR
-updates `main`. GitHub publication verifies the SHA256 digest of all 12 expected assets. A failed asset upload leaves a
+updates `main`. GitHub publication verifies the SHA256 digest of all 18 expected assets. A failed asset upload leaves a
 draft for retry; a retry updates the draft's notes and rejects changed assets.
 
 The Direct job needs signing credentials and [Sparkle](https://sparkle-project.org) keys. The App Store upload can
