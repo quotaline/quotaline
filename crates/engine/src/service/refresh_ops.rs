@@ -10,10 +10,6 @@ impl Engine {
         if self.delegate_refresh(requested).await {
             return true;
         }
-        // A fetch already in flight answers this request, as it finishes after it was made.
-        if self.inner.lock().await.running.contains(requested) {
-            return true;
-        }
         self.request(refresh::RefreshIntent {
             reason: refresh::RefreshReason::UserInitiated,
             usage: refresh::RefreshPolicy::Force,
@@ -34,6 +30,14 @@ impl Engine {
                 drop(inner);
                 self.persist().await;
                 self.emit().await;
+                return;
+            }
+            // Fetches in flight answer a request for only their providers, as they finish after it was made.
+            if intent
+                .providers
+                .as_ref()
+                .is_some_and(|providers| providers.is_subset(&inner.running))
+            {
                 return;
             }
             inner.session.request(intent);

@@ -470,3 +470,15 @@ async fn turning_a_provider_on_fetches_it_once() {
     running.engine.quit();
     running.run.await.unwrap();
 }
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn a_refresh_of_a_provider_being_fetched_waits_for_that_fetch() {
+    let (_root, _server, fetches) = machine(&[42]).await;
+    let engine = Engine::new(false, recorder()).unwrap();
+    assert!(engine.contest().await);
+    engine.inner.lock().await.running.insert("claude".into());
+
+    assert!(engine.refresh("claude").await);
+    assert!(!engine.inner.lock().await.cycle_running);
+    assert_eq!(fetches.load(Ordering::SeqCst), 0);
+}
