@@ -917,7 +917,7 @@ jobs:
           JOB_RESULT: ${{ needs.validate.result }}
         run: test "$JOB_RESULT" = success
       - name: 🚦 Require every applicable CI job
-        uses: tox-dev/github-workflows/required-checks@6.8.3
+        uses: tox-dev/github-workflows/required-checks@6.8.5
         with:
           needs: ${{ toJSON(needs) }}
           # Each applicable job must pass; a job that does not apply to this change set may be skipped.
