@@ -450,3 +450,23 @@ async fn a_provider_turned_off_is_not_fetched_even_when_named() {
         .unwrap();
     assert_eq!(fetches.load(Ordering::SeqCst), 0);
 }
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn turning_a_provider_on_fetches_it_once() {
+    let (_root, _server, fetches) = machine(&[42]).await;
+    let off = json!({"claude": false, "codex": false, "gemini": false, "antigravity": false, "cursor": false, "copilot": false});
+    fs::write(store::config(), json!({"providers": off}).to_string()).unwrap();
+    let running = Running::start();
+    let mut on = off.clone();
+    on["claude"] = true.into();
+    running
+        .engine
+        .apply_setting("providers", &on.to_string())
+        .await
+        .unwrap();
+    running.used(42.0).await;
+    tokio::time::sleep(Duration::from_millis(300)).await;
+    assert_eq!(fetches.load(Ordering::SeqCst), 1);
+    running.engine.quit();
+    running.run.await.unwrap();
+}

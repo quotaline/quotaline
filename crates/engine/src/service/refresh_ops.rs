@@ -10,6 +10,10 @@ impl Engine {
         if self.delegate_refresh(requested).await {
             return true;
         }
+        // A fetch already in flight answers this request, as it finishes after it was made.
+        if self.inner.lock().await.running.contains(requested) {
+            return true;
+        }
         self.request(refresh::RefreshIntent {
             reason: refresh::RefreshReason::UserInitiated,
             usage: refresh::RefreshPolicy::Force,

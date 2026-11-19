@@ -307,7 +307,14 @@ impl Engine {
         }
         let leading = self.contest().await;
         if leading || self.is_demo().await {
-            self.refresh("all").await;
+            // Everything is due in a new session, and a provider a front end refreshed while this engine started is not.
+            self.request(refresh::RefreshIntent {
+                reason: refresh::RefreshReason::Scheduled,
+                usage: refresh::RefreshPolicy::IfDue,
+                analytics: refresh::RefreshPolicy::Skip,
+                providers: None,
+            })
+            .await;
         } else {
             self.follow().await;
         }
