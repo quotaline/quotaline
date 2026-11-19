@@ -293,7 +293,10 @@ jobs:
           path: macos/.build/ui-build.log
           retention-days: 1
       - name: 📤 Retain rendered-text assertions
+        id: rendered
         if: ${{ !cancelled() && contains(join(matrix.shard.groups, ' '), 'text-') && (inputs.test == '' || startsWith(inputs.test, 'LiveControlAuditUITests/testLongTextAt')) }}
+        # The artifact service can drop the finalize request after the bytes are stored; one retry recovers it.
+        continue-on-error: true
         uses: actions/upload-artifact@v7.0.2
         with:
           name: rendered-ui-${{ inputs.runtime-major }}-${{ matrix.shard.name }}
@@ -302,3 +305,14 @@ jobs:
             macos/.build/ui-artifacts/**/*.ocr.json
           if-no-files-found: error
           retention-days: 1
+      - name: 📤 Retry rendered-text assertions
+        if: ${{ !cancelled() && steps.rendered.outcome == 'failure' }}
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: rendered-ui-${{ inputs.runtime-major }}-${{ matrix.shard.name }}
+          path: |
+            macos/.build/ui-artifacts/**/banner-*.png
+            macos/.build/ui-artifacts/**/*.ocr.json
+          if-no-files-found: error
+          retention-days: 1
+          overwrite: true
