@@ -105,6 +105,7 @@ jobs:
       contents: read
     outputs:
       commit: ${{ steps.commit.outputs.sha }}
+      source-artifact-id: ${{ steps.source.outputs.artifact-id }}
     steps:
       - name: 📥 Check out code
         uses: actions/checkout@v7.0.1
@@ -114,6 +115,16 @@ jobs:
       - name: ⚙️ Record the tagged commit
         id: commit
         run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+      # Builds that need no secrets compile this snapshot rather than checking out the requested ref themselves.
+      - name: 📦 Archive the tagged source
+        run: git archive --format=tar.gz --output="$RUNNER_TEMP/source.tar.gz" HEAD
+      - name: 📤 Upload the tagged source
+        id: source
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: source
+          path: ${{ runner.temp }}/source.tar.gz
+          if-no-files-found: error
   gnome:
     name: 🏗️ Build GNOME download
     needs: verify-source
@@ -155,17 +166,18 @@ jobs:
     needs: verify-source
     runs-on: ubuntu-26.04
     timeout-minutes: 30
-    environment: release
     permissions:
       contents: read
     outputs:
       artifact-id: ${{ steps.upload.outputs.artifact-id }}
     steps:
-      - name: 📥 Check out code
-        uses: actions/checkout@v7.0.1
+      - name: 📩 Download the tagged source
+        uses: actions/download-artifact@v8.0.2
         with:
-          ref: ${{ needs.verify-source.outputs.commit }}
-          persist-credentials: false
+          artifact-ids: ${{ needs.verify-source.outputs.source-artifact-id }}
+          path: ${{ runner.temp }}
+      - name: 📦 Unpack the tagged source
+        run: tar -xzf "${{ runner.temp }}/source.tar.gz"
       - name: 🦀 Install Rust toolchain
         uses: actions-rust-lang/setup-rust-toolchain@v2.0.1
         with:
@@ -249,17 +261,18 @@ jobs:
     needs: verify-source
     runs-on: windows-2025
     timeout-minutes: 45
-    environment: release
     permissions:
       contents: read
     outputs:
       artifact-id: ${{ steps.upload.outputs.artifact-id }}
     steps:
-      - name: 📥 Check out code
-        uses: actions/checkout@v7.0.1
+      - name: 📩 Download the tagged source
+        uses: actions/download-artifact@v8.0.2
         with:
-          ref: ${{ needs.verify-source.outputs.commit }}
-          persist-credentials: false
+          artifact-ids: ${{ needs.verify-source.outputs.source-artifact-id }}
+          path: ${{ runner.temp }}
+      - name: 📦 Unpack the tagged source
+        run: tar -xzf "${{ runner.temp }}/source.tar.gz"
       - name: 🦀 Install Rust toolchain
         uses: actions-rust-lang/setup-rust-toolchain@v2.0.1
         with:
