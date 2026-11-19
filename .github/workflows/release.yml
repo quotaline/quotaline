@@ -416,8 +416,7 @@ jobs:
         uses: actions/download-artifact@v8.0.2
         with:
           artifact-ids: >-
-            ${{ needs.tui-linux.outputs.artifact-id }},${{ needs.tui-macos.outputs.artifact-id }},${{
-            needs.tui-windows.outputs.artifact-id }}
+            ${{ needs.tui-linux.outputs.artifact-id }},${{ needs.tui-macos.outputs.artifact-id }},${{ needs.tui-windows.outputs.artifact-id }}
           path: tui
           merge-multiple: true
       - name: 📩 Download release notes
