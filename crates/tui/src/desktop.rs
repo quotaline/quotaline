@@ -1,4 +1,4 @@
-//! Defines the desktop data the terminal displays and the commands it can send.
+//! Defines the readings the dashboard displays and the commands it can send.
 
 use std::collections::BTreeSet;
 
@@ -7,20 +7,13 @@ use serde_json::Value;
 
 use crate::snapshot::Provider;
 
-#[cfg(all(not(test), target_os = "linux"))]
-#[path = "desktop/gnome.rs"]
-mod platform;
-
-#[cfg(target_os = "macos")]
-#[path = "desktop/macos.rs"]
-mod platform;
-
-#[cfg(all(test, target_os = "linux"))]
-#[path = "desktop/macos.rs"]
-mod macos;
+#[cfg(not(test))]
+mod engine;
+mod host;
+mod state;
 
 #[cfg(not(test))]
-pub(crate) use platform::Backend;
+pub(crate) use engine::Backend;
 
 #[derive(Deserialize)]
 pub(crate) struct State {

@@ -531,6 +531,7 @@ impl Dashboard {
                 (self.provider, self.usage_row),
                 &self.settings,
                 self.warning.is_some(),
+                self.settings_editable,
             ),
             Page::Settings => preferences::draw(frame, content, &self.controls, self.scroll, self.settings_editable),
             Page::History if self.history.is_some() => {

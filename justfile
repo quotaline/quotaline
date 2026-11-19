@@ -157,15 +157,10 @@ coverage-rust:
 coverage-tui: _tmp
     #!/bin/sh
     set -eu
-    if [ "$(uname -s)" = Linux ]; then
-      cargo build --locked -p quotaline-gnome --bin quotaline-gnome --target-dir {{ quote(root + "/target") }}
-      export QUOTALINE_TUI_TEST_GNOME_BIN={{ quote(root + "/target/debug/quotaline-gnome") }}
-      set -- --features gnome-smoke
-    fi
     export CARGO_LLVM_COV_TARGET_DIR={{ quote(root + "/target/tui-coverage") }}
     NEXTEST_STATUS_LEVEL=fail NEXTEST_SHOW_PROGRESS=none RUSTC_BOOTSTRAP=1 \
       cargo llvm-cov nextest --locked -p quotaline-tui --branch --json --no-default-ignore-filename-regex \
-        --profile {{ nextest_profile }} --output-path target/tui-coverage.json "$@"
+        --profile {{ nextest_profile }} --output-path target/tui-coverage.json
     jq -er '
       [.data[].files[] | select(.filename | test("(^|/)crates/tui/(src|tests)/"))] as $files |
       ($files[] | "\(.filename): lines \(.summary.lines.covered)/\(.summary.lines.count)" +

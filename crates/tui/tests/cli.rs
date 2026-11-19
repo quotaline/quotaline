@@ -1,6 +1,6 @@
-//! Exercises terminal behavior through a real pseudoterminal on Linux and macOS.
+//! Exercises terminal behavior through a real pseudoterminal, which only Unix systems provide.
 
-#![cfg(any(target_os = "linux", target_os = "macos"))]
+#![cfg(unix)]
 
 use rustix::{
     event::{PollFd, PollFlags, Timespec, poll},
@@ -68,13 +68,8 @@ fn rejects_redirected_input_or_output_before_opening_an_alternate_screen() {
     }
 }
 
-#[cfg(target_os = "linux")]
-#[path = "support/gnome.rs"]
-mod gnome;
-
-#[cfg(target_os = "macos")]
-#[path = "support/macos.rs"]
-mod macos;
+#[path = "support/live.rs"]
+mod live;
 
 #[test]
 fn command_editor_in_demo_mode_keeps_live_actions_disabled() {
@@ -83,14 +78,14 @@ fn command_editor_in_demo_mode_keeps_live_actions_disabled() {
     cli.write(b"?");
     cli.read_until("Enter a command");
     cli.write(b"3");
-    cli.read_until("Open the desktop source");
+    cli.read_until("Settings need live data");
     cli.write(b"\r\x1b[C");
     cli.write(b":set invalid\x1b:unknown\r");
     cli.read_until("Unknown command");
     cli.write(b":metrics\r");
     cli.read_until("Quota usage");
     cli.write(b":logs full\r");
-    cli.read_until("This action requires the desktop source");
+    cli.read_until("This action needs live data");
     cli.quit(b"\x03");
 }
 
@@ -102,7 +97,7 @@ fn provider_commands_handle_a_snapshot_with_no_visible_providers() {
     let mut cli = Interactive::start(command().arg("--file").arg(path));
     cli.read_until("No providers in snapshot");
     cli.write(b"1\rsviR");
-    cli.read_until("This action requires the desktop source");
+    cli.read_until("This action needs live data");
     cli.quit(b"q");
 }
 
@@ -199,7 +194,7 @@ fn history_editor_names_the_periods_it_accepts() {
     cli.write(b":period 3\r");
     cli.read_until("Period takes 1, 7, 30 or 60 days, not 3");
     cli.write(b":period 30\r");
-    cli.read_until("This action requires the desktop source");
+    cli.read_until("This action needs live data");
     cli.quit(b"q");
 }
 

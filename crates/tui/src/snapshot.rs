@@ -6,13 +6,12 @@ use serde::Deserialize;
 use std::{
     fs::File,
     io::{self, BufReader},
-    path::PathBuf,
+    path::{Path, PathBuf},
 };
 
 use crate::desktop::State;
 
 mod overview;
-#[cfg(all(not(test), target_os = "linux"))]
 pub(crate) use overview::OverviewFacts;
 pub(crate) use overview::provider_overview;
 
@@ -25,11 +24,7 @@ impl LocalSnapshot {
     pub(crate) fn read(&self) -> io::Result<State> {
         match self {
             Self::File(path) => {
-                let file = File::from(rustix::fs::open(
-                    path,
-                    rustix::fs::OFlags::RDONLY | rustix::fs::OFlags::NONBLOCK | rustix::fs::OFlags::CLOEXEC,
-                    rustix::fs::Mode::empty(),
-                )?);
+                let file = open(path)?;
                 if !file.metadata()?.is_file() {
                     return Err(io::Error::other("expected a regular snapshot file"));
                 }
@@ -46,6 +41,27 @@ impl LocalSnapshot {
             }
         }
     }
+}
+
+/// Opens without blocking, so a named pipe passed as the snapshot is rejected instead of waited on.
+#[cfg(unix)]
+fn open(path: &Path) -> io::Result<File> {
+    Ok(File::from(rustix::fs::open(
+        path,
+        rustix::fs::OFlags::RDONLY | rustix::fs::OFlags::NONBLOCK | rustix::fs::OFlags::CLOEXEC,
+        rustix::fs::Mode::empty(),
+    )?))
+}
+
+/// Opens directories too, so they reach the regular-file check instead of failing with access denied.
+#[cfg(windows)]
+fn open(path: &Path) -> io::Result<File> {
+    use std::os::windows::fs::OpenOptionsExt;
+    const FILE_FLAG_BACKUP_SEMANTICS: u32 = 0x0200_0000;
+    File::options()
+        .read(true)
+        .custom_flags(FILE_FLAG_BACKUP_SEMANTICS)
+        .open(path)
 }
 
 impl State {

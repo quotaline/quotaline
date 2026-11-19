@@ -193,7 +193,8 @@ pub(crate) fn draw(frame: &mut Frame<'_>, area: Rect, controls: &[Control], sele
     frame.render_widget(panel, area);
     if controls.is_empty() {
         frame.render_widget(
-            Paragraph::new("Open the desktop source to see its settings.").wrap(Wrap { trim: true }),
+            Paragraph::new("Settings need live data: run quotaline-tui without --demo or --file.")
+                .wrap(Wrap { trim: true }),
             inner,
         );
         return;

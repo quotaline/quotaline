@@ -229,7 +229,7 @@ fn keeps_last_valid_snapshot_through_bad_data_and_recovers_on_replacement() {
 fn valid_empty_export_clears_previous_readings() {
     let directory = tempdir().unwrap();
     let path = directory.path().join("usage.json");
-    let mut dashboard = Dashboard::new(true);
+    let mut dashboard = Dashboard::new(false);
     dashboard.refresh(&Source::Demo);
     write_export(&path, []);
     dashboard.refresh(&Source::File(path));
@@ -588,7 +588,9 @@ fn command_reference_lists_the_shared_metric_ids() {
 fn settings_explains_the_source_when_there_are_no_controls() {
     let mut dashboard = Dashboard::new(false);
     dashboard.show(Page::Settings);
-    assert!(render(&dashboard, 80, 24).contains("Open the desktop source to see its settings."));
+    assert!(
+        render(&dashboard, 80, 24).contains("Settings need live data: run quotaline-tui without --demo or --file.")
+    );
 }
 
 #[test]
@@ -803,10 +805,10 @@ fn mouse_footer_uses_visible_links_at_minimum_and_full_width() {
             ("4 Log", Page::Logs),
             ("?", Page::Help),
         ] {
-            assert_eq!(click_label(&mut dashboard, size, label), Some(MouseAction::Show(page)));
+            assert_eq!(click_footer(&mut dashboard, size, label), Some(MouseAction::Show(page)));
         }
-        assert_eq!(click_label(&mut dashboard, size, quit), Some(MouseAction::Quit));
-        assert!(click_label(&mut dashboard, size, ":").is_none());
+        assert_eq!(click_footer(&mut dashboard, size, quit), Some(MouseAction::Quit));
+        assert!(click_footer(&mut dashboard, size, ":").is_none());
         dashboard.edit(b'x');
         assert!(render(&dashboard, width, 14).contains(":x"));
         dashboard.edit(27);
@@ -1062,6 +1064,14 @@ fn click_label(dashboard: &mut Dashboard, (width, height): (u16, u16), label: &s
     dashboard.mouse(MouseEvent::Click(at.x, at.y), Rect::new(0, 0, width, height))
 }
 
+/// Clicks a footer link, which the page above may also mention.
+fn click_footer(dashboard: &mut Dashboard, (width, height): (u16, u16), label: &str) -> Option<MouseAction> {
+    let screen = render(dashboard, width, height);
+    let footer = screen.lines().last().unwrap();
+    let column = footer[..footer.find(label).expect(label)].chars().count() as u16;
+    dashboard.mouse(MouseEvent::Click(column, height - 1), Rect::new(0, 0, width, height))
+}
+
 fn screen_position(screen: &str, label: &str) -> Position {
     let (row, column) = screen
         .lines()
@@ -1076,7 +1086,7 @@ fn mouse_command_editor_runs_and_cancels_drafts_at_minimum_width() {
     let mut dashboard = Dashboard::new(true);
     let size = (34, 14);
     let area = Rect::new(0, 0, size.0, size.1);
-    assert!(click_label(&mut dashboard, size, ":").is_none());
+    assert!(click_footer(&mut dashboard, size, ":").is_none());
     for byte in b"logs full" {
         dashboard.edit(*byte);
     }
@@ -1090,14 +1100,14 @@ fn mouse_command_editor_runs_and_cancels_drafts_at_minimum_width() {
         assert_eq!(render(&dashboard, size.0, size.1), draft);
     }
     assert_eq!(
-        click_label(&mut dashboard, size, "Run"),
+        click_footer(&mut dashboard, size, "Run"),
         Some(MouseAction::Command(Command::Logs(true)))
     );
     assert!(!dashboard.editing());
 
-    assert!(click_label(&mut dashboard, size, ":").is_none());
+    assert!(click_footer(&mut dashboard, size, ":").is_none());
     dashboard.edit(b'x');
-    assert!(click_label(&mut dashboard, size, "Cancel").is_none());
+    assert!(click_footer(&mut dashboard, size, "Cancel").is_none());
     assert!(!render(&dashboard, size.0, size.1).contains(":x"));
 }
 

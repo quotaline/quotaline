@@ -1,4 +1,74 @@
 use super::*;
+use ratatui::crossterm::event::{KeyEvent, KeyEventState, MouseEvent as Report};
+
+fn key(code: KeyCode, modifiers: KeyModifiers, kind: KeyEventKind) -> Event {
+    Event::Key(KeyEvent {
+        code,
+        modifiers,
+        kind,
+        state: KeyEventState::NONE,
+    })
+}
+
+fn mouse(kind: MouseEventKind) -> Event {
+    Event::Mouse(Report {
+        kind,
+        column: 4,
+        row: 2,
+        modifiers: KeyModifiers::NONE,
+    })
+}
+
+#[test]
+fn encodes_terminal_events_as_the_bytes_the_decoder_reads() {
+    let press = |code| key(code, KeyModifiers::NONE, KeyEventKind::Press);
+    for (event, motion, bytes) in [
+        (
+            key(KeyCode::Char('c'), KeyModifiers::CONTROL, KeyEventKind::Press),
+            false,
+            &b"\x03"[..],
+        ),
+        (
+            key(KeyCode::Char('é'), KeyModifiers::NONE, KeyEventKind::Repeat),
+            false,
+            "é".as_bytes(),
+        ),
+        (
+            key(KeyCode::Char(':'), KeyModifiers::ALT, KeyEventKind::Press),
+            false,
+            b"\x1b:",
+        ),
+        (
+            key(KeyCode::Char('q'), KeyModifiers::NONE, KeyEventKind::Release),
+            false,
+            b"",
+        ),
+        (press(KeyCode::Enter), false, b"\r"),
+        (press(KeyCode::Tab), false, b"\t"),
+        (press(KeyCode::BackTab), false, b"\x1b[Z"),
+        (press(KeyCode::Backspace), false, b"\x7f"),
+        (press(KeyCode::Esc), false, b"\x1b"),
+        (press(KeyCode::Up), false, b"\x1b[A"),
+        (press(KeyCode::Down), false, b"\x1b[B"),
+        (press(KeyCode::Right), false, b"\x1b[C"),
+        (press(KeyCode::Left), false, b"\x1b[D"),
+        (press(KeyCode::F(1)), false, b""),
+        (mouse(MouseEventKind::Down(MouseButton::Left)), false, b"\x1b[<0;5;3M"),
+        (mouse(MouseEventKind::Down(MouseButton::Right)), false, b""),
+        (mouse(MouseEventKind::Up(MouseButton::Left)), false, b""),
+        (mouse(MouseEventKind::Moved), true, b"\x1b[<35;5;3M"),
+        (mouse(MouseEventKind::Drag(MouseButton::Left)), true, b"\x1b[<35;5;3M"),
+        (mouse(MouseEventKind::Moved), false, b""),
+        (mouse(MouseEventKind::Drag(MouseButton::Left)), false, b""),
+        (mouse(MouseEventKind::ScrollUp), false, b"\x1b[<64;5;3M"),
+        (mouse(MouseEventKind::ScrollDown), false, b"\x1b[<65;5;3M"),
+        (mouse(MouseEventKind::ScrollLeft), false, b"\x1b[<66;5;3M"),
+        (mouse(MouseEventKind::ScrollRight), false, b"\x1b[<67;5;3M"),
+        (Event::Resize(80, 24), false, b""),
+    ] {
+        assert_eq!(encode(&event, motion), bytes, "{event:?}");
+    }
+}
 
 #[test]
 fn decodes_navigation_and_commands() {

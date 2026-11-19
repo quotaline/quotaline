@@ -272,9 +272,10 @@ fn history_export_accepts_only_absolute_paths() {
         parse("export relative.csv", Some(&history)).unwrap_err().to_string(),
         "Use an absolute export path"
     );
+    let path = std::env::temp_dir().join("history.csv").display().to_string();
     assert_eq!(
-        parse("export /tmp/history.csv", Some(&history)).unwrap(),
-        Command::ExportMetric("usage".into(), 0, 86_400, "/tmp/history.csv".into())
+        parse(&format!("export {path}"), Some(&history)).unwrap(),
+        Command::ExportMetric("usage".into(), 0, 86_400, path)
     );
 }
 

@@ -46,6 +46,7 @@ pub(crate) fn draw(
     selected: UsagePosition,
     settings: &Value,
     read_failed: bool,
+    live: bool,
 ) {
     let remaining = settings["show_as"] == "remaining";
     let title = if remaining { " Quota remaining " } else { " Quota used " };
@@ -57,7 +58,9 @@ pub(crate) fn draw(
     frame.render_widget(panel, area);
     if providers.is_empty() {
         let message = if read_failed {
-            "Check the source, open Quotaline or use --demo."
+            "Check the source or use --demo."
+        } else if live {
+            "No signed-in providers yet. Sign in with :sign-in PROVIDER, using claude, codex, gemini, cursor or copilot."
         } else {
             "No providers in snapshot"
         };

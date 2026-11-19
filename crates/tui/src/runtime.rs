@@ -2,10 +2,8 @@
 
 use std::{env, ffi::OsString, io, process::ExitCode};
 
-#[cfg(any(target_os = "linux", target_os = "macos"))]
 use crate::snapshot::LocalSnapshot;
 
-#[cfg(any(target_os = "linux", target_os = "macos"))]
 mod terminal;
 
 pub(crate) fn main() -> ExitCode {
@@ -24,17 +22,16 @@ fn run(arguments: &[OsString]) -> io::Result<()> {
     {
         println!(
             "Usage: quotaline-tui [--file PATH | --demo | --help]\n\n\
-             Uses Quotaline’s desktop data by default."
+             Collects quota from your signed-in tools by default."
         );
         return Ok(());
     }
     run_dashboard(arguments)
 }
 
-#[cfg(any(target_os = "linux", target_os = "macos"))]
 fn run_dashboard(arguments: &[OsString]) -> io::Result<()> {
     let source = match arguments {
-        [] => Source::Desktop,
+        [] => Source::Live,
         [flag] if flag == "--demo" => Source::Local(LocalSnapshot::Demo),
         [flag, path] if flag == "--file" => Source::Local(LocalSnapshot::File(path.into())),
         _ => return Err(io::Error::other("expected --file PATH, --demo, or --help")),
@@ -42,13 +39,7 @@ fn run_dashboard(arguments: &[OsString]) -> io::Result<()> {
     terminal::run(source)
 }
 
-#[cfg(not(any(target_os = "linux", target_os = "macos")))]
-fn run_dashboard(_arguments: &[OsString]) -> io::Result<()> {
-    Err(io::Error::other("the terminal dashboard runs on Linux and macOS"))
-}
-
-#[cfg(any(target_os = "linux", target_os = "macos"))]
 enum Source {
-    Desktop,
+    Live,
     Local(LocalSnapshot),
 }

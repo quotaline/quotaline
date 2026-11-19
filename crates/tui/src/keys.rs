@@ -1,6 +1,49 @@
 //! Decodes terminal keys and mouse reports.
 
+use ratatui::crossterm::event::{Event, KeyCode, KeyEventKind, KeyModifiers, MouseButton, MouseEventKind};
+
 use crate::{dashboard::MouseEvent, pages::Page};
+
+/// Encodes a terminal event as the xterm bytes `Keys` decodes, so every platform shares one decoder. `motion`
+/// passes pointer movement, which only the history chart asks for.
+pub(crate) fn encode(event: &Event, motion: bool) -> Vec<u8> {
+    match event {
+        // Windows reports key releases as well as presses.
+        Event::Key(key) if key.kind != KeyEventKind::Release => match key.code {
+            KeyCode::Char(character) if key.modifiers.contains(KeyModifiers::CONTROL) => {
+                vec![(character as u8) & 0x1f]
+            }
+            // crossterm reads an escape followed by a key as that key with Alt held.
+            KeyCode::Char(character) if key.modifiers.contains(KeyModifiers::ALT) => {
+                format!("\x1b{character}").into_bytes()
+            }
+            KeyCode::Char(character) => character.to_string().into_bytes(),
+            KeyCode::Enter => b"\r".to_vec(),
+            KeyCode::Tab => b"\t".to_vec(),
+            KeyCode::BackTab => b"\x1b[Z".to_vec(),
+            KeyCode::Backspace => vec![0x7f],
+            KeyCode::Esc => vec![0x1b],
+            KeyCode::Up => b"\x1b[A".to_vec(),
+            KeyCode::Down => b"\x1b[B".to_vec(),
+            KeyCode::Right => b"\x1b[C".to_vec(),
+            KeyCode::Left => b"\x1b[D".to_vec(),
+            _ => Vec::new(),
+        },
+        Event::Mouse(report) => {
+            let button = match report.kind {
+                MouseEventKind::Down(MouseButton::Left) => 0,
+                MouseEventKind::Moved | MouseEventKind::Drag(_) if motion => 35,
+                MouseEventKind::ScrollUp => 64,
+                MouseEventKind::ScrollDown => 65,
+                MouseEventKind::ScrollLeft => 66,
+                MouseEventKind::ScrollRight => 67,
+                _ => return Vec::new(),
+            };
+            format!("\x1b[<{button};{};{}M", report.column + 1, report.row + 1).into_bytes()
+        }
+        _ => Vec::new(),
+    }
+}
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum Action {

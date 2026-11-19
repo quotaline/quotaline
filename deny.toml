@@ -22,6 +22,10 @@ multiple-versions = "deny"
 wildcards = "deny"
 skip = [
   { crate = "syn@2.0.119", reason = "zbus and tracing macros retain syn 2." },
+  { crate = "lock_api@0.4.14", reason = "crossterm 0.29, the terminal backend, retains parking_lot 0.12." },
+  { crate = "parking_lot@0.12.5", reason = "crossterm 0.29, the terminal backend, retains parking_lot 0.12." },
+  { crate = "parking_lot_core@0.9.12", reason = "crossterm 0.29, the terminal backend, retains parking_lot 0.12." },
+  { crate = "redox_syscall@0.5.18", reason = "crossterm 0.29, the terminal backend, retains parking_lot 0.12." },
 ]
 
 [sources]
