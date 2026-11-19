@@ -1,6 +1,6 @@
 cask "quotaline" do
-  version "0.2.2"
-  sha256 "4a0c7a028e8b01a7fc10af4f61e2294636ef412698dba5610d3c9362344b8dd6"
+  version "0.3.0"
+  sha256 "28c49b9ab6fc22e0582337cde2c28bfc2bf96662268f48f72a50369aaab894d9"
 
   url "https://github.com/quotaline/quotaline/releases/download/v#{version}/Quotaline-Homebrew.dmg"
   name "Quotaline"
