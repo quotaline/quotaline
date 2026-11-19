@@ -79,9 +79,9 @@ fn read_target(target: &str) -> Result<Option<Entry>, u32> {
             error => Err(error),
         };
     }
-    let entry = unsafe { found(&*credential) };
+    let entry = unsafe { credential.as_ref() }.map(|credential| unsafe { found(credential) });
     unsafe { CredFree(credential.cast()) };
-    Ok(Some(entry))
+    Ok(entry)
 }
 
 fn first_matching(filter: &str) -> Result<Option<Entry>, u32> {
@@ -92,10 +92,13 @@ fn first_matching(filter: &str) -> Result<Option<Entry>, u32> {
             error => Err(error),
         };
     }
+    if credentials.is_null() {
+        return Ok(None);
+    }
     let entries = unsafe { slice::from_raw_parts(credentials, count as usize) };
     let mut entries: Vec<Entry> = entries
         .iter()
-        .map(|&credential| unsafe { &*credential })
+        .filter_map(|&credential| unsafe { credential.as_ref() })
         .filter(|credential| credential.Type == CRED_TYPE_GENERIC)
         .map(|credential| unsafe { found(credential) })
         .collect();
