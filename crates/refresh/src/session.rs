@@ -31,7 +31,7 @@ pub struct ScheduleInputs<'a> {
     pub now: f64,
 }
 
-#[derive(Clone, Copy, Debug, Default, PartialEq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct ProviderTimes {
     pub last_attempt: Option<f64>,
     pub last_analytics_attempt: Option<f64>,
@@ -67,6 +67,13 @@ pub struct Completion<'a> {
     pub retry_interval: f64,
     pub included_analytics: bool,
     pub now: f64,
+}
+
+/// The attempt and backoff history another session needs to keep the same pace and retry limits.
+#[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize)]
+pub struct Handover {
+    times: BTreeMap<String, ProviderTimes>,
+    retry: BTreeMap<String, (u32, u32)>,
 }
 
 pub struct RefreshSession {
@@ -148,6 +155,19 @@ impl RefreshSession {
 
     pub fn times(&self, provider: &str) -> ProviderTimes {
         self.times.get(provider).copied().unwrap_or_default()
+    }
+
+    pub fn handover(&self) -> Handover {
+        Handover {
+            times: self.times.clone(),
+            retry: self.retry.strikes(),
+        }
+    }
+
+    /// Continues from another session's history, as when this one takes over polling from it.
+    pub fn adopt(&mut self, handover: Handover) {
+        self.times = handover.times;
+        self.retry = RetryLedger::from_strikes(handover.retry);
     }
 
     /// Makes analytics due again, as clearing history requires.

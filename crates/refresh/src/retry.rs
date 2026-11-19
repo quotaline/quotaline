@@ -8,6 +8,14 @@ use super::{FetchOutcome, OutcomeTransition, OutcomeTransitionInput, transition:
 pub struct RetryLedger(BTreeMap<String, (u32, u32)>);
 
 impl RetryLedger {
+    pub fn strikes(&self) -> BTreeMap<String, (u32, u32)> {
+        self.0.clone()
+    }
+
+    pub fn from_strikes(strikes: BTreeMap<String, (u32, u32)>) -> Self {
+        Self(strikes)
+    }
+
     pub fn advance_with_minute(
         &mut self,
         provider: &str,

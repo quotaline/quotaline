@@ -354,3 +354,32 @@ fn reset_forgets_attempts_and_drops_results_in_flight() {
         ["claude"]
     );
 }
+
+#[test]
+fn a_session_that_takes_over_keeps_the_backoff_and_its_strikes() {
+    let providers = [schedule("claude")];
+    let mut previous = RefreshSession::new(NOW);
+    let first = cycle(&mut previous, RefreshReason::Scheduled, None);
+    complete(&mut previous, &first, "claude", FetchOutcome::RateLimited, NOW);
+    previous.finish(&first);
+    let handover: Handover = serde_json::from_value(serde_json::to_value(previous.handover()).unwrap()).unwrap();
+
+    let mut next = RefreshSession::new(NOW);
+    next.adopt(handover);
+    assert_eq!(next.times("claude"), previous.times("claude"));
+    let asked = cycle(&mut next, RefreshReason::UserInitiated, None);
+    assert_eq!(
+        next.plan(&asked, &inputs(&providers, NOW + 10.0)).skipped,
+        [("claude".to_string(), RefreshSkip::RetryBackoff)]
+    );
+    next.finish(&asked);
+    let again = cycle(&mut next, RefreshReason::Scheduled, None);
+    complete(&mut next, &again, "claude", FetchOutcome::RateLimited, NOW + 400.0);
+    let mut fresh = RefreshSession::new(NOW);
+    let only = cycle(&mut fresh, RefreshReason::Scheduled, None);
+    complete(&mut fresh, &only, "claude", FetchOutcome::RateLimited, NOW + 400.0);
+    assert!(
+        next.times("claude").retry_not_before > fresh.times("claude").retry_not_before,
+        "the second strike did not lengthen the backoff"
+    );
+}

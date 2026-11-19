@@ -1,6 +1,6 @@
 //! Keeps the refresh status both desktops show beside a provider's last reading.
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct ProviderStatus {
     pub availability: String,
     pub last_error: Option<String>,

@@ -27,7 +27,7 @@ pub use stagger::RefreshStagger;
 pub use state::{ProviderStatus, SettleInput, keep_shown_when_disabled, settle};
 mod session;
 pub use session::{
-    Completion, Cycle, PlannedFetch, Plans, ProviderSchedule, ProviderTimes, RefreshSession, ScheduleInputs,
+    Completion, Cycle, Handover, PlannedFetch, Plans, ProviderSchedule, ProviderTimes, RefreshSession, ScheduleInputs,
 };
 
 pub const RATE_LIMIT_BACKOFF: f64 = 300.0;

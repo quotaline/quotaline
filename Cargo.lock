@@ -2421,6 +2421,8 @@ version = "0.2.0"
 dependencies = [
  "quotaline-quota",
  "quotaline-text",
+ "serde",
+ "serde_json",
  "uniffi",
 ]
 
