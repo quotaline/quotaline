@@ -3,6 +3,7 @@
 use super::*;
 
 pub(crate) struct IsolatedService {
+    _echo: ServiceEcho,
     pub(crate) scratch: tempfile::TempDir,
     pub(crate) _service: Process,
     pub(crate) _bus: Process,
@@ -48,16 +49,45 @@ pub(crate) fn isolated_service_configured_with_bus(
     let service = Process(
         command
             .stdout(Stdio::null())
-            .stderr(Stdio::from(fs::File::create(service_log).unwrap()))
+            .stderr(Stdio::from(fs::File::create(&service_log).unwrap()))
             .spawn()
             .unwrap(),
     );
     IsolatedService {
+        _echo: echo_service_log(&service_log),
         scratch,
         _service: service,
         _bus: bus,
         address: address.trim().into(),
     }
+}
+
+/// Copies the service log to the test's output as it grows, so a test stopped for hanging shows what the service
+/// was doing; the file stays for tests that read it.
+struct ServiceEcho(std::sync::Arc<std::sync::atomic::AtomicBool>);
+
+impl Drop for ServiceEcho {
+    fn drop(&mut self) {
+        self.0.store(true, std::sync::atomic::Ordering::Relaxed);
+    }
+}
+
+fn echo_service_log(path: &Path) -> ServiceEcho {
+    let stopped = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+    let mut log = fs::File::open(path).unwrap();
+    std::thread::spawn({
+        let stopped = stopped.clone();
+        move || {
+            let mut chunk = Vec::new();
+            while !stopped.load(std::sync::atomic::Ordering::Relaxed) {
+                chunk.clear();
+                std::io::Read::read_to_end(&mut log, &mut chunk).unwrap();
+                eprint!("{}", String::from_utf8_lossy(&chunk));
+                std::thread::sleep(Duration::from_millis(100));
+            }
+        }
+    });
+    ServiceEcho(stopped)
 }
 
 pub(crate) fn database_events(

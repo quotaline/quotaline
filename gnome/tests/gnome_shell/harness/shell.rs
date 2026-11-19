@@ -263,12 +263,14 @@ pub(crate) async fn wait_for_service(connection: &zbus::Connection) {
         .receive_name_owner_changed_with_args(&[(0, name.as_str())])
         .await
         .unwrap();
-    if dbus.name_has_owner(name.clone()).await.unwrap() {
-        return;
-    }
-    while !dbus.name_has_owner(name.clone()).await.unwrap() {
-        owners.next().await.unwrap();
-    }
+    // Bounded well below the test timeout, so a service that never starts fails here with its log echoed.
+    tokio::time::timeout(Duration::from_secs(60), async {
+        while !dbus.name_has_owner(name.clone()).await.unwrap() {
+            owners.next().await.unwrap();
+        }
+    })
+    .await
+    .expect("the service did not take its bus name");
 }
 
 pub(crate) async fn wait_for_state(
