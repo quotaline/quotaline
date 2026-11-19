@@ -12,6 +12,11 @@ on:
         required: false
         type: boolean
         default: false
+      app_store_only:
+        description: Retry only the App Store upload, leaving the published GitHub Release as it is
+        required: false
+        type: boolean
+        default: false
 permissions:
   contents: read
 concurrency:
@@ -23,7 +28,7 @@ env:
 jobs:
   previous-tag:
     name: 🏷️ Select previous tag
-    if: github.repository == 'quotaline/quotaline'
+    if: github.repository == 'quotaline/quotaline' && !inputs.app_store_only
     needs: verify-source
     runs-on: ubuntu-26.04
     timeout-minutes: 30
@@ -128,6 +133,7 @@ jobs:
   gnome:
     name: 🏗️ Build GNOME download
     needs: verify-source
+    if: ${{ !inputs.app_store_only }}
     runs-on: ubuntu-26.04
     timeout-minutes: 30
     permissions:
@@ -164,6 +170,7 @@ jobs:
   tui-linux:
     name: 🏗️ Build Linux terminal dashboard
     needs: verify-source
+    if: ${{ !inputs.app_store_only }}
     runs-on: ubuntu-26.04
     timeout-minutes: 30
     permissions:
@@ -202,6 +209,7 @@ jobs:
   tui-macos:
     name: 🏗️ Build macOS terminal dashboard
     needs: verify-source
+    if: ${{ !inputs.app_store_only }}
     runs-on: macos-26
     timeout-minutes: 60
     environment: release
@@ -259,6 +267,7 @@ jobs:
   tui-windows:
     name: 🏗️ Build Windows terminal dashboard
     needs: verify-source
+    if: ${{ !inputs.app_store_only }}
     runs-on: windows-2025
     timeout-minutes: 45
     permissions:

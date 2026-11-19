@@ -51,6 +51,11 @@ The Direct job needs signing credentials and [Sparkle](https://sparkle-project.o
 finish before Apple processes the build; it does not delay the GitHub Release or cask PR. Inspect both paths before
 treating the release as complete.
 
+A retried App Store upload stops until someone checks App Store Connect, because a second upload of one version is
+rejected. After confirming no build for the version exists, dispatch **Release** with the tag, `app_store_reconciled`,
+and `app_store_only`. The last runs only the upload and leaves a published GitHub Release untouched; its assets are
+immutable, and a rebuild would sign them again.
+
 Versions 0.1.0 through 0.1.7 were published from the archived macOS repository. The new repository has no tags or GitHub
 Releases for those versions. The first release here must be checked against the GNOME download, macOS downloads, cask
 PR, and App Store upload before considering the new pipeline complete.
