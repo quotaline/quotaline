@@ -2,19 +2,32 @@
 
 use std::{
     env,
+    ffi::OsString,
     path::{Path, PathBuf},
 };
 
 #[cfg(not(target_os = "macos"))]
 const APP_DIRECTORY: &str = "quotaline";
 
+/// Only `HOME` counts on Unix, so a process started without one reads paths relative to its working directory.
+#[cfg(unix)]
+fn home_variable() -> Option<OsString> {
+    env::var_os("HOME")
+}
+
+/// Windows sets no `HOME`; its profile folder comes from `USERPROFILE`.
+#[cfg(windows)]
+fn home_variable() -> Option<OsString> {
+    env::home_dir().map(PathBuf::into_os_string)
+}
+
 pub fn home() -> PathBuf {
-    env::home_dir().unwrap_or_else(|| PathBuf::from("."))
+    home_variable().map_or_else(|| PathBuf::from("."), PathBuf::from)
 }
 
 /// The home folder as text, which failure messages shorten to `~`.
 pub fn home_text() -> Option<String> {
-    env::home_dir().map(|home| home.to_string_lossy().into_owned())
+    home_variable()?.into_string().ok()
 }
 
 /// Honours `variable` only for the signed-in user's own home, so a provider read against another home stays there.
