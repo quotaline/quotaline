@@ -1,7 +1,11 @@
 //! Advances a bounded reverse read across candidate rollout files.
 
 use super::{Cache, CacheState, MAX_LINE_BYTES, Reading, ReverseRead, RolloutReader, Search, parse_line};
-use std::{fs::File, os::unix::fs::FileExt, time::Instant};
+use std::{
+    fs::File,
+    io::{Read, Seek, SeekFrom},
+    time::Instant,
+};
 
 const CHUNK_BYTES: u64 = 64 * 1024;
 
@@ -19,7 +23,7 @@ impl RolloutReader {
                 reversed_line: Vec::new(),
                 oversized: false,
             });
-            let Ok(handle) = File::open(&file.path) else {
+            let Ok(mut handle) = File::open(&file.path) else {
                 search.file_index += 1;
                 continue;
             };
@@ -30,7 +34,11 @@ impl RolloutReader {
                 let count = (current.cursor - current.floor).min(bytes_remaining).min(CHUNK_BYTES);
                 let start = current.cursor - count;
                 let mut chunk = vec![0; count as usize];
-                if handle.read_exact_at(&mut chunk, start).is_err() {
+                if handle
+                    .seek(SeekFrom::Start(start))
+                    .and_then(|_| handle.read_exact(&mut chunk))
+                    .is_err()
+                {
                     stale = true;
                     break;
                 }

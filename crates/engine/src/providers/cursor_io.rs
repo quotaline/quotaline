@@ -4,7 +4,7 @@ use super::*;
 use quotaline_credential_sources::{CursorOrigin, CursorSourceError, discover_cursor};
 
 pub(super) fn cursor_credentials(home: &Path) -> Result<(String, Value, PathBuf), Failure> {
-    let state_path = config_home(home).join("Cursor/User/globalStorage/state.vscdb");
+    let state_path = app_data(home, "Cursor").join("User/globalStorage/state.vscdb");
     let agent_path = home.join(".cursor/auth.json");
     let found = discover_cursor(&state_path, &agent_path).map_err(|error| {
         let message = match error {
@@ -45,7 +45,7 @@ pub(super) async fn cursor(client: &Api, home: &Path) -> Result<Provider, Failur
         },
         &cookie,
         &token,
-        env::var("HOME").ok().as_deref(),
+        crate::platform::home_text().as_deref(),
     )
     .await
     .map_err(|error| pipeline_failure(error, "cursor").with_credential())?;

@@ -357,6 +357,7 @@ fn demo_history_provides_each_advertised_metric() {
     }
 }
 
+#[cfg(target_os = "linux")]
 fn legacy_base(legacy: bool, current: bool) -> tempfile::TempDir {
     let base = tempfile::tempdir().unwrap();
     if legacy {
@@ -371,6 +372,7 @@ fn legacy_base(legacy: bool, current: bool) -> tempfile::TempDir {
 }
 
 #[test]
+#[cfg(target_os = "linux")]
 fn legacy_directory_moves_to_the_current_name() {
     let base = legacy_base(true, false);
     let (level, message) = adopt_legacy_directory(base.path()).unwrap();
@@ -383,6 +385,7 @@ fn legacy_directory_moves_to_the_current_name() {
 }
 
 #[test]
+#[cfg(target_os = "linux")]
 fn legacy_directory_stays_when_the_current_one_exists() {
     let base = legacy_base(true, true);
     assert_eq!(adopt_legacy_directory(base.path()), None);
@@ -397,6 +400,7 @@ fn legacy_directory_stays_when_the_current_one_exists() {
 }
 
 #[test]
+#[cfg(target_os = "linux")]
 fn legacy_directory_absent_leaves_the_base_untouched() {
     let base = legacy_base(false, false);
     assert_eq!(adopt_legacy_directory(base.path()), None);
@@ -404,6 +408,7 @@ fn legacy_directory_absent_leaves_the_base_untouched() {
 }
 
 #[test]
+#[cfg(target_os = "linux")]
 fn legacy_directory_move_failure_is_a_warning() {
     let base = legacy_base(true, false);
     fs::set_permissions(base.path(), fs::Permissions::from_mode(0o500)).unwrap();

@@ -1,4 +1,4 @@
-//! Resolves GNOME data paths and adapts the shared SQLite history store.
+//! Resolves Quotaline's data paths and adapts the shared SQLite history store.
 
 use jiff::Timestamp;
 use quotaline_analytics::{self as analytics, WindowRollup};
@@ -8,12 +8,15 @@ use quotaline_quota::Provider;
 use quotaline_settings::Settings;
 use std::{
     collections::{BTreeMap, BTreeSet},
-    env, fs,
+    fs,
     path::{Path, PathBuf},
     sync::{Arc, Mutex, PoisonError},
 };
 
-use crate::history::{self, History};
+use crate::{
+    history::{self, History},
+    platform,
+};
 
 pub type RecentSamples = BTreeMap<String, Vec<(String, i64, f64)>>;
 
@@ -23,27 +26,14 @@ static HISTORY: Mutex<Option<(Identity, Arc<Store>)>> = Mutex::new(None);
 static DEMO: Mutex<Option<Arc<Store>>> = Mutex::new(None);
 static DEMO_ACTIVITY: Mutex<Option<(u32, BTreeMap<String, i64>)>> = Mutex::new(None);
 
-const APP_DIRECTORY: &str = "quotaline";
-// The project shipped as Token Menu Bar before the rename.
+// The project shipped as Token Menu Bar before the rename, on GNOME only.
+#[cfg(target_os = "linux")]
 const LEGACY_APP_DIRECTORY: &str = "token-menu-bar-gnome";
 
-fn home() -> PathBuf {
-    env::var_os("HOME")
-        .map(PathBuf::from)
-        .unwrap_or_else(|| PathBuf::from("."))
-}
-fn xdg_base(variable: &str, fallback: &str) -> PathBuf {
-    env::var_os(variable)
-        .map(PathBuf::from)
-        .unwrap_or_else(|| home().join(fallback))
-}
-pub fn xdg(variable: &str, fallback: &str) -> PathBuf {
-    xdg_base(variable, fallback).join(APP_DIRECTORY)
-}
-
 /// Moves the pre-rename directory to the current name under `base`, unless the current one already exists.
+#[cfg(target_os = "linux")]
 pub fn adopt_legacy_directory(base: &Path) -> Option<(&'static str, String)> {
-    let (legacy, current) = (base.join(LEGACY_APP_DIRECTORY), base.join(APP_DIRECTORY));
+    let (legacy, current) = (base.join(LEGACY_APP_DIRECTORY), base.join("quotaline"));
     if current.exists() || !legacy.exists() {
         return None;
     }
@@ -58,6 +48,7 @@ pub fn adopt_legacy_directory(base: &Path) -> Option<(&'static str, String)> {
 }
 
 /// Adopts the pre-rename config, data, and cache directories and returns a log entry for each one acted on.
+#[cfg(target_os = "linux")]
 pub fn adopt_legacy_directories() -> Vec<(&'static str, String)> {
     [
         ("XDG_CONFIG_HOME", ".config"),
@@ -65,27 +56,40 @@ pub fn adopt_legacy_directories() -> Vec<(&'static str, String)> {
         ("XDG_CACHE_HOME", ".cache"),
     ]
     .into_iter()
-    .filter_map(|(variable, fallback)| adopt_legacy_directory(&xdg_base(variable, fallback)))
+    .filter_map(|(variable, fallback)| adopt_legacy_directory(&platform::xdg_base(variable, fallback)))
     .collect()
 }
+
+/// Only GNOME shipped under the old name, so other systems have nothing to adopt.
+#[cfg(not(target_os = "linux"))]
+pub fn adopt_legacy_directories() -> Vec<(&'static str, String)> {
+    Vec::new()
+}
+
 pub fn config() -> PathBuf {
-    xdg("XDG_CONFIG_HOME", ".config").join("settings.json")
+    platform::config_dir().join("settings.json")
 }
 pub fn database() -> PathBuf {
-    xdg("XDG_DATA_HOME", ".local/share").join("history.sqlite3")
+    platform::data_dir().join("history.sqlite3")
 }
 /// Where engines on this machine share the lease, the published state, and planned notices.
 pub fn live() -> PathBuf {
-    xdg("XDG_DATA_HOME", ".local/share").join("live.sqlite3")
+    platform::data_dir().join("live.sqlite3")
 }
 pub fn snapshot() -> PathBuf {
-    xdg("XDG_CACHE_HOME", ".cache").join("snapshot.json")
+    platform::cache_dir().join("snapshot.json")
 }
 pub fn usage() -> PathBuf {
-    xdg("XDG_DATA_HOME", ".local/share").join("usage.json")
+    platform::data_dir().join("usage.json")
+}
+pub fn claude_checkpoint() -> PathBuf {
+    platform::data_dir().join("claude-transcripts.json")
+}
+pub fn log() -> PathBuf {
+    platform::data_dir().join("log.txt")
 }
 fn codex_watermarks() -> PathBuf {
-    xdg("XDG_DATA_HOME", ".local/share").join("codex-analytics-watermarks.json")
+    platform::data_dir().join("codex-analytics-watermarks.json")
 }
 pub fn load_codex_watermarks() -> Option<Vec<u8>> {
     fs::read(codex_watermarks()).ok()
@@ -118,6 +122,7 @@ fn now() -> f64 {
     Timestamp::now().as_millisecond() as f64 / 1000.0
 }
 
+#[cfg(unix)]
 fn identity(path: &Path) -> Option<Identity> {
     use std::os::unix::fs::MetadataExt;
     fs::metadata(path)
@@ -125,19 +130,20 @@ fn identity(path: &Path) -> Option<Identity> {
         .map(|item| (path.to_path_buf(), item.dev(), item.ino()))
 }
 
+// Windows exposes no stable file index without opening the file, and a replaced database gets a new creation time.
+#[cfg(windows)]
+fn identity(path: &Path) -> Option<Identity> {
+    use std::os::windows::fs::MetadataExt;
+    fs::metadata(path)
+        .ok()
+        .map(|item| (path.to_path_buf(), item.creation_time(), item.file_size()))
+}
+
 fn history_store() -> Result<Arc<Store>> {
-    use std::os::unix::fs::{OpenOptionsExt, PermissionsExt};
     let path = database();
     fs::create_dir_all(path.parent().expect("history path has a directory"))?;
-    if !path.exists() {
-        // Create the file privately before SQLite opens it with default permissions.
-        fs::OpenOptions::new()
-            .write(true)
-            .create_new(true)
-            .mode(0o600)
-            .open(&path)?;
-    }
-    fs::set_permissions(&path, fs::Permissions::from_mode(0o600))?;
+    // Create the file privately before SQLite opens it with default permissions.
+    quotaline_storage::open_private(fs::OpenOptions::new().write(true).create(true), &path)?;
     let current = identity(&path);
     let mut cached = HISTORY.lock().unwrap_or_else(PoisonError::into_inner);
     if let Some((stored, store)) = cached.as_ref()

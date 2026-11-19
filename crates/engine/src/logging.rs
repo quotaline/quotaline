@@ -90,7 +90,7 @@ fn now() -> f64 {
 }
 
 fn home() -> Option<String> {
-    std::env::var("HOME").ok()
+    crate::platform::home_text()
 }
 
 fn load(path: &Path, now: f64) -> Vec<Record> {

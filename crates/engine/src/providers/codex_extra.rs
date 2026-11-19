@@ -23,7 +23,7 @@ pub(super) async fn codex_reset_credits(
             cached.value,
             Some(codex_fetch::reset_credits_warning(
                 &error,
-                env::var("HOME").ok().as_deref(),
+                crate::platform::home_text().as_deref(),
             )),
         ),
     };

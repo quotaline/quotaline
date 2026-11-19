@@ -133,7 +133,7 @@ pub(super) async fn codex_document(client: &Api, root: &Path) -> Result<(Value, 
     };
     let from_keyring = keyring.is_some();
     let (doc, source) = if let Some(doc) = keyring {
-        (doc, "Secret Service: Codex Auth".to_string())
+        (doc, format!("{}: Codex Auth", keyring::STORE))
     } else {
         (file?, source(&path))
     };

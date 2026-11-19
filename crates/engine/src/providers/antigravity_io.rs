@@ -15,7 +15,7 @@ pub(super) fn antigravity_file(home: &Path) -> Result<(Value, String), Failure> 
     let mut unreadable = None;
     for path in [
         home.join(".gemini/antigravity-cli/antigravity-oauth-token"),
-        config_home(home).join("Antigravity/auth.json"),
+        app_data(home, "Antigravity").join("auth.json"),
     ] {
         match json_file(&path) {
             Ok(document) if credentials::antigravity_token(&document).is_some() => {
@@ -41,10 +41,43 @@ pub(super) fn antigravity_refresh_token(document: &Value) -> Option<&str> {
     quotaline_credentials::antigravity_refresh_token(document)
 }
 
+#[cfg(not(target_os = "macos"))]
 pub(super) fn antigravity_oauth_binary(path: &Path) -> Option<(String, String)> {
     quotaline_credential_sources::google_oauth::antigravity_binary(path).map(|client| (client.id, client.secret))
 }
 
+#[cfg(target_os = "macos")]
+pub(super) fn antigravity_oauth_client(home: &Path) -> Option<(String, String)> {
+    quotaline_macos_platform::google_oauth::antigravity_client(home, Path::new("/Applications"), &env::vars().collect())
+        .map(|client| (client.id, client.secret))
+}
+
+#[cfg(target_os = "linux")]
+const AGY: [&str; 1] = ["agy"];
+#[cfg(windows)]
+const AGY: [&str; 1] = ["agy.exe"];
+
+#[cfg(target_os = "linux")]
+fn antigravity_installs(home: &Path) -> Vec<PathBuf> {
+    let binary = "resources/app/extensions/antigravity/bin/language_server_linux_x64";
+    vec![
+        home.join(".local/bin/agy"),
+        home.join(".local/share/antigravity").join(binary),
+        PathBuf::from("/usr/share/antigravity").join(binary),
+        PathBuf::from("/opt/Antigravity").join(binary),
+    ]
+}
+
+/// The per-user install folder Windows installers of VS Code forks use.
+#[cfg(windows)]
+fn antigravity_installs(home: &Path) -> Vec<PathBuf> {
+    vec![
+        crate::platform::config_home(home)
+            .join("Programs/Antigravity/resources/app/extensions/antigravity/bin/language_server_windows_x64.exe"),
+    ]
+}
+
+#[cfg(not(target_os = "macos"))]
 pub(super) fn antigravity_oauth_client(home: &Path) -> Option<(String, String)> {
     if let (Ok(id), Ok(secret)) = (
         env::var("ANTIGRAVITY_OAUTH_CLIENT_ID"),
@@ -54,16 +87,10 @@ pub(super) fn antigravity_oauth_client(home: &Path) -> Option<(String, String)> 
     {
         return Some((id, secret));
     }
-    let binary = "resources/app/extensions/antigravity/bin/language_server_linux_x64";
-    let mut paths = vec![
-        home.join(".local/bin/agy"),
-        home.join(".local/share/antigravity").join(binary),
-        PathBuf::from("/usr/share/antigravity").join(binary),
-        PathBuf::from("/opt/Antigravity").join(binary),
-    ];
+    let mut paths = antigravity_installs(home);
     if let Some(path) = env::var_os("PATH") {
         for directory in env::split_paths(&path) {
-            paths.push(directory.join("agy"));
+            paths.extend(AGY.map(|name| directory.join(name)));
         }
     }
     paths.into_iter().find_map(|path| antigravity_oauth_binary(&path))
@@ -97,7 +124,7 @@ pub(super) async fn refresh_antigravity(client: &Api, home: &Path, stored: &Valu
 
 pub(super) async fn antigravity_cloud(client: &Api, token: &str) -> Result<(Value, String), Failure> {
     let bases = client.antigravity_bases.each_ref().map(String::as_str);
-    let home = env::var("HOME").ok();
+    let home = crate::platform::home_text();
     core_antigravity::fetch::fetch_quota(
         client,
         &bases,
@@ -115,7 +142,8 @@ pub(super) async fn antigravity_tier(client: &Api, base: &str, token: &str) -> R
     if let Some(tier) = cache.read(token, client.cache_epoch.elapsed().as_secs_f64()) {
         return Ok(tier);
     }
-    let plan = core_antigravity::fetch::fetch_plan(client, base, token, env::var("HOME").ok().as_deref()).await?;
+    let plan =
+        core_antigravity::fetch::fetch_plan(client, base, token, crate::platform::home_text().as_deref()).await?;
     let tier = plan["currentTier"].as_object().map(|_| plan["currentTier"].clone());
     cache.record(token, tier.clone(), client.cache_epoch.elapsed().as_secs_f64());
     Ok(tier)
@@ -139,7 +167,7 @@ pub(super) async fn antigravity(client: &Api, home: &Path, allow_token_refresh: 
         } else {
             Ok(None)
         } {
-            Ok(Some(document)) => (document, "Secret Service: gemini/antigravity".into()),
+            Ok(Some(document)) => (document, format!("{}: gemini/antigravity", keyring::STORE)),
             Ok(None) => antigravity_file(home)?,
             Err(error) => {
                 let Ok(file) = antigravity_file(home) else {

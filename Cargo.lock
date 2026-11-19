@@ -2186,6 +2186,7 @@ dependencies = [
  "quotaline-history",
  "quotaline-http",
  "quotaline-logging",
+ "quotaline-macos-platform",
  "quotaline-notifications",
  "quotaline-quota",
  "quotaline-refresh",
@@ -2202,8 +2203,8 @@ dependencies = [
  "sha2",
  "tempfile",
  "tokio",
+ "windows-sys 0.61.2",
  "wiremock",
- "zbus",
 ]
 
 [[package]]

@@ -6,6 +6,7 @@ pub mod history;
 pub mod history_view;
 pub mod live;
 pub mod logging;
+pub mod platform;
 pub mod providers;
 pub mod service;
 pub mod state;

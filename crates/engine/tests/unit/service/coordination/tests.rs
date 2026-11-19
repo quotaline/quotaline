@@ -285,7 +285,7 @@ async fn the_poller_serves_forwarded_resets_and_lets_go_on_release() {
     let coordination = leader.engine.coordination.as_ref().unwrap();
     assert!(!leader.engine.inner.lock().await.recent_samples.is_empty());
     let rival = rival();
-    let checkpoint = store::xdg("XDG_DATA_HOME", ".local/share").join("claude-transcripts.json");
+    let checkpoint = store::claude_checkpoint();
     let _ = fs::remove_file(&checkpoint);
     fs::create_dir_all(checkpoint.join("blocked")).unwrap();
     rival.request(&Request::ClearHistory).unwrap();

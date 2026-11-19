@@ -6,6 +6,52 @@ use quotaline_http::transport::header_list;
 
 const GEMINI_KEYRING: &[(&str, &str)] = &[("service", "gemini-cli-oauth"), ("username", "main-account")];
 
+#[cfg(target_os = "macos")]
+pub(super) fn gemini_oauth_client(home: &Path) -> Option<(String, String)> {
+    quotaline_macos_platform::google_oauth::gemini_client(
+        home,
+        &["/opt/homebrew".into(), "/usr/local".into()],
+        &env::vars().collect(),
+    )
+    .map(|client| (client.id, client.secret))
+}
+
+#[cfg(target_os = "linux")]
+const GEMINI: [&str; 1] = ["gemini"];
+#[cfg(windows)]
+const GEMINI: [&str; 1] = ["gemini.cmd"];
+
+#[cfg(target_os = "linux")]
+fn gemini_prefixes(home: &Path) -> Vec<PathBuf> {
+    vec![
+        home.join(".npm-global"),
+        PathBuf::from("/usr/local"),
+        PathBuf::from("/usr"),
+    ]
+}
+
+/// npm installs global packages under `%APPDATA%\npm` on Windows.
+#[cfg(windows)]
+fn gemini_prefixes(home: &Path) -> Vec<PathBuf> {
+    vec![crate::platform::app_data(home, "npm")]
+}
+
+#[cfg(target_os = "linux")]
+const GEMINI_SOURCES: [&str; 4] = [
+    "node_modules/@google/gemini-cli-core/dist/src/code_assist/oauth2.js",
+    "lib/node_modules/@google/gemini-cli-core/dist/src/code_assist/oauth2.js",
+    "lib/node_modules/@google/gemini-cli/node_modules/@google/gemini-cli-core/dist/src/code_assist/oauth2.js",
+    "lib/node_modules/@google/gemini-cli/dist/gemini.js",
+];
+// Windows npm prefixes hold node_modules directly, without lib.
+#[cfg(windows)]
+const GEMINI_SOURCES: [&str; 3] = [
+    "node_modules/@google/gemini-cli-core/dist/src/code_assist/oauth2.js",
+    "node_modules/@google/gemini-cli/node_modules/@google/gemini-cli-core/dist/src/code_assist/oauth2.js",
+    "node_modules/@google/gemini-cli/dist/gemini.js",
+];
+
+#[cfg(not(target_os = "macos"))]
 pub(super) fn gemini_oauth_client(home: &Path) -> Option<(String, String)> {
     if let (Ok(id), Ok(secret)) = (
         env::var("GEMINI_OAUTH_CLIENT_ID"),
@@ -19,26 +65,18 @@ pub(super) fn gemini_oauth_client(home: &Path) -> Option<(String, String)> {
     if let Some(prefix) = env::var_os("NPM_CONFIG_PREFIX") {
         roots.push(PathBuf::from(prefix));
     }
-    roots.extend([
-        home.join(".npm-global"),
-        PathBuf::from("/usr/local"),
-        PathBuf::from("/usr"),
-    ]);
+    roots.extend(gemini_prefixes(home));
     if let Some(path) = env::var_os("PATH") {
         for directory in env::split_paths(&path) {
-            if let Ok(executable) = directory.join("gemini").canonicalize() {
-                roots.extend(executable.ancestors().take(8).map(Path::to_path_buf));
+            for name in GEMINI {
+                if let Ok(executable) = directory.join(name).canonicalize() {
+                    roots.extend(executable.ancestors().take(8).map(Path::to_path_buf));
+                }
             }
         }
     }
-    const SOURCES: [&str; 4] = [
-        "node_modules/@google/gemini-cli-core/dist/src/code_assist/oauth2.js",
-        "lib/node_modules/@google/gemini-cli-core/dist/src/code_assist/oauth2.js",
-        "lib/node_modules/@google/gemini-cli/node_modules/@google/gemini-cli-core/dist/src/code_assist/oauth2.js",
-        "lib/node_modules/@google/gemini-cli/dist/gemini.js",
-    ];
     for root in roots {
-        for relative in SOURCES {
+        for relative in GEMINI_SOURCES {
             if let Ok(source) = fs::read_to_string(root.join(relative))
                 && let Some(client) = quotaline_credential_sources::google_oauth::gemini_source(&source)
             {
@@ -62,7 +100,7 @@ pub(super) async fn gemini(client: &Api, home: &Path, allow_token_refresh: bool)
     } else {
         Ok(None)
     } {
-        Ok(Some(document)) => (document, "Secret Service: gemini-cli-oauth".into(), true),
+        Ok(Some(document)) => (document, format!("{}: gemini-cli-oauth", keyring::STORE), true),
         Ok(None) => (json_file(&path)?, source(&path), false),
         Err(error) => {
             let document = match json_file(&path) {
@@ -106,13 +144,13 @@ pub(super) async fn gemini(client: &Api, home: &Path, allow_token_refresh: bool)
         text(&doc["id_token"]).or_else(|| text(&doc["token"]["idToken"])),
     ));
     let hint = format!("Run {}.", login("gemini"));
-    let home = env::var("HOME").ok();
+    let home = crate::platform::home_text();
     let fetch = core_gemini::fetch::fetch(
         client,
         &client.gemini_assist_cache,
         core_gemini::fetch::Context {
             base: &client.gemini_base,
-            headers: header_list(gemini_request::headers(token, "linux", None)),
+            headers: header_list(gemini_request::headers(token, crate::platform::client_os(), None)),
             fingerprint: &fingerprint,
             now: client.cache_epoch.elapsed().as_secs_f64(),
             hint: &hint,

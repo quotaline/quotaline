@@ -1,4 +1,5 @@
 use super::*;
+use std::os::unix::fs::PermissionsExt;
 
 #[test]
 fn loading_missing_files_returns_an_empty_history() {

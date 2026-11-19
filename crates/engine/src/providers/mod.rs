@@ -32,7 +32,6 @@ use reqwest::{Client, Method, header::HeaderMap};
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
 use std::{
-    collections::HashMap,
     env, fs,
     path::{Path, PathBuf},
     sync::{
@@ -263,12 +262,7 @@ fn json_file(path: &Path) -> Result<Value, Failure> {
 fn credential<'a>(value: Option<&'a str>, id: &str) -> Result<&'a str, Failure> {
     value.ok_or_else(|| Failure::missing_sign_in(format!("No sign-in found. Run {}.", login(id))))
 }
-fn config_home(home: &Path) -> PathBuf {
-    env::var_os("XDG_CONFIG_HOME")
-        .filter(|_| env::var_os("HOME").as_deref() == Some(home.as_os_str()))
-        .map(PathBuf::from)
-        .unwrap_or_else(|| home.join(".config"))
-}
+use crate::platform::{app_data, config_home};
 
 fn refresh_failure(status: &'static str, provider: &str, detail: &str) -> Failure {
     let name = quotaline_catalog::definition(provider)
@@ -389,6 +383,13 @@ mod antigravity_io;
 use antigravity_io::*;
 mod transport;
 use transport::*;
+#[cfg(target_os = "linux")]
+mod keyring;
+#[cfg(target_os = "macos")]
+#[path = "keychain.rs"]
+mod keyring;
+#[cfg(windows)]
+#[path = "credential_manager.rs"]
 mod keyring;
 
 #[cfg(test)]

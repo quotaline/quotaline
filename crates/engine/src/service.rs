@@ -149,20 +149,18 @@ impl Engine {
                 eprintln!("Recent history read failed: {error}");
                 BTreeMap::new()
             });
-        let home = env::var_os("HOME").map(PathBuf::from).unwrap_or_default();
+        let home = crate::platform::home();
         let claude_root = env::var_os("CLAUDE_CONFIG_DIR")
             .map(PathBuf::from)
             .unwrap_or_else(|| home.join(".claude"))
             .join("projects");
-        let claude_checkpoint = store::xdg("XDG_DATA_HOME", ".local/share").join("claude-transcripts.json");
+        let claude_checkpoint = store::claude_checkpoint();
         let claude_reader = Arc::new(std::sync::Mutex::new(claude_transcripts::Scanner::new(
             claude_root,
             claude_checkpoint,
         )));
         // Written before any front end announces itself, so a reader that sees it running also sees these lines.
-        let logs = Arc::new(logging::LogStore::new(
-            store::xdg("XDG_DATA_HOME", ".local/share").join("log.txt"),
-        ));
+        let logs = Arc::new(logging::LogStore::new(store::log()));
         for (level, message) in [("info", "Service started".to_owned())].into_iter().chain(adopted) {
             if let Err(error) = logs.record(level, "app", &message) {
                 eprintln!("Service log write failed: {error}");

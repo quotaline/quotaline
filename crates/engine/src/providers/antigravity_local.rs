@@ -1,14 +1,24 @@
 //! Discovers Antigravity local language servers.
 
-use procfs::FromReadSI;
-use procfs::net::{TcpNetEntries, TcpState};
-use procfs::process::{FDTarget, all_processes_with_root};
+#[cfg(target_os = "linux")]
+use procfs::{
+    FromReadSI,
+    net::{TcpNetEntries, TcpState},
+    process::{FDTarget, all_processes_with_root},
+};
 use quotaline_antigravity::local::LocalRole;
+#[cfg(target_os = "linux")]
 use quotaline_antigravity::local::role;
 use quotaline_antigravity::validate;
 use reqwest::Client;
 use serde_json::Value;
-use std::{collections::HashMap, env, ffi::OsStr, fs, os::unix::fs::MetadataExt, path::PathBuf, time::Duration};
+use std::time::Duration;
+#[cfg(target_os = "linux")]
+use std::{collections::HashMap, env, ffi::OsStr, fs, os::unix::fs::MetadataExt, path::PathBuf};
+
+#[cfg(windows)]
+#[path = "antigravity_windows.rs"]
+mod windows;
 
 struct Server {
     ports: Vec<u16>,
@@ -16,6 +26,47 @@ struct Server {
     source: &'static str,
 }
 
+impl Server {
+    #[cfg(not(target_os = "linux"))]
+    fn new(role: LocalRole, ports: Vec<u16>) -> Self {
+        let (csrf, source) = describe(role);
+        Self { ports, csrf, source }
+    }
+}
+
+fn describe(role: LocalRole) -> (Option<String>, &'static str) {
+    match role {
+        LocalRole::Cli => (None, "Antigravity CLI"),
+        LocalRole::LanguageServer { csrf_token } => (Some(csrf_token), "Antigravity language server"),
+    }
+}
+
+#[cfg(target_os = "macos")]
+fn discover() -> Vec<Server> {
+    let mut servers: std::collections::BTreeMap<i32, Server> = std::collections::BTreeMap::new();
+    for server in quotaline_macos_platform::process::Scanner::system().discover_servers() {
+        let role = match server.csrf_token {
+            Some(csrf_token) => LocalRole::LanguageServer { csrf_token },
+            None => LocalRole::Cli,
+        };
+        servers
+            .entry(server.pid)
+            .or_insert_with(|| Server::new(role, Vec::new()))
+            .ports
+            .push(server.port);
+    }
+    servers.into_values().collect()
+}
+
+#[cfg(windows)]
+fn discover() -> Vec<Server> {
+    windows::processes()
+        .into_iter()
+        .map(|(role, ports)| Server::new(role, ports))
+        .collect()
+}
+
+#[cfg(target_os = "linux")]
 fn discover() -> Vec<Server> {
     #[cfg(feature = "fixture-api")]
     let root = env::var_os("TMB_FIXTURE_PROC_ROOT")
@@ -43,10 +94,7 @@ fn discover() -> Vec<Server> {
         .filter_map(|process| {
             let args = process.cmdline().ok()?;
             let args: Vec<_> = args.iter().map(String::as_str).collect();
-            let (csrf, source) = match role(args.first()?, &args)? {
-                LocalRole::Cli => (None, "Antigravity CLI"),
-                LocalRole::LanguageServer { csrf_token } => (Some(csrf_token), "Antigravity language server"),
-            };
+            let (csrf, source) = describe(role(args.first()?, &args)?);
             if let Some(runtime) = &runtime
                 && process.environ().ok()?.get(OsStr::new("XDG_RUNTIME_DIR")) != Some(runtime)
             {

@@ -8,9 +8,9 @@ use quotaline_credential_sources::{
 };
 use quotaline_credentials::CopilotCredential;
 
-pub(super) fn copilot_secret(bytes: &[u8], account: &str) -> Result<Option<CopilotCredential>, Failure> {
+pub(super) fn copilot_secret(bytes: &[u8], account: Option<&str>) -> Result<Option<CopilotCredential>, Failure> {
     use quotaline_credentials::CopilotSecretError;
-    quotaline_credentials::copilot_keyring_credential(bytes, Some(account)).map_err(|error| {
+    quotaline_credentials::copilot_keyring_credential(bytes, account).map_err(|error| {
         Failure::new(
             "unreadable",
             match error {
@@ -22,6 +22,7 @@ pub(super) fn copilot_secret(bytes: &[u8], account: &str) -> Result<Option<Copil
     })
 }
 
+#[cfg(target_os = "linux")]
 pub(super) async fn copilot_keyring(accounts: &[String]) -> Result<Option<CopilotCredential>, Failure> {
     let Some(service) = keyring::connect().await else {
         return Ok(None);
@@ -45,7 +46,7 @@ pub(super) async fn copilot_keyring(accounts: &[String]) -> Result<Option<Copilo
     }
     items.sort_by(|left, right| (left.0, &left.1).cmp(&(right.0, &right.1)));
     for (_, account, item) in items {
-        if let Some(credentials) = copilot_secret(&keyring::secret("Copilot", item).await?, &account)? {
+        if let Some(credentials) = copilot_secret(&keyring::secret("Copilot", item).await?, Some(&account))? {
             return Ok(Some(credentials));
         }
     }
@@ -58,6 +59,24 @@ pub(super) async fn copilot_keyring(accounts: &[String]) -> Result<Option<Copilo
                 .is_some_and(|account| accounts.contains(account))
         {
             return Err(keyring::locked("Copilot"));
+        }
+    }
+    Ok(None)
+}
+
+/// Reads each account Copilot's config names, or the first stored sign-in when it names none.
+#[cfg(not(target_os = "linux"))]
+pub(super) async fn copilot_keyring(accounts: &[String]) -> Result<Option<CopilotCredential>, Failure> {
+    let candidates: Vec<Option<&str>> = if accounts.is_empty() {
+        vec![None]
+    } else {
+        accounts.iter().map(|account| Some(account.as_str())).collect()
+    };
+    for account in candidates {
+        if let Some(entry) = keyring::load("Copilot", "copilot-cli", account).await?
+            && let Some(credentials) = copilot_secret(&entry.data, entry.account.as_deref())?
+        {
+            return Ok(Some(credentials));
         }
     }
     Ok(None)
@@ -126,7 +145,7 @@ pub(super) async fn copilot(client: &Api, home: &Path) -> Result<Provider, Failu
         .map_err(|error| pipeline_failure(error, "copilot").with_credential())?;
     let source = match found.origin {
         CopilotOrigin::Environment => "environment".into(),
-        CopilotOrigin::Keyring => "Secret Service: copilot-cli".into(),
+        CopilotOrigin::Keyring => format!("{}: copilot-cli", keyring::STORE),
         CopilotOrigin::Cli(path) | CopilotOrigin::Legacy(path) => path.to_string_lossy().into(),
     };
     let mut provider = copilot_provider(&data, source);

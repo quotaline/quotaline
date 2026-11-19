@@ -2,7 +2,7 @@
 
 use serde::Serialize;
 use std::{
-    fs,
+    fs::{self, File, OpenOptions},
     io::{self, Write},
     path::{Path, PathBuf},
 };
@@ -19,6 +19,21 @@ pub fn write_secret_file(path: &Path, data: &[u8]) -> io::Result<()> {
 pub fn write_private_file(path: &Path, data: &[u8]) -> io::Result<usize> {
     atomic_write(path, data, true)?;
     Ok(data.len())
+}
+
+/// Opens a file only its owner can read, tightening an existing file that `options` keeps.
+#[cfg(unix)]
+pub fn open_private(options: &mut OpenOptions, path: &Path) -> io::Result<File> {
+    use std::os::unix::fs::{OpenOptionsExt, PermissionsExt};
+    let file = options.mode(0o600).open(path)?;
+    file.set_permissions(fs::Permissions::from_mode(0o600))?;
+    Ok(file)
+}
+
+/// Opens a file under the user's profile, whose inherited access list already keeps it to its owner.
+#[cfg(windows)]
+pub fn open_private(options: &mut OpenOptions, path: &Path) -> io::Result<File> {
+    options.open(path)
 }
 
 pub fn read_optional_file(path: &Path) -> io::Result<Option<Vec<u8>>> {

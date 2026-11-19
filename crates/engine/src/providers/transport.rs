@@ -57,7 +57,7 @@ impl Transport for Api {
 
 /// Words a shared pipeline's failure as macOS does and maps its kind to a GNOME status.
 pub(super) fn pipeline_failure(error: HttpError, id: &str) -> Failure {
-    let failure = error.provider_failure(&format!("Run {}.", login(id)), env::var("HOME").ok().as_deref());
+    let failure = error.provider_failure(&format!("Run {}.", login(id)), crate::platform::home_text().as_deref());
     Failure {
         retry_after: failure.retry_after.map_or(0, |seconds| seconds.ceil() as u64),
         ..Failure::new(

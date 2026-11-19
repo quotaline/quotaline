@@ -5,7 +5,6 @@ use quotaline_logging::parse::parse_lines;
 use std::{
     fs::{self, File, OpenOptions},
     io::{self, Read, Seek, SeekFrom, Write},
-    os::unix::fs::{OpenOptionsExt, PermissionsExt},
     path::{Path, PathBuf},
 };
 
@@ -121,9 +120,7 @@ fn file_line(line: &str, maximum_bytes: usize) -> Vec<u8> {
 }
 
 fn open(path: &Path) -> io::Result<File> {
-    let file = OpenOptions::new().create(true).append(true).mode(0o600).open(path)?;
-    file.set_permissions(fs::Permissions::from_mode(0o600))?;
-    Ok(file)
+    crate::open_private(OpenOptions::new().create(true).append(true), path)
 }
 
 fn rotate(path: &Path, count: usize) -> io::Result<()> {

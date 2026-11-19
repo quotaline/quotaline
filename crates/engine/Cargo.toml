@@ -37,14 +37,30 @@ hex = "0.4"
 iana-time-zone = "0.1.65"
 jiff = "1"
 reqwest = { version = "0.13", default-features = false, features = ["form", "json", "rustls"] }
-secret-service = { version = "6", default-features = false, features = ["rt-tokio-crypto-rust"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 sha2 = "0.11"
 tokio = { version = "1", features = ["macros", "rt-multi-thread", "signal", "sync", "time"] }
-zbus = { version = "6", default-features = false, features = ["tokio", "proxy"] }
-procfs = { version = "0.18", default-features = false }
 rusqlite = { version = "0.43", features = ["bundled"] }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+procfs = { version = "0.18", default-features = false }
+secret-service = { version = "6", default-features = false, features = ["rt-tokio-crypto-rust"] }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+quotaline-macos-platform = { version = "0.2.0", path = "../../macos/platform" }
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.61", features = [
+  "Wdk_System_Threading",
+  "Win32_Foundation",
+  "Win32_NetworkManagement_IpHelper",
+  "Win32_Networking_WinSock",
+  "Win32_Security",
+  "Win32_Security_Credentials",
+  "Win32_System_Threading",
+  "Win32_UI_Shell",
+] }
 
 [dev-dependencies]
 libc = "0.2"

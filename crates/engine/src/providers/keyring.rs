@@ -2,6 +2,10 @@
 
 use super::*;
 use secret_service::{EncryptionType, Item, SearchItemsResult, SecretService};
+use std::collections::HashMap;
+
+/// How provider details name this store.
+pub(super) const STORE: &str = "Secret Service";
 
 async fn within<T>(
     operation: impl Future<Output = Result<T, secret_service::Error>>,

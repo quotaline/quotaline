@@ -4,7 +4,6 @@ use std::{
     borrow::Cow,
     fs::{File, OpenOptions},
     io::BufWriter,
-    os::unix::fs::{OpenOptionsExt, PermissionsExt},
     path::Path,
 };
 
@@ -30,14 +29,7 @@ impl Csv {
         if !path.parent().is_some_and(Path::is_dir) {
             return Err(HistoryError::ExportDirectory);
         }
-        let file = OpenOptions::new()
-            .write(true)
-            .create(true)
-            .truncate(true)
-            .mode(0o600)
-            .open(path)?;
-        // mode only applies when the file is created; an existing export keeps its permissions otherwise.
-        file.set_permissions(std::fs::Permissions::from_mode(0o600))?;
+        let file = quotaline_storage::open_private(OpenOptions::new().write(true).create(true).truncate(true), path)?;
         let mut writer = WriterBuilder::new()
             .quote_style(QuoteStyle::Necessary)
             .from_writer(BufWriter::with_capacity(256 * 1024, file));
