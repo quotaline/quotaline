@@ -28,6 +28,7 @@ use std::{
 use tokio::sync::{Mutex, Notify, Semaphore};
 
 mod commands;
+mod coordination;
 mod history_selection;
 mod history_session;
 mod history_visibility;
@@ -86,6 +87,8 @@ struct Inner {
     session: refresh::RefreshSession,
     last_refresh: Option<i64>,
     panel_open: bool,
+    /// Whether another engine's front end shows its panel, which keeps polling at the visible pace.
+    remote_visible: bool,
     power_saver: bool,
     thermal_pressure: bool,
     last_analytics: Option<Instant>,
@@ -118,6 +121,7 @@ pub struct Engine {
     home: PathBuf,
     logs: Arc<logging::LogStore>,
     claude_reader: Arc<std::sync::Mutex<claude_transcripts::Scanner>>,
+    coordination: Option<Arc<coordination::Coordination>>,
 }
 
 impl Engine {
@@ -182,6 +186,7 @@ impl Engine {
                 session: refresh::RefreshSession::with_minute(epoch(), minute_seconds as f64),
                 last_refresh,
                 panel_open: false,
+                remote_visible: false,
                 power_saver: false,
                 thermal_pressure: false,
                 last_analytics: None,
@@ -222,6 +227,11 @@ impl Engine {
             home,
             claude_reader,
             logs,
+            coordination: if demo_requested {
+                None
+            } else {
+                coordination::Coordination::open().map(Arc::new)
+            },
         })
     }
 
@@ -241,12 +251,15 @@ impl Engine {
     }
 
     async fn emit(&self) {
+        self.publish().await;
         let state = self.state().await;
         self.host.changed(state).await;
     }
 
     pub async fn take_notifications(&self) -> Vec<Planned> {
-        self.inner.lock().await.pending_notifications.take()
+        let mut planned = self.inner.lock().await.pending_notifications.take();
+        planned.extend(self.claim_notifications().await);
+        planned
     }
 
     /// Whether notices show, and with sound; read per notice so switching them off stops a batch midway.
@@ -292,28 +305,31 @@ impl Engine {
         if self.is_demo().await {
             self.warm_demo();
         }
-        self.refresh("all").await;
+        let leading = self.contest().await;
+        if leading || self.is_demo().await {
+            self.refresh("all").await;
+        } else {
+            self.follow().await;
+        }
         if self.first_run_candidate {
             self.inner.lock().await.first_run_pending = true;
             self.emit().await;
         }
-        self.scan_claude().await;
-        let timer = self.clone();
-        let timer = tokio::spawn(async move {
-            loop {
-                timer.scheduled().await;
-                if let Some(deadline) = timer.next_scheduled().await {
-                    tokio::select! {
-                        _ = tokio::time::sleep_until(deadline.into()) => {},
-                        _ = timer.schedule_changed.notified() => {},
-                    }
-                } else {
-                    timer.schedule_changed.notified().await;
-                }
+        if leading {
+            self.scan_claude().await;
+        }
+        match self.coordination.clone() {
+            Some(coordination) => {
+                self.spawn_coordinator(coordination);
+                self.shutdown.notified().await;
             }
-        });
-        self.shutdown.notified().await;
-        timer.abort();
+            None => {
+                let poller = self.spawn_poller();
+                self.shutdown.notified().await;
+                poller.abort();
+            }
+        }
+        self.stop_coordinating().await;
     }
 
     pub fn quit(&self) {
@@ -334,7 +350,8 @@ impl Engine {
 
     #[cfg(feature = "fixture-api")]
     pub async fn pending_notification_count(&self) -> u32 {
-        self.inner.lock().await.pending_notifications.len() as u32
+        let local = self.inner.lock().await.pending_notifications.len() as u32;
+        local + self.posted_notification_count().await
     }
 
     #[cfg(feature = "fixture-api")]

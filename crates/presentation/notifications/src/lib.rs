@@ -12,7 +12,7 @@ pub use copy::{Copy, Moments, Selection, copy, summary};
 pub use delivery::{CredentialKey, DeliveryEvent, DeliveryLedger};
 
 pub const THRESHOLD_CHOICES: [u8; 4] = [50, 75, 90, 100];
-#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, serde::Serialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Kind {
     Threshold,
@@ -24,13 +24,13 @@ pub enum Kind {
     AheadOfPace,
 }
 
-#[derive(Clone, Debug, PartialEq, serde::Serialize)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct ThresholdCrossing {
     pub label: String,
     pub used: f64,
 }
 
-#[derive(Clone, Debug, PartialEq, serde::Serialize)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum Facts {
     Authentication {
@@ -102,7 +102,7 @@ impl NotificationRoutes {
     }
 }
 
-#[derive(Debug, PartialEq, serde::Serialize)]
+#[derive(Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct Event {
     pub id: String,
     pub kind: Kind,

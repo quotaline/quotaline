@@ -2,7 +2,7 @@
 
 use super::*;
 
-#[derive(Clone, Debug, PartialEq, serde::Serialize)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct LocalTranscriptUsage {
     pub window_tokens: i64,
     pub window_cost: f64,

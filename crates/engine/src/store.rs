@@ -74,6 +74,10 @@ pub fn config() -> PathBuf {
 pub fn database() -> PathBuf {
     xdg("XDG_DATA_HOME", ".local/share").join("history.sqlite3")
 }
+/// Where engines on this machine share the lease, the published state, and planned notices.
+pub fn live() -> PathBuf {
+    xdg("XDG_DATA_HOME", ".local/share").join("live.sqlite3")
+}
 pub fn snapshot() -> PathBuf {
     xdg("XDG_CACHE_HOME", ".cache").join("snapshot.json")
 }

@@ -149,6 +149,7 @@ impl Engine {
                     .collect()
             }
         };
+        self.share_panel_open(open).await;
         for id in missing {
             self.refresh(id).await;
         }
@@ -232,6 +233,16 @@ impl Engine {
                 Timestamp::now().as_second() as f64,
             );
             inner.history_visibility.clear();
+        }
+        self.forget_readings().await;
+        self.forward(coordination::Request::ForgetReadings).await;
+        self.refresh("all").await;
+        Ok(self.state().await)
+    }
+
+    pub(super) async fn forget_readings(&self) {
+        {
+            let mut inner = self.inner.lock().await;
             inner.providers.clear();
             inner.statuses.clear();
             inner.notified.clear();
@@ -243,8 +254,6 @@ impl Engine {
             inner.claude_local_usage = None;
         }
         self.schedule_changed.notify_one();
-        self.refresh("all").await;
-        Ok(self.state().await)
     }
 
     pub async fn clear_history(&self) -> Result<bool, Error> {
@@ -262,6 +271,8 @@ impl Engine {
             inner.claude_scan_pending = false;
             inner.last_claude_scan = None;
         }
+        // The polling engine keeps its own copy of recent readings and transcript progress, which it must drop too.
+        self.forward(coordination::Request::ClearHistory).await;
         self.emit().await;
         Ok(true)
     }

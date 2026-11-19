@@ -3,6 +3,7 @@
 use quotaline_notifications::Event;
 use std::collections::VecDeque;
 
+#[derive(serde::Serialize, serde::Deserialize)]
 pub struct Planned {
     pub provider: String,
     pub event: Event,

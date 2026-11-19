@@ -7,6 +7,9 @@ impl Engine {
         if requested != "all" && !IDS.contains(&requested) {
             return false;
         }
+        if self.delegate_refresh(requested).await {
+            return true;
+        }
         self.request(refresh::RefreshIntent {
             reason: refresh::RefreshReason::UserInitiated,
             usage: refresh::RefreshPolicy::Force,
@@ -110,7 +113,7 @@ impl Engine {
         };
         let twelve_hour = fetched == refresh::FetchOutcome::RateLimited && self.host.twelve_hour_clock().await;
         let clock = crate::clock::SessionClock::new(jiff::tz::TimeZone::system(), twelve_hour);
-        let (detailed, planned) = {
+        let detailed = {
             let mut inner = self.inner.lock().await;
             inner.running.remove(id);
             // The last result ends the cycle before it is published, so a refresh asked for in reaction to it
@@ -249,17 +252,16 @@ impl Engine {
             inner.providers.insert(id.into(), provider);
             inner.statuses.insert(id.into(), status);
             inner.notified.trim();
-            // Queued with the state change, so a reader that sees the new reading also sees its notifications.
-            let planned = !notifications.is_empty();
-            inner.pending_notifications.extend(notifications);
-            (
-                inner
-                    .settings
-                    .detailed_logging
-                    .then(|| format!("{id} refresh completed in {} ms", elapsed.as_millis())),
-                planned,
-            )
+            inner
+                .settings
+                .detailed_logging
+                .then(|| format!("{id} refresh completed in {} ms", elapsed.as_millis()))
         };
+        let planned = !notifications.is_empty();
+        // Queued before the state change goes out, so a reader that sees the new reading also sees its notifications.
+        if planned && !self.post_notifications(&notifications).await {
+            self.inner.lock().await.pending_notifications.extend(notifications);
+        }
         self.persist().await;
         self.log(
             if status == "connected" { "info" } else { "warning" },

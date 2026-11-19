@@ -136,7 +136,7 @@ impl Engine {
         let minute = self.minute_seconds as f64;
         refresh::ScheduleInputs {
             providers: schedules,
-            visible: inner.panel_open,
+            visible: inner.panel_open || inner.remote_visible,
             throttled: inner.power_saver || inner.thermal_pressure,
             analytics_interval: f64::from(inner.settings.analytics_interval_minutes) * minute,
             maximum: f64::from(quotaline_catalog::MAXIMUM_REFRESH_MINUTES) * minute,

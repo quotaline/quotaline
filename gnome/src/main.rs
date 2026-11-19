@@ -31,44 +31,42 @@ trait PortalSettings {
     fn read_one(&self, namespace: &str, key: &str) -> zbus::Result<zbus::OwnedVariant>;
 }
 
-/// Turns engine changes into the service's D-Bus signals once the service owns its name.
+/// Turns engine changes into the service's D-Bus signals.
 #[derive(Default)]
 struct GnomeHost {
+    // Set after the engine is built, so a broken fixture configuration fails before the session bus is needed.
     connection: OnceLock<zbus::Connection>,
+}
+
+impl GnomeHost {
+    fn connection(&self) -> &zbus::Connection {
+        self.connection
+            .get()
+            .expect("the engine runs only after the service connects")
+    }
 }
 
 impl Host for GnomeHost {
     fn changed(&self, state: String) -> BoxFuture<'_, ()> {
         Box::pin(async move {
-            if let Some(connection) = self.connection.get() {
-                let _: zbus::Result<()> = Bus::changed(&emitter(connection), &state).await;
-            }
+            let _: zbus::Result<()> = Bus::changed(&emitter(self.connection()), &state).await;
         })
     }
 
     fn log_changed(&self) -> BoxFuture<'_, ()> {
         Box::pin(async move {
-            if let Some(connection) = self.connection.get() {
-                let _: zbus::Result<()> = Bus::log_changed(&emitter(connection)).await;
-            }
+            let _: zbus::Result<()> = Bus::log_changed(&emitter(self.connection())).await;
         })
     }
 
     fn notification_planned(&self) -> BoxFuture<'_, ()> {
         Box::pin(async move {
-            if let Some(connection) = self.connection.get() {
-                let _: zbus::Result<()> = Bus::notification_planned(&emitter(connection)).await;
-            }
+            let _: zbus::Result<()> = Bus::notification_planned(&emitter(self.connection())).await;
         })
     }
 
     fn twelve_hour_clock(&self) -> BoxFuture<'_, bool> {
-        Box::pin(async move {
-            match self.connection.get() {
-                Some(connection) => twelve_hour_clock(connection).await,
-                None => false,
-            }
-        })
+        Box::pin(async move { twelve_hour_clock(self.connection()).await })
     }
 }
 
@@ -327,6 +325,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         _ = terminate.recv() => {},
         _ = connection.closed() => {},
     }
+    engine.release().await;
     power_stop.notify_one();
     if !connection.is_closed() {
         connection.close().await?;
