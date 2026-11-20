@@ -470,7 +470,8 @@ import Testing
   let newer = WindowSelectionList(environment: environment).activityRequest
 
   let superseded = Task { await environment.settingsActivity(for: older) }
-  await Task.yield()
+  // The newer request must replace a load that is still running, which one yield does not guarantee.
+  while environment.settingsActivityLoad == nil { await Task.yield() }
   _ = await environment.settingsActivity(for: newer)
   _ = await superseded.value
   try await environment.history.breakDatabase()

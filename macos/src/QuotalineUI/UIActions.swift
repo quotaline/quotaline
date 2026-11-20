@@ -105,7 +105,7 @@ public final class UIEnvironment {
   private var usagePresentationDirty = false
   private var recentSamplesLoad: Task<Void, Never>?
   private var settingsActivityCache: SettingsActivityCacheEntry?
-  private var settingsActivityLoad: SettingsActivityLoad?
+  private(set) var settingsActivityLoad: SettingsActivityLoad?
   @ObservationIgnored private var tabTransition: (tab: PopoverTab, startedAt: TimeInterval)?
   @ObservationIgnored weak var tabContainer: PersistentTabContainer?
 
@@ -352,7 +352,7 @@ private struct SettingsActivityCacheEntry {
   let dates: [WindowKey: Date]
 }
 
-private struct SettingsActivityLoad {
+struct SettingsActivityLoad {
   let id: UUID
   let request: SettingsActivityRequest
   let task: Task<[WindowKey: Date]?, Never>
