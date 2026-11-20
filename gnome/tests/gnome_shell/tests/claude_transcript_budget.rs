@@ -5,9 +5,10 @@ use super::super::*;
 #[test]
 fn claude_transcript_scan_resumes_after_its_byte_budget() {
     let now = jiff::Timestamp::now();
+    // A week, not the default Today, keeps a record written just before UTC midnight in the period read back.
     let fixture = isolated_service_with(
         &serde_json::json!({"providers":{"claude":true,"codex":false,"gemini":false,
-            "antigravity":false,"cursor":false,"copilot":false}}),
+            "antigravity":false,"cursor":false,"copilot":false},"history_days":7}),
         |root| {
             let folder = root.join("home/.claude/projects/app");
             fs::create_dir_all(&folder).unwrap();
