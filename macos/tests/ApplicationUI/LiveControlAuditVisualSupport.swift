@@ -31,7 +31,8 @@ extension LiveControlAuditUITests {
       else { continue }
       if control.elementType == .stepper { continue }
       let element = element(for: control, in: surface, tree: snapshot)
-      let hittable = element.isHittable
+      // XCTest's hit test can briefly miss a control whose frame has not changed; reveal waits for the same reason.
+      let hittable = waitUntil(timeout: controlTimeout) { element.isHittable }
       if !hittable {
         let attachment = XCTAttachment(string: application.debugDescription)
         attachment.name = "Inaccessible visible control"
@@ -41,7 +42,7 @@ extension LiveControlAuditUITests {
       XCTAssertTrue(
         hittable,
         "Visible enabled control is not hittable: \(control.elementType) \(control.identifier) "
-          + "\(control.label) \(control.frame)")
+          + "\(control.label) \(control.frame), now at \(element.frame)")
     }
     XCTAssertEqual(application.state, .runningForeground)
     return banners.count
