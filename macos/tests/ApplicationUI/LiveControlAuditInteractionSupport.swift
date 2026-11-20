@@ -237,11 +237,10 @@ extension LiveControlAuditUITests {
       if element.exists { break }
       let first = scrollView.staticTexts.firstMatch
       guard let anchor = try? first.snapshot() else { return false }
-      scroll(scrollView, by: -viewport.height * 0.75)
       guard
-        waitUntil(
-          timeout: controlTimeout,
-          condition: {
+        scroll(
+          scrollView, by: -viewport.height * 0.75,
+          until: {
             element.exists
               || (try? first.snapshot()).map { $0.label != anchor.label || $0.frame != anchor.frame } == true
           })
@@ -274,12 +273,11 @@ extension LiveControlAuditUITests {
       guard abs(before.midY - viewport.midY) > 20 else { return false }
       let anchor = scrollView.staticTexts.firstMatch
       let anchorBefore = anchor.frame
-      scroll(scrollView, by: viewport.midY - before.midY)
       var after: (any XCUIElementSnapshot)?
       guard
-        waitUntil(
-          timeout: controlTimeout,
-          condition: {
+        scroll(
+          scrollView, by: viewport.midY - before.midY,
+          until: {
             after = try? element.snapshot()
             return (after.map { $0.frame != before } ?? true) || anchor.frame != anchorBefore
           })
@@ -315,6 +313,17 @@ extension LiveControlAuditUITests {
     XCTAssertTrue(
       reveal(firstText, in: surface),
       "Scrolling did not expose the first content row")
+  }
+
+  /// XCTest never confirms that a synthesized wheel gesture reached the scroll view, so a viewport that did not move
+  /// gets the gesture once more; a late first gesture only overshoots, which the caller's next pass measures and undoes.
+  @MainActor
+  func scroll(_ scrollView: XCUIElement, by delta: CGFloat, until moved: () -> Bool) -> Bool {
+    for _ in 0..<2 {
+      scroll(scrollView, by: delta)
+      if waitUntil(timeout: controlTimeout, condition: moved) { return true }
+    }
+    return false
   }
 
   @MainActor
