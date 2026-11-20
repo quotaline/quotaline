@@ -243,7 +243,8 @@ final class LiveControlAuditUITests: XCTestCase {
           ).firstMatch.waitUntilExists(timeout: 5))
       }
       let exposedText = try captureAndAuditPages(
-        tab: tab, surface: surface, application: verification.application, output: output,
+        tab: tab, surface: surface, statusItem: verification.statusItem, application: verification.application,
+        output: output,
         prefix: "\(appearance.rawValue.lowercased())-\(widthName)")
       if tab == "Usage" {
         XCTAssertTrue(exposedText.contains { $0.contains("Verification warning text is intentionally long") })

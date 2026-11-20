@@ -102,14 +102,15 @@ extension LiveControlAuditUITests {
 
   @MainActor
   func captureAndAuditPages(
-    tab: String, surface: XCUIElement, application: XCUIApplication, output: URL, prefix: String
+    tab: String, surface: XCUIElement, statusItem: XCUIElement, application: XCUIApplication, output: URL,
+    prefix: String
   ) throws -> [String] {
     let scrollView = surface.scrollViews.firstMatch
     let hasScrollView = scrollView.exists
-    let frame = surface.frame
+    var frame = surface.frame
+    var anchor = statusItem.frame
     let viewport = hasScrollView ? scrollView.frame.intersection(frame) : frame
-    let outside = coordinateOutsidePanel(surface, frame: frame)
-    let point = outside.screenPoint
+    let point = coordinateOutsidePanel(surface, frame: frame).screenPoint
     XCTAssertTrue(point.x.isFinite && point.y.isFinite, "Pointer target must have finite screen coordinates")
     var exposedText: [String] = []
     var previousPage: Set<String> = []
@@ -117,8 +118,17 @@ extension LiveControlAuditUITests {
     var auditedControls: Set<[String]> = []
     var adjustedSteppers: Set<String> = []
     for page in 0..<18 {
-      outside.hover()
+      coordinateOutsidePanel(surface, frame: surface.frame).hover()
       let snapshot = try surface.snapshot()
+      // The panel follows its status item when the menu bar lays out again, as when the clock's hour gains or loses a
+      // digit; the viewport keeps its size, so pages captured before and after the move still tile.
+      let moved = statusItem.frame
+      if snapshot.frame.size == frame.size && snapshot.frame.minY == frame.minY
+        && snapshot.frame.minX - frame.minX == moved.minX - anchor.minX
+      {
+        frame = snapshot.frame
+        anchor = moved
+      }
       XCTAssertEqual(snapshot.frame, frame, "The viewport changed during paged text capture")
       try application.screenshot().pngRepresentation.write(
         to: output.appendingPathComponent("\(prefix)-\(tab.lowercased())-page-\(page).png"))
