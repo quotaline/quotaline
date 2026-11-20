@@ -58,8 +58,9 @@ pub(crate) async fn sign_in_response(fixture: &IsolatedService, provider: &str) 
 pub(crate) fn project_history_shell(private: bool, projects: &[(&str, f64)], expected: &[&str], capture: &str) {
     let _shell = shell_lock();
     let providers = serde_json::json!({"claude":true,"codex":false,"gemini":false,"antigravity":false,"cursor":false,"copilot":false});
+    // A week, not the default Today, keeps records written just before UTC midnight in the period the shell loads.
     let fixture = isolated_service_configured(
-        &serde_json::json!({"providers":providers,"history_metric":"projectCost","last_tab":"History","hide_identity":private}),
+        &serde_json::json!({"providers":providers,"history_metric":"projectCost","history_days":7,"last_tab":"History","hide_identity":private}),
         |root| {
             let path = root.join("home/.claude/projects/demo/session.jsonl");
             fs::create_dir_all(path.parent().unwrap()).unwrap();
