@@ -30,7 +30,7 @@ matrices="$(jq -cn --argjson release "$release" \
   {
     runtimes: [$runtimes[]."runtime-major"],
     full: ($full == 1),
-    "ui-shards": (if $full == 1 then 0 else 4 end),
+    "ui-shards": (if $full == 1 then 0 else 2 end),
     ui: {include: [$runtimes[] | select(
       if $group == "performance" then ."runtime-major" == ($runtimes | map(."runtime-major") | max)
       elif $diagnostic != 0 then ."runtime-major" == $diagnostic

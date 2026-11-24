@@ -179,7 +179,7 @@ jobs:
       UI_TEST: ${{ inputs.test }}
     strategy:
       fail-fast: false
-      max-parallel: ${{ inputs.shards > 0 && inputs.shards || 2 }}
+      max-parallel: 2
       matrix:
         shard: ${{ inputs.group != '' && fromJSON(format('[{{"name":{0},"groups":[{0}]}}]', toJSON(inputs.group))) || fromJSON(needs.build.outputs.shards) }}
     steps:

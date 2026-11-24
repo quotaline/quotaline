@@ -44,7 +44,7 @@ for state in complete prerelease; do
     FULL_MATRIX=0 bash Scripts/ci-runtime-matrix.sh > "$probe/result"
   jq -Rne '
     [inputs | capture("^(?<key>[^=]+)=(?<value>.*)$") | .value |= fromjson] | from_entries |
-    .full == false and ."ui-shards" == 4 and [.ui.include[]."runtime-major"] == [26]
+    .full == false and ."ui-shards" == 2 and [.ui.include[]."runtime-major"] == [26]
   ' "$GITHUB_OUTPUT" > /dev/null
 done
 : > "$GITHUB_OUTPUT"
