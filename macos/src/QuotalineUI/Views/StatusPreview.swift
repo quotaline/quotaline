@@ -45,21 +45,19 @@ public struct StatusPreview: View {
       let help =
         "Shows the status cell from the same model used by the menu bar. "
         + "Select it to scroll to and focus its model row."
+      let tooltip = TooltipContent(title: "Preview \(cell.tooltip)", body: help)
       StatusPreviewCellButton(
         image: StatusItemRenderer.cellImage(cell, height: 24, dark: colorScheme == .dark),
         accessibilityIdentifier: "status-preview-\(cell.id)",
         accessibilityLabel: cell.tooltip,
         accessibilityHelp: help,
+        tooltip: tooltip,
         selected: highlightedKey == key
       ) {
         highlightedKey = key
         select(key)
       }
-      .richHelp(
-        TooltipContent(
-          title: "Preview \(cell.tooltip)",
-          body: help)
-      )
+      .richHelpAccessibility(tooltip)
       .hoverTracking { inside in
         if inside { highlightedKey = key } else if highlightedKey == key { highlightedKey = nil }
       }
@@ -75,6 +73,7 @@ private struct StatusPreviewCellButton: NSViewRepresentable {
   let accessibilityIdentifier: String
   let accessibilityLabel: String
   let accessibilityHelp: String
+  let tooltip: TooltipContent
   let selected: Bool
   let action: () -> Void
 
@@ -91,11 +90,15 @@ private struct StatusPreviewCellButton: NSViewRepresentable {
     button.refusesFirstResponder = false
     button.setAccessibilityElement(true)
     button.setAccessibilityRole(.button)
+    context.coordinator.tooltip.autoresizingMask = [.width, .height]
+    button.addSubview(context.coordinator.tooltip)
     update(button, coordinator: context.coordinator)
     return NativeButtonContainer(button: button)
   }
 
   func updateNSView(_ container: NativeButtonContainer, context: Context) {
+    context.coordinator.tooltip.tooltipPresentationDelay = context.environment.tooltipPresentationDelay
+    context.coordinator.tooltip.update(content: tooltip, focused: false)
     update(container.button, coordinator: context.coordinator)
   }
 
@@ -104,7 +107,11 @@ private struct StatusPreviewCellButton: NSViewRepresentable {
   }
 
   func makeCoordinator() -> Coordinator {
-    Coordinator(action: action)
+    Coordinator(action: action, tooltip: tooltip)
+  }
+
+  static func dismantleNSView(_ container: NativeButtonContainer, coordinator: Coordinator) {
+    coordinator.tooltip.dismantle()
   }
 
   private func update(_ button: NSButton, coordinator: Coordinator) {
@@ -119,9 +126,11 @@ private struct StatusPreviewCellButton: NSViewRepresentable {
   @MainActor
   final class Coordinator: NSObject {
     var action: () -> Void
+    let tooltip: TooltipTrackingView
 
-    init(action: @escaping () -> Void) {
+    init(action: @escaping () -> Void, tooltip: TooltipContent) {
       self.action = action
+      self.tooltip = TooltipTrackingView(content: tooltip, presenter: .shared)
     }
 
     @objc func press(_: NSButton) {
