@@ -151,7 +151,7 @@ jobs:
         with:
           cache: false
       - name: 🧰 Install mise tools
-        uses: jdx/mise-action@v5.2.7
+        uses: jdx/mise-action@v5.2.9
         with:
           version: 2026.10.24
           install_args: --locked
@@ -190,7 +190,7 @@ jobs:
         with:
           cache: false
       - name: 🧰 Install mise tools
-        uses: jdx/mise-action@v5.2.7
+        uses: jdx/mise-action@v5.2.9
         with:
           version: 2026.10.24
           install_args: --locked just
@@ -330,7 +330,7 @@ jobs:
         with:
           cache: false
       - name: 🧰 Install mise tools
-        uses: jdx/mise-action@v5.2.7
+        uses: jdx/mise-action@v5.2.9
         with:
           version: 2026.10.24
           install_args: --locked
@@ -604,7 +604,7 @@ jobs:
         with:
           cache: false
       - name: 🧰 Install mise tools
-        uses: jdx/mise-action@v5.2.7
+        uses: jdx/mise-action@v5.2.9
         with:
           version: 2026.10.24
           install_args: --locked
