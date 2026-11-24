@@ -41,7 +41,7 @@ quotaline-storage = { version = "0.2.0", path = "../../crates/data/storage" }
 quotaline-history = { version = "0.2.0", path = "../../crates/data/history", features = ["uniffi"] }
 quotaline-macos-platform = { version = "0.2.0", path = "../platform" }
 uniffi = "0.32.2"
-url = "2.5.8"
+url = "2.5.9"
 
 [dev-dependencies]
 base64 = "0.23"
