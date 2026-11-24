@@ -801,8 +801,14 @@ def test_workload_handles_parent_exit_during_discovery(tmp_path: Path, mocker: M
     mocker.patch("psutil.Process", autospec=True, return_value=process)
     mocker.patch("psutil.process_iter", autospec=True, return_value=[])
     mocker.patch("psutil.wait_procs", autospec=True, return_value=([process], []))
+    child: Final = mocker.create_autospec(subprocess.Popen, instance=True, pid=999999)
+    child.__enter__.return_value = child
+    child.poll.return_value = None
     expected: Final = 7
-    assert run_bounded([sys.executable, "-c", f"raise SystemExit({expected})"], tmp_path, timeout=3) == expected
+    child.wait.return_value = expected
+    mocker.patch("subprocess.Popen", autospec=True, return_value=child)
+    assert run_bounded([sys.executable], tmp_path, timeout=3) == expected
+    process.children.assert_called_once_with(recursive=True)
 
 
 @pytest.mark.usefixtures("safe_resources")
