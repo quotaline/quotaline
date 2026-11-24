@@ -116,10 +116,7 @@ fn service_owner_loss_and_recovery_reach_shell() {
     });
     let wait_for_marker = |marker: &Path| {
         while !marker.exists() {
-            events
-                .recv()
-                .unwrap_or_else(|error| panic!("{} was not created: {error}", marker.display()))
-                .unwrap();
+            events.recv().expect("marker watcher disconnected").unwrap();
         }
     };
     wait_for_marker(&ready);

@@ -280,32 +280,36 @@ async fn a_promoted_engine_drops_fetches_the_previous_poller_left_running() {
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 async fn the_poller_serves_forwarded_resets_and_lets_go_on_release() {
     let (_root, _server, _fetches) = machine(&[42]).await;
-    let leader = Running::start();
-    leader.used(42.0).await;
-    let coordination = leader.engine.coordination.as_ref().unwrap();
-    assert!(!leader.engine.inner.lock().await.recent_samples.is_empty());
+    let leader = Engine::new(false, recorder()).unwrap();
+    assert!(leader.contest().await);
+    assert!(leader.refresh("claude").await);
+    tokio::time::timeout(Duration::from_secs(30), leader.schedule_changed.notified())
+        .await
+        .unwrap();
+    let coordination = leader.coordination.as_ref().unwrap();
+    assert!(!leader.inner.lock().await.recent_samples.is_empty());
     let rival = rival();
     let checkpoint = store::claude_checkpoint();
     let _ = fs::remove_file(&checkpoint);
     fs::create_dir_all(checkpoint.join("blocked")).unwrap();
     rival.request(&Request::ClearHistory).unwrap();
-    leader.engine.coordinate(coordination, false).await;
+    leader.coordinate(coordination, false).await;
     assert!(
-        !leader.engine.inner.lock().await.recent_samples.is_empty(),
+        !leader.inner.lock().await.recent_samples.is_empty(),
         "a failed clear dropped readings"
     );
     fs::remove_dir_all(&checkpoint).unwrap();
     rival.request(&Request::ClearHistory).unwrap();
     rival.request(&Request::ClearHistory).unwrap();
-    leader.engine.coordinate(coordination, false).await;
-    assert!(leader.engine.inner.lock().await.recent_samples.is_empty());
+    leader.coordinate(coordination, false).await;
+    assert!(leader.inner.lock().await.recent_samples.is_empty());
     rival.request(&Request::ForgetReadings).unwrap();
-    leader.engine.coordinate(coordination, false).await;
-    assert!(leader.engine.inner.lock().await.providers.is_empty());
+    leader.coordinate(coordination, false).await;
+    assert!(leader.inner.lock().await.providers.is_empty());
 
-    leader.engine.release().await;
-    assert!(!leader.engine.contest().await);
-    assert!(leader.engine.refresh("claude").await);
+    leader.release().await;
+    assert!(!leader.contest().await);
+    assert!(leader.refresh("claude").await);
     assert!(
         rival.lead(epoch(), 30.0).unwrap(),
         "a released engine took the lease back"
@@ -432,6 +436,14 @@ async fn a_rate_limit_and_its_backoff_reach_the_other_engines() {
     assert!(follower.engine.refresh("claude").await);
     tokio::time::sleep(Duration::from_millis(500)).await;
     assert_eq!(fetches.load(Ordering::SeqCst), 2, "taking over ignored the rate limit");
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn toggling_windows_for_an_unknown_provider_is_rejected() {
+    let (_root, _server, _) = machine(&[42]).await;
+    let engine = Engine::new(false, recorder()).unwrap();
+    let error = engine.toggle_provider_models("missing").await.unwrap_err();
+    assert_eq!(format!("{error:?}"), r#"InvalidArgs("Unknown provider")"#);
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]

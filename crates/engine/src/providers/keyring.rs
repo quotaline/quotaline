@@ -22,8 +22,8 @@ pub(super) async fn connect() -> Option<SecretService<'static>> {
     // A missing or slow Secret Service means no keyring credentials, not a failure.
     tokio::time::timeout(Duration::from_millis(800), SecretService::connect(EncryptionType::Dh))
         .await
-        .ok()?
         .ok()
+        .and_then(Result::ok)
 }
 
 pub(super) async fn search<'a>(
@@ -114,12 +114,15 @@ pub(super) async fn replace(
     if &current != expected {
         return Err(Failure::new("sign-in", changed));
     }
-    let serialized = serde_json::to_vec(document)
-        .map_err(|_| Failure::new("unreadable", format!("Cannot encode refreshed {product} credentials")))?;
+    let serialized = document.to_string();
     within(
-        item.set_secret(&serialized, "application/json"),
+        item.set_secret(serialized.as_bytes(), "application/json"),
         format!("{product} keyring write timed out"),
         format!("Cannot save refreshed {product} keyring item"),
     )
     .await
 }
+
+#[cfg(test)]
+#[path = "../../tests/unit/providers/tests/keyring.rs"]
+mod tests;

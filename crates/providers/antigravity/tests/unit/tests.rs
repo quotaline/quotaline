@@ -233,8 +233,8 @@ fn empty_groups_are_a_connected_provider_without_quota() {
 #[test]
 fn projection_rejects_invalid_quota() {
     assert_eq!(
-        project(&json!({"code":16}), identity(&Value::Null), "fixture".into()).map(|provider| provider.plan),
-        Err(QuotaError::Unauthenticated)
+        project(&json!({"code":16}), identity(&Value::Null), "fixture".into()).err(),
+        Some(QuotaError::Unauthenticated)
     );
 }
 

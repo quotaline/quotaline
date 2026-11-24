@@ -193,6 +193,23 @@ fn gemini_keyring_refresh_precedes_stale_file_credentials() {
 #[cfg(feature = "fixture-api")]
 #[test]
 fn gemini_refresh_preserves_a_keyring_item_changed_during_oauth() {
+    assert_gemini_refresh_respects_keyring_change(Some(br#"{"token":{"accessToken":"new-session"}}"#), "sign-in");
+}
+
+#[cfg(feature = "fixture-api")]
+#[test]
+fn gemini_refresh_does_not_restore_a_removed_keyring_item() {
+    assert_gemini_refresh_respects_keyring_change(None, "sign-in");
+}
+
+#[cfg(feature = "fixture-api")]
+#[test]
+fn gemini_refresh_preserves_a_malformed_replacement() {
+    assert_gemini_refresh_respects_keyring_change(Some(b"not JSON"), "unreadable");
+}
+
+#[cfg(feature = "fixture-api")]
+fn assert_gemini_refresh_respects_keyring_change(replacement: Option<&'static [u8]>, status: &str) {
     tokio::runtime::Runtime::new().unwrap().block_on(async {
         let server = MockServer::start().await;
         let fixture = isolated_service_configured(
@@ -220,13 +237,23 @@ fn gemini_refresh_preserves_a_keyring_item_changed_during_oauth() {
         Mock::given(matchers::method("POST"))
             .and(matchers::path("/token"))
             .respond_with(move |_: &wiremock::Request| {
-                store_keyring_item_at(
-                    &root,
-                    &address,
-                    "Gemini replacement",
-                    &[("service", "gemini-cli-oauth"), ("username", "main-account")],
-                    br#"{"token":{"accessToken":"new-session"}}"#,
-                );
+                if let Some(replacement) = replacement {
+                    store_keyring_item_at(
+                        &root,
+                        &address,
+                        "Gemini replacement",
+                        &[("service", "gemini-cli-oauth"), ("username", "main-account")],
+                        replacement,
+                    );
+                } else {
+                    assert!(
+                        environment(&mut Command::new("secret-tool"), &root, &address)
+                            .args(["clear", "service", "gemini-cli-oauth", "username", "main-account"])
+                            .status()
+                            .unwrap()
+                            .success()
+                    );
+                }
                 ResponseTemplate::new(200).set_body_json(serde_json::json!({
                     "access_token":"refreshed","expires_in":3600
                 }))
@@ -256,14 +283,16 @@ fn gemini_refresh_preserves_a_keyring_item_changed_during_oauth() {
             state["providers"]["gemini"]["notice"] == "Gemini keyring item changed during refresh"
         })
         .await;
-        assert_eq!(state["providers"]["gemini"]["status"], "sign-in");
+        assert_eq!(state["providers"]["gemini"]["status"], status);
         let lookup = environment(&mut Command::new("secret-tool"), fixture.scratch.path(), &fixture.address)
             .args(["lookup", "service", "gemini-cli-oauth", "username", "main-account"])
             .output()
             .unwrap();
-        assert!(lookup.status.success());
-        let saved: serde_json::Value = serde_json::from_slice(&lookup.stdout).unwrap();
-        assert_eq!(saved["token"]["accessToken"], "new-session");
+        assert_eq!(lookup.status.success(), replacement.is_some());
+        assert_eq!(
+            lookup.stdout.strip_suffix(b"\n").unwrap_or(&lookup.stdout),
+            replacement.unwrap_or_default()
+        );
         server.verify().await;
     });
 }

@@ -14,6 +14,7 @@ workflows:
         - 'swatinem/rust-cache@v2.9.3'
         - 'tox-dev/github-workflows@6.8.5'
     '.github/workflows/codeql.yaml':
+        - 'actions-rust-lang/setup-rust-toolchain@v2.0.1'
         - 'actions/cache@v6.1.0'
         - 'actions/checkout@v7.0.1'
         - 'github/codeql-action@v4.39.3'

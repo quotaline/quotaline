@@ -83,6 +83,7 @@ fn assist_metadata_and_subscription_errors_use_one_contract() {
     assert_eq!(unsupported_reason(&json!({"currentTier":{}})), None);
     assert_eq!(unsupported_reason(&json!({"paidTier":{}})), None);
     assert_eq!(unsupported_reason(&Value::Null), None);
+    assert_eq!(unsupported_reason(&json!({"ineligibleTiers":[]})), None);
     assert_eq!(
         unsupported_reason(
             &json!({"ineligibleTiers":[{"reasonCode":"other","reasonMessage":"Other"},

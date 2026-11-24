@@ -62,6 +62,22 @@ fn snapshot<'a>(
 }
 
 #[test]
+fn an_invalid_previous_sample_prevents_recording() {
+    let store = Store::open(None, 60).unwrap();
+    let rows = [sample(1000.0, 10.0, None)];
+    store.record_snapshot(snapshot("claude", None, 1000.0, &rows)).unwrap();
+    store.state().db.execute("UPDATE samples SET used = X'00'", []).unwrap();
+    let error = store
+        .record_snapshot(snapshot("claude", None, 1060.0, &rows))
+        .unwrap_err();
+    assert!(matches!(
+        error,
+        HistoryError::Database(rusqlite::Error::InvalidColumnType(..))
+    ));
+    assert_eq!(store.stats().unwrap().sample_count, 1);
+}
+
+#[test]
 fn snapshots_follow_sampling_and_account_switches() {
     let store = Store::open(None, 60).unwrap();
     let rows = [sample(1000.0, 10.0, None)];

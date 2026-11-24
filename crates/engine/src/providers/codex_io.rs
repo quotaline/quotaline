@@ -36,10 +36,7 @@ pub(super) async fn codex(client: &Api, home: &Path, allow_token_refresh: bool) 
         Err(error) => {
             let throttled = client.local_scan_throttled.load(Ordering::Relaxed);
             let cache = Arc::clone(&client.codex_rollout_cache);
-            let reading = tokio::task::spawn_blocking(move || cache.latest(&root, throttled))
-                .await
-                .map_err(|_| Failure::new("error", "Codex rollout task failed"))?
-                .map_err(|_| Failure::new("unreadable", "Cannot read Codex rollouts"))?;
+            let reading = read_rollout(move || cache.latest(&root, throttled)).await?;
             let Some(reading) = reading else {
                 return Err(error);
             };
@@ -57,6 +54,15 @@ pub(super) async fn codex(client: &Api, home: &Path, allow_token_refresh: bool) 
             Ok(provider)
         }
     }
+}
+
+async fn read_rollout(
+    read: impl FnOnce() -> std::io::Result<Option<codex_rollouts::Reading>> + Send + 'static,
+) -> Result<Option<codex_rollouts::Reading>, Failure> {
+    tokio::task::spawn_blocking(read)
+        .await
+        .map_err(|_| Failure::new("error", "Codex rollout task failed"))?
+        .map_err(|_| Failure::new("unreadable", "Cannot read Codex rollouts"))
 }
 
 pub(super) fn codex_subscription_until(document: &Value) -> Option<String> {
@@ -178,9 +184,7 @@ pub(super) async fn codex_remote(
             .await
             .map_err(Failure::with_expired)?;
     }
-    let token = text(&doc["tokens"]["access_token"])
-        .or_else(|| text(&doc["OPENAI_API_KEY"]))
-        .expect("discovered Codex credentials contain a token");
+    let token = text(&doc["tokens"]["access_token"]).expect("Codex usage requires an access token");
     let fetch_account = codex_fetch::Account {
         base: &client.codex_base,
         token,
@@ -276,4 +280,18 @@ pub(super) async fn refresh_codex(
         .await?;
     }
     Ok(document)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn reports_a_failed_rollout_worker_as_a_provider_error() {
+        let error = read_rollout(|| panic!("rollout worker stopped")).await.err().unwrap();
+        assert_eq!(
+            (error.status, error.message.as_str()),
+            ("error", "Codex rollout task failed")
+        );
+    }
 }

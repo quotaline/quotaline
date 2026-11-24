@@ -107,6 +107,24 @@ fn live_engine_serves_usage_history_settings_and_logs() {
 }
 
 #[test]
+fn history_moves_between_readings_with_the_keyboard_and_mouse() {
+    let home = Home::demo();
+    let mut cli = Interactive::start(&mut home.command());
+    cli.read_until("Max 20x");
+    cli.write(b"2");
+    cli.read_until("Latest");
+    cli.write(b"\x1b[D\x1b[D");
+    cli.read_until("◆");
+    cli.click(55, 5);
+    cli.read_until("Series hidden");
+    cli.write(b"v");
+    cli.read_until("Latest");
+    cli.click(20, 9);
+    cli.read_until("◆");
+    cli.quit(b"q");
+}
+
+#[test]
 fn live_engine_runs_every_command() {
     let home = Home::demo();
     let mut cli = Interactive::start(&mut home.command());

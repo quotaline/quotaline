@@ -92,6 +92,26 @@ fn malformed_rows_report_json_errors() {
 }
 
 #[test]
+fn non_text_rows_report_sql_errors() {
+    let (directory, first, _) = pair();
+    let raw = Connection::open(directory.path().join("live.sqlite3")).unwrap();
+    raw.execute_batch(
+        "INSERT INTO published (id, state) VALUES (1, X'00');
+         INSERT INTO requests (request) VALUES (X'00');
+         INSERT INTO outbox (created, notice) VALUES (100, X'00');",
+    )
+    .unwrap();
+    for error in [
+        first.published::<u32>().unwrap_err(),
+        first.take_requests::<u32>().unwrap_err(),
+        first.claim::<u32>(100.0, 60.0).unwrap_err(),
+    ] {
+        assert!(matches!(error, LiveError::Sql(rusqlite::Error::InvalidColumnType(..))));
+    }
+    assert_eq!(first.pending(100.0, 60.0).unwrap(), 1);
+}
+
+#[test]
 fn a_damaged_store_reports_sql_errors() {
     let (directory, first, _second) = pair();
     let raw = Connection::open(directory.path().join("live.sqlite3")).unwrap();
