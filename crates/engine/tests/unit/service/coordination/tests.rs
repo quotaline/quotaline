@@ -435,6 +435,14 @@ async fn a_rate_limit_and_its_backoff_reach_the_other_engines() {
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn toggling_windows_for_an_unknown_provider_is_rejected() {
+    let (_root, _server, _) = machine(&[42]).await;
+    let engine = Engine::new(false, recorder()).unwrap();
+    let error = engine.toggle_provider_models("missing").await.unwrap_err();
+    assert_eq!(format!("{error:?}"), r#"InvalidArgs("Unknown provider")"#);
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 async fn a_provider_turned_off_is_not_fetched_even_when_named() {
     let (_root, _server, fetches) = machine(&[42]).await;
     // Not running, so no poller takes the signal a cycle gives when it ends.

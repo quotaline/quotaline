@@ -2,6 +2,28 @@
 
 use super::*;
 
+#[cfg(feature = "fixture-api")]
+#[tokio::test]
+async fn copilot_rejects_an_invalid_fixture_endpoint() {
+    let server = MockServer::start().await;
+    let home = tempfile::tempdir().unwrap();
+    credential_file(
+        home.path(),
+        ".copilot/config.json",
+        &json!({"loggedInUsers":[{"token":"copilot-fixture","host":"github.com"}]}),
+    );
+    let api = Api {
+        copilot_usage: "invalid endpoint".into(),
+        fixture_base: Some(server.uri()),
+        ..fixture_api(&server)
+    };
+    let failure = collect(&api, "copilot", home.path(), false).await.err().unwrap();
+    assert_eq!(
+        (failure.status, failure.message.as_str()),
+        ("unreadable", "Invalid GitHub host")
+    );
+}
+
 #[tokio::test]
 async fn copilot_http_uses_cli_session() {
     let server = MockServer::start().await;

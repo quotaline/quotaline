@@ -142,9 +142,7 @@ impl Bus {
         provider: &str,
         #[zbus(signal_emitter)] emitter: SignalEmitter<'_>,
     ) -> fdo::Result<()> {
-        Self::sign_in_requested(&emitter, provider)
-            .await
-            .map_err(|error| fdo::Error::Failed(error.to_string()))
+        Self::sign_in_requested(&emitter, provider).await.map_err(Into::into)
     }
 
     async fn get_diagnostics(&self) -> String {

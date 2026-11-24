@@ -214,6 +214,7 @@ fn pending_hot_tail_reports_incomplete_until_the_byte_budget_finishes() {
         .unwrap()
         .write_all(line("two").as_bytes())
         .unwrap();
+    reader.request_discovery();
     let pending = reader.refresh(now() + 1.0, 60, false);
     assert!(!pending.projects_complete);
     assert!(reader.pending());

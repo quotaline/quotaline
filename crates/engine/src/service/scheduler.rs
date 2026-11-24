@@ -164,18 +164,7 @@ impl Engine {
             }
             inner.last_claude_scan = Some(Instant::now());
             inner.claude_scanning = true;
-            let now = Timestamp::now().as_second();
-            let start = inner
-                .providers
-                .get("claude")
-                .and_then(|provider| provider.windows.iter().find(|row| row.id == "session"))
-                .and_then(|row| {
-                    row.reset
-                        .as_deref()
-                        .and_then(|text| text.parse::<Timestamp>().ok())
-                        .map(|reset| reset.as_second() - row.duration_seconds.unwrap_or(18_000) as i64)
-                })
-                .unwrap_or(now - 18_000);
+            let start = claude_window_start(inner.providers.get("claude"), Timestamp::now().as_second());
             (
                 inner.settings.retention_days,
                 start,
@@ -208,5 +197,36 @@ impl Engine {
             app.schedule_changed.notify_one();
             app.emit().await;
         });
+    }
+}
+
+fn claude_window_start(provider: Option<&Provider>, now: i64) -> i64 {
+    let duration = 18_000;
+    provider
+        .and_then(|provider| provider.windows.iter().find(|row| row.id == "session"))
+        .and_then(|row| {
+            let reset = row.reset.as_deref()?.parse::<Timestamp>().ok()?;
+            Some(reset.as_second() - row.duration_seconds.unwrap_or(duration as u64) as i64)
+        })
+        .unwrap_or(now - duration)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use quotaline_quota::Window;
+
+    #[test]
+    fn valid_session_reset_sets_the_transcript_window_start() {
+        let mut window = Window::new("session", "Session", 12.0, None, "session");
+        window.reset = Some("2026-11-24T12:00:00Z".into());
+        window.duration_seconds = Some(3600);
+        let mut provider = Provider::connected("claude", "Pro".into(), "test".into(), String::new(), vec![window]);
+        let noon = "2026-11-24T12:00:00Z".parse::<Timestamp>().unwrap().as_second();
+        assert_eq!(claude_window_start(Some(&provider), noon), noon - 3600);
+        provider.windows[0].duration_seconds = None;
+        assert_eq!(claude_window_start(Some(&provider), noon), noon - 18_000);
+        provider.windows[0].reset = Some("invalid".into());
+        assert_eq!(claude_window_start(Some(&provider), noon + 60), noon + 60 - 18_000);
     }
 }

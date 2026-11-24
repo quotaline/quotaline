@@ -2,7 +2,12 @@
 
 use super::*;
 
-pub(crate) fn copilot_locked_keyring_state(account: &str, configured: bool, status: &str) -> serde_json::Value {
+pub(crate) fn copilot_locked_keyring_state(
+    attribute: &str,
+    account: &str,
+    configured: bool,
+    status: &str,
+) -> serde_json::Value {
     tokio::runtime::Runtime::new().unwrap().block_on(async {
         let providers = serde_json::json!({"claude":false,"codex":false,"gemini":false,"antigravity":false,"cursor":false,"copilot":true});
         let fixture = isolated_service_with(
@@ -18,7 +23,13 @@ pub(crate) fn copilot_locked_keyring_state(account: &str, configured: bool, stat
                 fs::write(config, r#"{"loggedInUsers":[{"keychainAccount":"https://github.com:ada"}]}"#).unwrap();
             },
         );
-        let _keyring = copilot_keyring_fixture(&fixture, &[(account, "locked-fixture")]).await;
+        let _keyring = start_keyring(&fixture).await;
+        store_keyring_item(
+            &fixture,
+            "Copilot fixture",
+            &[("service", "copilot-cli"), (attribute, account)],
+            b"locked-fixture",
+        );
         let connection = zbus::connection::Builder::address(fixture.address.as_str())
             .build()
             .await

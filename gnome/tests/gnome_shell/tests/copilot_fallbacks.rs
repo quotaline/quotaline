@@ -138,14 +138,14 @@ fn malformed_copilot_keyring_item_reports_unreadable_credentials() {
 #[cfg(feature = "fixture-api")]
 #[test]
 fn copilot_locked_matching_keyring_account_reports_unreadable_credentials() {
-    let state = copilot_locked_keyring_state("https://github.com:ada", true, "unreadable");
+    let state = copilot_locked_keyring_state("username", "https://github.com:ada", true, "unreadable");
     assert_eq!(state["providers"]["copilot"]["notice"], "Copilot keyring is locked");
 }
 
 #[cfg(feature = "fixture-api")]
 #[test]
 fn copilot_locked_unlisted_keyring_account_does_not_block_sign_in() {
-    let state = copilot_locked_keyring_state("https://github.com:zoe", true, "sign-in");
+    let state = copilot_locked_keyring_state("account", "https://github.com:zoe", true, "sign-in");
     assert!(
         state["providers"]["copilot"]["notice"]
             .as_str()
@@ -157,7 +157,7 @@ fn copilot_locked_unlisted_keyring_account_does_not_block_sign_in() {
 #[cfg(feature = "fixture-api")]
 #[test]
 fn copilot_locked_keyring_without_a_configured_account_reports_unreadable_credentials() {
-    let state = copilot_locked_keyring_state("https://github.com:ada", false, "unreadable");
+    let state = copilot_locked_keyring_state("account", "https://github.com:ada", false, "unreadable");
     assert_eq!(state["providers"]["copilot"]["notice"], "Copilot keyring is locked");
 }
 

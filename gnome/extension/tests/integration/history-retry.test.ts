@@ -55,6 +55,8 @@ export async function run() {
         await waitOrFail(() => containsText(indicator.menu.box, '52%'), 'Retry did not refresh the History chart');
         if (containsText(indicator.menu.box, 'Update failed'))
             throw new Error('Retry did not refresh the History chart');
+        clickButton(required(findActor(indicator.menu.box, actor => buttonLabel(actor) === '←')));
+        await waitOrFail(() => containsText(indicator.menu.box, '62%'), 'Previous period did not refresh the chart');
         closeInstantly(indicator.menu);
     } finally {
         const directory = GLib.getenv('TMB_JS_COVERAGE_DIR');
