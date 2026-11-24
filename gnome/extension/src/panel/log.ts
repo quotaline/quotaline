@@ -73,8 +73,12 @@ export const logMethods = {
                 () => {
                     this._logLevel = title;
                     this._logPage = 0;
-                    for (const sibling of levels.flatMap(row => row.get_children() as St.Widget[]))
-                        sibling.remove_style_class_name('tmb-setting-segment-selected');
+                    for (const row of levels) {
+                        for (const sibling of row.get_children()) {
+                            if (sibling instanceof St.Button)
+                                sibling.remove_style_class_name('tmb-setting-segment-selected');
+                        }
+                    }
                     choice.add_style_class_name('tmb-setting-segment-selected');
                     renderRows();
                 },
