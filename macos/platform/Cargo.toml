@@ -5,7 +5,6 @@ edition = "2024"
 license = "MIT"
 
 [dependencies]
-quotaline-antigravity = { version = "0.2.0", path = "../../crates/providers/antigravity" }
 quotaline-catalog = { version = "0.2.0", path = "../../crates/catalog" }
 quotaline-credentials = { version = "0.2.0", path = "../../crates/accounts/credentials" }
 quotaline-quota = { version = "0.2.0", path = "../../crates/presentation/quota" }
@@ -21,6 +20,7 @@ libc = "0.2.191"
 libproc = "0.15.0"
 objc2 = "0.6"
 objc2-local-authentication = { version = "0.3.2", features = ["LAContext"] }
+quotaline-antigravity = { version = "0.2.0", path = "../../crates/providers/antigravity" }
 security-framework = "3.7"
 security-framework-sys = "2.17"
 

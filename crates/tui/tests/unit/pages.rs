@@ -49,6 +49,35 @@ fn history_filters_and_reordering_preserve_values() {
 }
 
 #[test]
+fn translates_live_commands_to_backend_actions() {
+    for (text, command) in [
+        ("visibility {}", Command::Visibility("{}".into())),
+        (
+            "set hide_identity true",
+            Command::Set("hide_identity".into(), "true".into()),
+        ),
+        ("models codex", Command::Models("codex".into())),
+        ("toggle-model codex:weekly", Command::ToggleModel("codex:weekly".into())),
+        ("toggle-provider codex", Command::ToggleProviderModels("codex".into())),
+        ("spend", Command::Spend),
+        ("reviews", Command::Reviews),
+        ("diagnostics", Command::Diagnostics),
+        ("issue", Command::IssueUrl),
+        ("clear logs confirm", Command::ClearLogs),
+        ("clear history confirm", Command::ClearHistory),
+        ("reset settings confirm", Command::ResetSettings),
+    ] {
+        assert_eq!(parse(text, None).unwrap(), command, "{text}");
+    }
+}
+
+#[test]
+fn history_has_no_value_before_the_first_reading() {
+    let history = chart_fixture("usage", false, 60, [("day", "Daily", json!([[30, 20.0, null, false]]))]);
+    assert_eq!(history_series_value(&history.series[0], Some(10), "line"), None);
+}
+
+#[test]
 fn history_draws_each_visible_usage_series_and_highlights_selected_reading() {
     let history = chart_fixture(
         "usage",
@@ -253,6 +282,7 @@ fn history_falls_back_for_an_unknown_metric_and_formats_local_time() {
         ],
     );
     history.utc = false;
+    history.series[0].provider = "codex".into();
     let buffer = history_buffer(&history, (0, Some(0)), (100, 22));
     let rows = history_rows(&buffer);
     let stamp = Timestamp::from_second(0)
@@ -263,6 +293,7 @@ fn history_falls_back_for_an_unknown_metric_and_formats_local_time() {
     assert!(rows.contains("History metric"));
     assert!(rows.contains(&format!("{stamp} · 12.00")), "{rows}");
     assert!(rows.contains("›● Codex · First"));
+    assert!(rows.contains("Codex · Second"));
 }
 
 #[test]

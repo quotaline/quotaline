@@ -31,6 +31,10 @@ fn short_label_helpers_preserve_graphemes_and_semantic_tags() {
         Some("CC 5h")
     );
     assert_eq!(
+        default_short_label("claude", "monthly", "Monthly", None).as_deref(),
+        Some("CC 1mo")
+    );
+    assert_eq!(
         default_short_label("claude", "opus", "Opus", None).as_deref(),
         Some("OP")
     );
