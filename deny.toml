@@ -26,6 +26,7 @@ skip = [
   { crate = "parking_lot@0.12.5", reason = "crossterm 0.29, the terminal backend, retains parking_lot 0.12." },
   { crate = "parking_lot_core@0.9.12", reason = "crossterm 0.29, the terminal backend, retains parking_lot 0.12." },
   { crate = "redox_syscall@0.5.18", reason = "crossterm 0.29, the terminal backend, retains parking_lot 0.12." },
+  { crate = "signal-hook@0.3.18", reason = "crossterm 0.29 and signal-hook-mio 0.2 require signal-hook 0.3." },
 ]
 
 [sources]
