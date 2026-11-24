@@ -546,7 +546,11 @@ jobs:
         with:
           version: 2026.10.24
           working_directory: macos
-          install_args: --locked just rust swift
+          install_args: --locked just swift
+      - name: 🦀 Install Rust toolchain
+        uses: actions-rust-lang/setup-rust-toolchain@v2.0.1
+        with:
+          cache: false
       - name: 🦀 Install macOS Rust toolchain
         run: just macos-toolchain
       - name: 💾 Restore Rust build cache

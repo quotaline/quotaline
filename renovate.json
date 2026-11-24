@@ -9,6 +9,6 @@
   ],
   "timezone": "Europe/London",
   "minimumReleaseAge": "7 days",
-  "enabledManagers": ["mise"],
+  "enabledManagers": ["mise", "rust-toolchain"],
   "schedule": ["before 6am on Tuesday"]
 }
