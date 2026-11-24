@@ -343,6 +343,7 @@ jobs:
         shell: bash
         run: |
           read -ra packages <<< "$GNOME_PACKAGES"
+          sudo sed -Ei 's@https?://[[:alnum:]-]+\.ec2\.archive\.ubuntu\.com/ubuntu@http://archive.ubuntu.com/ubuntu@g' /etc/apt/sources.list.d/ubuntu.sources
           sudo apt-get -o Acquire::Retries=5 -o Acquire::http::Timeout=30 update
           versions=$(apt-get install --print-uris --yes --no-install-recommends "${packages[@]}" | sha256sum | cut -c1-16)
           echo "prefix=apt-$ImageOS-$ImageVersion-" >> "$GITHUB_OUTPUT"
