@@ -23,7 +23,7 @@ tokio = { version = "1", features = ["rt-multi-thread", "time"] }
 
 [target.'cfg(unix)'.dependencies]
 rustix = { version = "1", features = ["fs"] }
-signal-hook = "0.3"
+signal-hook = "0.4"
 
 [target.'cfg(unix)'.dev-dependencies]
 rustix = { version = "1", features = ["event", "fs", "process", "pty", "termios"] }
