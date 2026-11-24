@@ -16,7 +16,7 @@ quotaline-http = { version = "0.2.0", path = "../../http" }
 quotaline-settings = { version = "0.2.0", path = "../../settings" }
 quotaline-quota = { version = "0.2.0", path = "../../presentation/quota" }
 quotaline-text = { version = "0.2.0", path = "../../presentation/text" }
-url = "2.5.8"
+url = "2.5.9"
 
 [dev-dependencies]
 futures-executor = "0.3"
